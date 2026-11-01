@@ -33,7 +33,8 @@ public class TaxInvoices {
 
     private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
     private static final Pattern GSTIN = Pattern.compile("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]");
-    // Maharashtra, where the corridor lies: the first two characters of a GSTIN name the state.
+    // Maharashtra, taken as where the service is supplied: the first two characters of a GSTIN
+    // name the state. A simplification for rides elsewhere, in docs/KNOWN_LIMITATIONS.md.
     private static final String CORRIDOR_STATE = "27";
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 

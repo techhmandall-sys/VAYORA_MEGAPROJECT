@@ -21,7 +21,7 @@ import org.bson.Document;
  * <p>A value is a {@code String}, another {@code Text} (a phrase that is itself translated,
  * such as "2 seats, Kolhapur to Pune"), or a {@code List<Text>}, rendered joined by "; ".
  * A string that is an ISO-8601 instant, such as {@code 2026-10-23T02:00:00Z}, is a moment:
- * the English gives it in the corridor's time ("Fri 23 Oct, 07:30"), and the app in the
+ * the English gives it in India's time ("Fri 23 Oct, 07:30"), and the app in the
  * reader's language. An ISO date, such as {@code 2026-10-27}, is left as it is here.
  */
 public record Text(String template, Map<String, Object> values) {

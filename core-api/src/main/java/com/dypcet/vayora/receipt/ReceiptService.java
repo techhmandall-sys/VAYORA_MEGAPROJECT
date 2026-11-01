@@ -191,7 +191,7 @@ public class ReceiptService {
                     "Total: " + rupees(receipt.price()),
                     "",
                     "This is not a tax invoice.",
-                    "VAYORA, Kolhapur to Pune"));
+                    "VAYORA, shared rides between cities"));
             return lines;
         }
         lines.addAll(List.of(
@@ -234,7 +234,7 @@ public class ReceiptService {
         if (!invoiced) {
             lines.add("This is not a tax invoice.");
         }
-        lines.add("VAYORA, Kolhapur to Pune");
+        lines.add("VAYORA, shared rides between cities");
         return lines;
     }
 

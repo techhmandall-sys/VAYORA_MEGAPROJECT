@@ -3,7 +3,7 @@ package com.dypcet.vayora.identity;
 /**
  * One way of writing a member's phone number, so the same number typed two ways is one
  * account. Numbers without a country code are taken to be Indian (+91): the platform serves
- * one corridor in Maharashtra.
+ * India.
  */
 public final class Phones {
 

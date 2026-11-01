@@ -50,7 +50,7 @@ public class DetourService {
     /**
      * The cheapest pickup at {@code point} on a leg before stop {@code toSeq}, if it fits in
      * the minutes left. Driving times come from the routing service, or from straight lines
-     * when it cannot be reached, as for every route.
+     * off its map or when it cannot be reached, as for every route.
      */
     public Optional<Pickup> cheapest(long rideId, Point point, int toSeq, int minutesLeft) {
         List<StopAt> stops = stopsOf(rideId);

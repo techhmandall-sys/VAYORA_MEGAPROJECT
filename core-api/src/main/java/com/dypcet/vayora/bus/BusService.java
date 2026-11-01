@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Bus services on the corridor, entered by administrators, offered to a passenger when no
+ * Bus services, entered by administrators, offered to a passenger when no
  * ride will do.
  *
  * <p>The platform ships with none. Times and fares are whatever an administrator enters;

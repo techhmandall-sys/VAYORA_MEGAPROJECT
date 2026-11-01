@@ -52,7 +52,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class RideService {
 
-    /** The corridor is Kolhapur to Pune; a search date is a calendar day there. */
+    /** A search date is a calendar day in India, which has one time zone. */
     private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
     private static final String BOARDING = "r.departure_time + make_interval(mins => o.offset_minutes)";
     private static final int MAX_REPEAT_WEEKS = 8;
@@ -264,7 +264,7 @@ public class RideService {
      * <p>The last three look at what the driver has said or proved. A driver who has not
      * said is left out by them: silence is not a promise of a smoke-free car.
      *
-     * @param earliestHour    boarding at or after this hour of the corridor's day, 0 to 23
+     * @param earliestHour    boarding at or after this hour of the day in India, 0 to 23
      * @param latestHour      boarding before this hour, 1 to 24
      * @param maxPricePerSeat for the stretch the passenger would travel
      * @param confirmedDriver the driver has confirmed an email address or a phone number
@@ -521,7 +521,7 @@ public class RideService {
         return back;
     }
 
-    /** The same time of day on the corridor's clock, so many weeks on. */
+    /** The same time of day in India, so many weeks on. */
     private static Instant weeksLater(Instant time, int weeks) {
         return time.atZone(CORRIDOR_ZONE).plusWeeks(weeks).toInstant();
     }
@@ -568,8 +568,9 @@ public class RideService {
     /**
      * An electric car must cover each stretch between stops on one charge, by the driver's own
      * figures: it can charge at a stop, not between two. Compared to the tenth of a kilometre,
-     * as the route preview shows it, so the two never disagree. When the routing service is
-     * down the stretches are straight lines, shorter than the road, and this is lenient.
+     * as the route preview shows it, so the two never disagree. Off the routing service's map,
+     * or when it is down, the stretches are straight lines, shorter than the road, and this is
+     * lenient.
      */
     private static void withinRange(Vehicle vehicle, Route route) {
         Integer range = vehicle.estimatedRangeKm();
