@@ -1,0 +1,38 @@
+# The one way in when VAYORA is online (docker-compose.prod.yml). It gets and renews its HTTPS
+# certificate by itself and holds no logic: each path goes to the service that owns it.
+{$VAYORA_DOMAIN} {
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	# core-api: transactions and truth, and the description of its API. Its health and metrics
+	# stay inside.
+	handle /api/* {
+		reverse_proxy core-api:8080
+	}
+	handle /v3/api-docs* {
+		reverse_proxy core-api:8080
+	}
+	handle /swagger-ui* {
+		reverse_proxy core-api:8080
+	}
+
+	# The gateway: chat and live position.
+	handle /socket.io/* {
+		reverse_proxy gateway:3000
+	}
+
+	# intel: only live what-if runs, which check an administrator's token themselves. Its model
+	# and scheduler have no authentication and must never be reachable from here.
+	handle /v1/whatif/* {
+		reverse_proxy intel:8000
+	}
+
+	# Everything else is the app.
+	handle {
+		reverse_proxy web:80
+	}
+}

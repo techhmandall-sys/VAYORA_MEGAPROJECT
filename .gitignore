@@ -30,3 +30,6 @@ data/
 *.iml
 .DS_Store
 Thumbs.db
+
+# database backups (scripts/backup.sh)
+backups/

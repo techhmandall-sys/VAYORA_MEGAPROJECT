@@ -1,0 +1,88 @@
+# VAYORA online, on one server. Layered over docker-compose.yml by scripts/deploy.sh; see
+# docs/DEPLOYMENT.md. What it changes:
+#   - One way in: the edge serves HTTPS and passes each path to the service that owns it.
+#   - Every other port is closed. The databases and the model are reachable only from inside.
+#   - No defaults for secrets: without them it refuses to start.
+#   - Everything comes back by itself after a restart.
+services:
+  edge:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      core-api:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+      intel:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    environment:
+      VAYORA_DOMAIN: ${VAYORA_DOMAIN:?Set VAYORA_DOMAIN to the address VAYORA is served from}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/edge/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates: kept, so a restart does not ask for new ones.
+      - edgedata:/data
+      - edgeconfig:/config
+
+  postgres:
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    ports: !reset []
+
+  mongo:
+    restart: unless-stopped
+    ports: !reset []
+
+  redis:
+    restart: unless-stopped
+    ports: !reset []
+
+  osrm:
+    restart: unless-stopped
+    ports: !reset []
+
+  osrm-foot:
+    restart: unless-stopped
+
+  core-api:
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET to at least 32 random characters}
+      CORS_ALLOWED_ORIGINS: https://${VAYORA_DOMAIN:?Set VAYORA_DOMAIN}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD, 12 characters or more}
+    ports: !reset []
+
+  intel:
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: https://${VAYORA_DOMAIN:?Set VAYORA_DOMAIN}
+    ports: !reset []
+
+  gateway:
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: https://${VAYORA_DOMAIN:?Set VAYORA_DOMAIN}
+    ports: !reset []
+
+  web:
+    restart: unless-stopped
+    # The app finds everything at its own address, through the edge.
+    build:
+      args:
+        VITE_API_URL: https://${VAYORA_DOMAIN:?Set VAYORA_DOMAIN}
+        VITE_GATEWAY_URL: https://${VAYORA_DOMAIN:?Set VAYORA_DOMAIN}
+        VITE_INTEL_URL: https://${VAYORA_DOMAIN:?Set VAYORA_DOMAIN}
+    ports: !reset []
+
+volumes:
+  edgedata:
+  edgeconfig:
