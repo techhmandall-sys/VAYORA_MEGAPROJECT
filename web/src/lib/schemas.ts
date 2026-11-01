@@ -6,7 +6,7 @@ import { z } from 'zod';
 // A coerced number is written z.coerce.number<number>() throughout: the field holds a number
 // as far as the form's types go, as it did before zod 4 typed the input as unknown.
 
-import { CORRIDOR } from './corridor';
+import { placeNamed } from './places';
 import { msg } from './i18n';
 
 // Digits with an optional + in front; spaces and hyphens are allowed and the server drops them.
@@ -47,18 +47,16 @@ export const registerSchema = z
   });
 export type RegisterForm = z.infer<typeof registerSchema>;
 
-const stopNames = CORRIDOR.map((stop) => stop.name);
-
 export const searchSchema = z
   .object({
-    origin: z.string().refine((name) => stopNames.includes(name), msg('Choose where you start')),
-    destination: z.string().refine((name) => stopNames.includes(name), msg('Choose where you are going')),
+    origin: z.string().refine((name) => placeNamed(name) !== undefined, msg('Choose where you start')),
+    destination: z.string().refine((name) => placeNamed(name) !== undefined, msg('Choose where you are going')),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, msg('Choose a date')),
     seats: z.coerce.number<number>().int().min(1, msg('At least 1 seat')).max(8, msg('At most 8 seats')),
   })
-  .refine((form) => stopNames.indexOf(form.destination) > stopNames.indexOf(form.origin), {
+  .refine((form) => form.destination !== form.origin, {
     path: ['destination'],
-    message: msg('The destination must come after the starting point on the way to Pune'),
+    message: msg('Choose a different place from where you start'),
   });
 export type SearchForm = z.infer<typeof searchSchema>;
 
@@ -125,12 +123,10 @@ export const rideSchema = z
       .int(msg('Enter whole minutes'))
       .min(0, msg('Enter 0 or more'))
       .max(MAX_DETOUR_MINUTES, msg('At most 30 minutes')),
-    // One entry per corridor stop, in travel order. The numbers are checked below, and
-    // only for stops the driver included: an unticked stop's fields are hidden, so an
-    // error on one could never be seen or fixed.
+    // The driver's stops, in travel order. The numbers are checked below.
     stops: z.array(
       z.object({
-        included: z.boolean(),
+        name: z.string().min(1, msg('Choose a place')),
         // Where passengers meet the driver. Starts at the town centre; the driver can move it.
         lat: z.coerce.number<number>(),
         lon: z.coerce.number<number>(),
@@ -144,18 +140,18 @@ export const rideSchema = z
     if (Number.isNaN(Date.parse(form.departure)) || Date.parse(form.departure) <= Date.now()) {
       context.addIssue({ code: 'custom', path: ['departure'], message: msg('Choose a time in the future') });
     }
-    const included = form.stops.map((stop, index) => ({ ...stop, index })).filter((stop) => stop.included);
-    if (form.returnDeparture !== '' && included.length >= 2) {
-      const drive = (included[included.length - 1].offsetMinutes - included[0].offsetMinutes) * 60_000;
+    const stops = form.stops.map((stop, index) => ({ ...stop, index }));
+    if (form.returnDeparture !== '' && stops.length >= 2) {
+      const drive = (stops[stops.length - 1].offsetMinutes - stops[0].offsetMinutes) * 60_000;
       // NaN compares false, so an unreadable time is refused here too.
       if (!(Date.parse(form.returnDeparture) > Date.parse(form.departure) + drive)) {
         context.addIssue({ code: 'custom', path: ['returnDeparture'], message: msg('The return must leave after you have arrived') });
       }
     }
-    if (included.length < 2) {
+    if (stops.length < 2) {
       context.addIssue({ code: 'custom', path: ['stops'], message: msg('A ride needs at least two stops') });
     }
-    for (const stop of included) {
+    for (const stop of stops) {
       if (!Number.isInteger(stop.offsetMinutes) || stop.offsetMinutes < 0 || stop.offsetMinutes > 2880) {
         context.addIssue({
           code: 'custom',
@@ -171,12 +167,19 @@ export const rideSchema = z
         });
       }
     }
-    for (let i = 1; i < included.length; i++) {
-      if (included[i].offsetMinutes <= included[i - 1].offsetMinutes) {
+    for (let i = 1; i < stops.length; i++) {
+      if (stops[i].offsetMinutes <= stops[i - 1].offsetMinutes) {
         context.addIssue({
           code: 'custom',
-          path: ['stops', included[i].index, 'offsetMinutes'],
+          path: ['stops', i, 'offsetMinutes'],
           message: msg('Must be later than the stop before'),
+        });
+      }
+      if (stops[i].name !== '' && stops[i].name === stops[i - 1].name) {
+        context.addIssue({
+          code: 'custom',
+          path: ['stops', i, 'name'],
+          message: msg('Choose a different place from the stop before'),
         });
       }
     }
@@ -185,22 +188,20 @@ export type RideForm = z.infer<typeof rideSchema>;
 
 /** Turns the publish form into the body core-api expects. */
 export function toPublishRequest(form: RideForm) {
-  const included = form.stops.map((stop, index) => ({ ...stop, place: CORRIDOR[index] })).filter((stop) => stop.included);
-  const start = included[0].offsetMinutes;
   return {
     vehicleId: form.vehicleId,
     departureTime: new Date(form.departure).toISOString(),
     seatsOffered: form.seatsOffered,
     instantBooking: form.instantBooking,
     payAfterRide: form.payAfterRide,
-    stops: included.map((stop) => ({
-      name: stop.place.name,
+    stops: form.stops.map((stop) => ({
+      name: stop.name,
       lat: stop.lat,
       lon: stop.lon,
-      // The server wants minutes after departure, and the ride departs from its first stop.
-      offsetMinutes: stop.offsetMinutes - start,
+      // Minutes after departure: the ride departs from its first stop, at 0.
+      offsetMinutes: stop.offsetMinutes,
     })),
-    segmentPrices: included.slice(1).map((stop) => stop.priceFromPrevious),
+    segmentPrices: form.stops.slice(1).map((stop) => stop.priceFromPrevious),
     notes: form.notes.trim(),
     maxTwoInBack: form.maxTwoInBack,
     womenOnly: form.womenOnly,

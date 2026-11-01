@@ -18,7 +18,8 @@ import { Collapse } from '../components/collapse';
 import { SuccessCard } from '../components/success';
 import { Button, Card, Chip, ConfirmButton, Detail, Notice, Page, QueryState, SelectField, StatusBadge, StepperField, TextField } from '../components/ui';
 import { api } from '../lib/api';
-import { CORRIDOR } from '../lib/corridor';
+import { placeNamed } from '../lib/places';
+import { PlaceOptions } from '../components/places';
 import { answerBy, formatDate, formatDateTime, formatRupees, formatTime, todayInCorridor } from '../lib/format';
 import { msg, useT, useUnits } from '../lib/i18n';
 import { matchReasonLabels } from '../lib/match';
@@ -114,7 +115,7 @@ interface Criteria {
 }
 
 const townPoint = (name: string): LatLon => {
-  const town = CORRIDOR.find((stop) => stop.name === name)!;
+  const town = placeNamed(name)!;
   return { lat: town.lat, lon: town.lon };
 };
 
@@ -316,7 +317,7 @@ export function SearchPage() {
   });
 
   const mapPoints: MapPoint[] = [
-    ...CORRIDOR.map((stop) => ({ lat: stop.lat, lon: stop.lon, label: t(stop.name) })),
+    ...[towns.origin, towns.destination].map((name) => ({ ...townPoint(name), label: t(name) })),
     ...(picked.origin ? [{ ...picked.origin, label: t('Your start'), emphasis: true }] : []),
     ...(picked.destination ? [{ ...picked.destination, label: t('Your destination'), emphasis: true }] : []),
   ];
@@ -360,18 +361,10 @@ export function SearchPage() {
           className="grid gap-4 sm:grid-cols-2"
         >
           <SelectField label={t('From')} error={formState.errors.origin?.message} {...register('origin')}>
-            {CORRIDOR.slice(0, -1).map((stop) => (
-              <option key={stop.name} value={stop.name}>
-                {t(stop.name)}
-              </option>
-            ))}
+            <PlaceOptions />
           </SelectField>
           <SelectField label={t('To')} error={formState.errors.destination?.message} {...register('destination')}>
-            {CORRIDOR.slice(1).map((stop) => (
-              <option key={stop.name} value={stop.name}>
-                {t(stop.name)}
-              </option>
-            ))}
+            <PlaceOptions />
           </SelectField>
           <TextField label={t('Date')} type="date" min={todayInCorridor()} error={formState.errors.date?.message} {...register('date')} />
           <StepperField
@@ -415,7 +408,7 @@ export function SearchPage() {
                 <RouteMap
                   points={mapPoints}
                   onPick={(lat, lon) => setPicked({ ...picked, [setting]: { lat, lon } })}
-                  describe={t('Map of the towns between Kolhapur and Pune. Click to choose an exact point.')}
+                  describe={t('Map around your start and destination. Click to choose an exact point.')}
                 />
               </div>
             </Collapse>

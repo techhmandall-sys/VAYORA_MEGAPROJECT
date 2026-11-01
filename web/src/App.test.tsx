@@ -167,7 +167,7 @@ describe('access', () => {
   it('shows a signed-out visitor what VAYORA is, and takes a driver to sign up as one', async () => {
     open('/');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Share the road between Kolhapur and Pune' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Share the road between cities across India' })).toBeInTheDocument();
     expect(screen.getByText(/simulated unless real services are connected/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('link', { name: 'Offer a ride' }));
 
@@ -1598,7 +1598,8 @@ describe('publishing a ride through the page', () => {
     await userEvent.clear(screen.getByLabelText('Seats offered'));
     await userEvent.type(screen.getByLabelText('Seats offered'), '2');
     await userEvent.click(screen.getByLabelText('Confirm bookings instantly, without asking me'));
-    await userEvent.click(screen.getByLabelText('Satara'));
+    await userEvent.click(screen.getByRole('button', { name: 'Add a stop on the way' }));
+    await userEvent.selectOptions(screen.getByLabelText('Stop on the way 1'), 'Satara');
     await userEvent.clear(screen.getByLabelText('Price to Satara (₹)'));
     await userEvent.type(screen.getByLabelText('Price to Satara (₹)'), '270');
     await userEvent.clear(screen.getByLabelText('Price to Pune (₹)'));
@@ -1652,6 +1653,70 @@ describe('publishing a ride through the page', () => {
     await screen.findByRole('heading', { name: 'My rides' });
     const sent = fetchMock.mock.calls.find(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith('/rides'));
     expect(JSON.parse(String(sent?.[1]?.body))).toMatchObject({ maxDetourMinutes: 10 });
+  });
+
+  it('publishes a ride between any two places, with a stop added and another taken away', async () => {
+    signIn('DRIVER');
+    const fetchMock = serve({
+      'GET /vehicles': () => json([vehicle]),
+      'POST /rides': () => json(published, 201),
+      'GET /rides/mine': () => json([published]),
+    });
+    open('/rides/new');
+
+    fireEvent.change(await screen.findByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
+    await userEvent.selectOptions(screen.getByLabelText('From'), 'Mumbai');
+    await userEvent.selectOptions(screen.getByLabelText('To'), 'Panaji');
+    await userEvent.click(screen.getByRole('button', { name: 'Add a stop on the way' }));
+    await userEvent.selectOptions(screen.getByLabelText('Stop on the way 1'), 'Pune');
+    await userEvent.click(screen.getByRole('button', { name: 'Add a stop on the way' }));
+    await userEvent.selectOptions(screen.getByLabelText('Stop on the way 2'), 'Ratnagiri');
+    await userEvent.click(screen.getAllByRole('button', { name: 'Remove this stop' })[0]);
+    expect(screen.queryByLabelText('Stop on the way 2')).not.toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Price to Ratnagiri (₹)'), '500');
+    await userEvent.type(screen.getByLabelText('Price to Panaji (₹)'), '400');
+    await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
+
+    await screen.findByRole('heading', { name: 'My rides' });
+    const sent = fetchMock.mock.calls.find(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith('/rides'));
+    const body = JSON.parse(String(sent?.[1]?.body));
+    expect(body.stops.map((stop: { name: string }) => stop.name)).toEqual(['Mumbai', 'Ratnagiri', 'Panaji']);
+    expect(body.stops[0]).toMatchObject({ lat: 19.076, lon: 72.8777, offsetMinutes: 0 });
+    // Each later than the one before, or the server refuses the ride.
+    expect(body.stops[1].offsetMinutes).toBeGreaterThan(0);
+    expect(body.stops[2].offsetMinutes).toBeGreaterThan(body.stops[1].offsetMinutes);
+    expect(body.segmentPrices).toEqual([500, 400]);
+  });
+
+  it('will not publish until a stop that was added has a place', async () => {
+    signIn('DRIVER');
+    const fetchMock = serve({ 'GET /vehicles': () => json([vehicle]) });
+    open('/rides/new');
+
+    fireEvent.change(await screen.findByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Add a stop on the way' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
+
+    expect(await screen.findByText('Choose a place', { selector: 'p, span, [role="alert"]' })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
+  it('forgets a worked-out route when a stop changes', async () => {
+    signIn('DRIVER');
+    serve({
+      'GET /vehicles': () => json([vehicle]),
+      'POST /rides/route-preview': () =>
+        json({ distanceKm: 230, durationMinutes: 191, source: 'OSRM', alongRoute: [],
+          legs: [{ distanceKm: 230, durationMinutes: 191, suggestedPrice: 460 }], path: [[16.705, 74.2433], [18.5204, 73.8567]] }),
+    });
+    open('/rides/new');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Work out the route' }));
+    expect(await screen.findByText('230 km by road, about 3 h 11 min of driving.')).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText('To'), 'Chennai');
+    expect(screen.queryByText(/230 km by road/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Use the suggested prices and times' })).not.toBeInTheDocument();
   });
 
   it("keeps the form and shows the server's reason when publishing is refused", async () => {
@@ -2360,7 +2425,8 @@ describe('electric range', () => {
     });
     open('/rides/new');
 
-    await userEvent.click(await screen.findByLabelText('Satara'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Add a stop on the way' }));
+    await userEvent.selectOptions(screen.getByLabelText('Stop on the way 1'), 'Satara');
     await userEvent.click(screen.getByRole('button', { name: 'Work out the route' }));
     expect(await screen.findByText(/This route is longer than the 200 km your vehicle covers on a full charge/)).toBeInTheDocument();
     expect(screen.queryByText(/cannot be published/)).not.toBeInTheDocument();

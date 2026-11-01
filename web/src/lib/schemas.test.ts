@@ -22,10 +22,9 @@ function ride(overrides: Partial<RideForm> = {}): RideForm {
     repeatWeeks: 0,
     maxDetourMinutes: 0,
     stops: [
-      { included: true, lat: 16.705, lon: 74.2433, offsetMinutes: 0, priceFromPrevious: 0 },
-      { included: false, lat: 17.289, lon: 74.1818, offsetMinutes: 75, priceFromPrevious: 0 },
-      { included: true, lat: 17.6805, lon: 74.0183, offsetMinutes: 130, priceFromPrevious: 270 },
-      { included: true, lat: 18.5204, lon: 73.8567, offsetMinutes: 270, priceFromPrevious: 250 },
+      { name: 'Kolhapur', lat: 16.705, lon: 74.2433, offsetMinutes: 0, priceFromPrevious: 0 },
+      { name: 'Satara', lat: 17.6805, lon: 74.0183, offsetMinutes: 130, priceFromPrevious: 270 },
+      { name: 'Pune', lat: 18.5204, lon: 73.8567, offsetMinutes: 270, priceFromPrevious: 250 },
     ],
     ...overrides,
   };
@@ -58,13 +57,18 @@ describe('searchSchema', () => {
     expect(searchSchema.parse(valid).seats).toBe(2);
   });
 
-  it('refuses a destination that is not further along the corridor', () => {
-    expect(searchSchema.safeParse({ ...valid, origin: 'Satara', destination: 'Karad' }).success).toBe(false);
-    expect(searchSchema.safeParse({ ...valid, origin: 'Pune', destination: 'Pune' }).success).toBe(false);
+  it('accepts any two listed places in India, in either direction', () => {
+    expect(searchSchema.safeParse({ ...valid, origin: 'Chennai', destination: 'Bengaluru' }).success).toBe(true);
+    expect(searchSchema.safeParse({ ...valid, origin: 'Mumbai', destination: 'Panaji' }).success).toBe(true);
+    expect(searchSchema.safeParse({ ...valid, origin: 'Pune', destination: 'Kolhapur' }).success).toBe(true);
   });
 
-  it('refuses a place off the corridor and a seat count out of range', () => {
-    expect(searchSchema.safeParse({ ...valid, destination: 'Mumbai' }).success).toBe(false);
+  it('refuses the same place twice', () => {
+    expect(messages(searchSchema.safeParse({ ...valid, origin: 'Pune', destination: 'Pune' }))).toEqual(['Choose a different place from where you start']);
+  });
+
+  it('refuses a place not on the list and a seat count out of range', () => {
+    expect(messages(searchSchema.safeParse({ ...valid, destination: 'Atlantis' }))).toEqual(['Choose where you are going']);
     expect(searchSchema.safeParse({ ...valid, seats: '0' }).success).toBe(false);
     expect(searchSchema.safeParse({ ...valid, seats: '9' }).success).toBe(false);
   });
@@ -90,33 +94,47 @@ describe('rideSchema', () => {
   });
 
   it('refuses fewer than two stops', () => {
-    const stops = ride().stops.map((stop, index) => ({ ...stop, included: index === 0 }));
-    expect(messages(rideSchema.safeParse(ride({ stops })))).toContain('A ride needs at least two stops');
+    expect(messages(rideSchema.safeParse(ride({ stops: ride().stops.slice(0, 1) })))).toContain('A ride needs at least two stops');
   });
 
-  it('refuses a stop that is not later than the one before, ignoring skipped stops', () => {
+  it('refuses a stop that is not later than the one before', () => {
     const stops = ride().stops;
-    stops[2] = { ...stops[2], offsetMinutes: 0 };
+    stops[1] = { ...stops[1], offsetMinutes: 0 };
     expect(messages(rideSchema.safeParse(ride({ stops })))).toContain('Must be later than the stop before');
-
-    const skippedIsIgnored = ride().stops;
-    skippedIsIgnored[1] = { ...skippedIsIgnored[1], included: false, offsetMinutes: 9999 };
-    expect(rideSchema.safeParse(ride({ stops: skippedIsIgnored })).success).toBe(true);
   });
 
-  it('refuses a negative price or an absurd offset on an included stop', () => {
+  it('refuses a stop with no place, and the same place twice running', () => {
+    const unnamed = ride().stops;
+    unnamed[1] = { ...unnamed[1], name: '' };
+    expect(messages(rideSchema.safeParse(ride({ stops: unnamed })))).toEqual(['Choose a place']);
+
+    const repeated = ride().stops;
+    repeated[1] = { ...repeated[1], name: 'Kolhapur' };
+    expect(messages(rideSchema.safeParse(ride({ stops: repeated })))).toEqual(['Choose a different place from the stop before']);
+  });
+
+  it('accepts a ride between any places, and back to where it began', () => {
+    const stops = [
+      { name: 'Mumbai', lat: 19.076, lon: 72.8777, offsetMinutes: 0, priceFromPrevious: 0 },
+      { name: 'Panaji', lat: 15.4909, lon: 73.8278, offsetMinutes: 600, priceFromPrevious: 900 },
+      { name: 'Mumbai', lat: 19.076, lon: 72.8777, offsetMinutes: 1200, priceFromPrevious: 900 },
+    ];
+    expect(rideSchema.safeParse(ride({ stops })).success).toBe(true);
+  });
+
+  it('refuses a negative price or an absurd offset', () => {
     const negative = ride().stops;
-    negative[2] = { ...negative[2], priceFromPrevious: -5 };
+    negative[1] = { ...negative[1], priceFromPrevious: -5 };
     expect(messages(rideSchema.safeParse(ride({ stops: negative })))).toContain('Enter a price of 0 or more');
 
     const absurd = ride().stops;
-    absurd[3] = { ...absurd[3], offsetMinutes: 99999 };
+    absurd[2] = { ...absurd[2], offsetMinutes: 99999 };
     expect(messages(rideSchema.safeParse(ride({ stops: absurd })))).toContain('Enter whole minutes, up to two days');
   });
 });
 
 describe('toPublishRequest', () => {
-  it('sends only the included stops, with one price per leg', () => {
+  it('sends the stops in order, with one price per leg', () => {
     const body = toPublishRequest(ride());
 
     expect(body.stops.map((stop) => stop.name)).toEqual(['Kolhapur', 'Satara', 'Pune']);
@@ -125,21 +143,9 @@ describe('toPublishRequest', () => {
     expect(body.stops[1]).toMatchObject({ lat: 17.6805, lon: 74.0183 });
   });
 
-  it('measures offsets from the first included stop when the ride starts mid-corridor', () => {
-    const stops = ride().stops;
-    stops[0] = { ...stops[0], included: false };
-    stops[1] = { ...stops[1], included: true };
-
-    const body = toPublishRequest(ride({ stops }));
-
-    expect(body.stops.map((stop) => stop.name)).toEqual(['Karad', 'Satara', 'Pune']);
-    expect(body.stops.map((stop) => stop.offsetMinutes)).toEqual([0, 55, 195]);
-    expect(body.segmentPrices).toEqual([270, 250]);
-  });
-
   it('sends a meeting point the driver moved, under the town it belongs to', () => {
     const stops = ride().stops;
-    stops[2] = { ...stops[2], lat: 17.6912, lon: 74.0001 };
+    stops[1] = { ...stops[1], lat: 17.6912, lon: 74.0001 };
 
     const body = toPublishRequest(ride({ stops }));
 

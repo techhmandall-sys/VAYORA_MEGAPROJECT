@@ -131,7 +131,7 @@ function Receipt({ provider, notes = [], invoice, invoiceFor, farePaid = false, 
           {provider && <p className="font-medium text-slate-900">{providerStatement(provider, t)}</p>}
           {!invoice && <p>{t('This is not a tax invoice.')}</p>}
           <p>{t('Times are India Standard Time.')}</p>
-          <p>{t('VAYORA, Kolhapur to Pune')}</p>
+          <p>{t('VAYORA, shared rides between cities')}</p>
         </div>
       </Card>
       <div className="flex flex-wrap items-center gap-3 print:hidden">

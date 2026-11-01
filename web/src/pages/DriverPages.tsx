@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Car, CarFront, IndianRupee, Users } from 'lucide-react';
-import { useId, useState, type ReactNode } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { SimulatedPaymentNotice } from '../components/payment';
@@ -18,7 +18,8 @@ import { Collapse } from '../components/collapse';
 import { CountUp } from '../components/countup';
 import { Button, Card, ConfirmButton, Notice, Page, QueryState, SelectField, StatusBadge, TextField } from '../components/ui';
 import { api } from '../lib/api';
-import { CORRIDOR } from '../lib/corridor';
+import { PlaceOptions } from '../components/places';
+import { placeNamed, roughDriveMinutes } from '../lib/places';
 import { formatDateTime, formatRupees, formatTime } from '../lib/format';
 import { msg, useT, useUnits } from '../lib/i18n';
 import { rideSchema, toPublishRequest, vehicleSchema, type RideForm, type VehicleForm, MAX_DETOUR_MINUTES, MAX_REPEAT_WEEKS, ridesPublished, toVehicleRequest } from '../lib/schemas';
@@ -167,10 +168,11 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse }: {
 }) {
   const t = useT();
   const units = useUnits();
-  const included = stops.map((stop, index) => ({ ...stop, index })).filter((stop) => stop.included);
+  // A stop just added has no place yet, so nothing to show or route.
+  const included = stops.map((stop, index) => ({ ...stop, index })).filter((stop) => stop.name !== '');
   const [moving, setMoving] = useState<number | null>(null);
   const target = included.some((stop) => stop.index === moving) ? moving! : included[0]?.index;
-  const town = (index: number) => t(CORRIDOR[index].name);
+  const town = (index: number) => t(stops[index].name);
   const preview = useMutation({
     mutationFn: () =>
       api<RoutePreview>('/rides/route-preview', {
@@ -178,6 +180,11 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse }: {
         body: { stops: included.map((stop) => ({ lat: Number(stop.lat), lon: Number(stop.lon) })) },
       }),
   });
+
+  // A route worked out for other stops is no route for these, however they changed.
+  const pins = included.map((stop) => `${stop.lat},${stop.lon}`).join(' ');
+  const { reset } = preview;
+  useEffect(() => reset(), [pins, reset]);
 
   if (included.length < 2) return null;
   // The first stretch between stops longer than a full charge: the server refuses to publish it.
@@ -213,7 +220,6 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse }: {
         }))}
         onPick={(lat, lon) => {
           if (target !== undefined) onMove(target, lat, lon);
-          preview.reset(); // the route shown no longer matches the pins
         }}
         describe={t('Map of your stops: {stops}', { stops: included.map((stop) => town(stop.index)).join(', ') })}
       />
@@ -237,7 +243,7 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse }: {
                   time: units.duration(preview.data.durationMinutes),
                 })
               : t(
-                  'About {km} km in a straight line. The routing service is unavailable, so this is not a road distance and the times are rough guesses.',
+                  'About {km} km in a straight line. No road route is available for this trip, so this is not a road distance and the times are rough guesses.',
                   { km: preview.data.distanceKm },
                 )}
           </p>
@@ -311,7 +317,7 @@ export function PublishRidePage() {
   const vehicles = useVehicles();
   // Only a driver whose profile says she is a woman may offer a women-only ride.
   const me = useQuery({ queryKey: ['me', 'profile'], queryFn: () => api<MyProfile>('/me/profile') });
-  const { register, handleSubmit, formState, watch, setValue } = useForm<RideForm>({
+  const { register, handleSubmit, formState, watch, setValue, getValues, control } = useForm<RideForm>({
     resolver: zodResolver(rideSchema),
     defaultValues: {
       departure: '',
@@ -324,16 +330,43 @@ export function PublishRidePage() {
       returnDeparture: '',
       repeatWeeks: 0,
       maxDetourMinutes: 0,
-      stops: CORRIDOR.map((stop, index) => ({
-        // The two ends by default; the driver adds the towns in between.
-        included: index === 0 || index === CORRIDOR.length - 1,
-        lat: stop.lat,
-        lon: stop.lon,
-        offsetMinutes: stop.typicalOffsetMinutes,
-        priceFromPrevious: 0,
-      })),
+      // The two ends to begin with; the driver changes them and adds stops in between.
+      stops: [
+        { ...placeNamed('Kolhapur')!, offsetMinutes: 0, priceFromPrevious: 0 },
+        {
+          ...placeNamed('Pune')!,
+          offsetMinutes: roughDriveMinutes(placeNamed('Kolhapur')!, placeNamed('Pune')!),
+          priceFromPrevious: 0,
+        },
+      ],
     },
   });
+  const { fields, insert, remove } = useFieldArray({ control, name: 'stops' });
+
+  /** Rough times from one stop onward, each from the stop before, as far as the stops have places. */
+  const retime = (from: number) => {
+    const current = getValues('stops');
+    let minutes = Number(current[from - 1].offsetMinutes);
+    for (let i = from; i < current.length && current[i].name !== '' && current[i - 1].name !== ''; i++) {
+      minutes += roughDriveMinutes(current[i - 1], current[i]);
+      setValue(`stops.${i}.offsetMinutes`, minutes);
+    }
+  };
+
+  /** A stop's place chosen: its meeting point starts at the town centre. */
+  const choosePlace = (index: number, name: string) => {
+    const place = placeNamed(name);
+    if (!place) return;
+    setValue(`stops.${index}.name`, name, { shouldValidate: formState.isSubmitted });
+    setValue(`stops.${index}.lat`, place.lat);
+    setValue(`stops.${index}.lon`, place.lon);
+    retime(Math.max(index, 1));
+  };
+
+  const removeStop = (index: number) => {
+    remove(index);
+    retime(index);
+  };
   const publish = useMutation({
     mutationFn: (form: RideForm) => api<Ride>('/rides', { method: 'POST', body: toPublishRequest(form) }),
     onSuccess: () => {
@@ -344,7 +377,6 @@ export function PublishRidePage() {
 
   const stops = watch('stops');
   const publishing = ridesPublished({ returnDeparture: watch('returnDeparture'), repeatWeeks: watch('repeatWeeks') });
-  const firstIncluded = stops.findIndex((stop) => stop.included);
   const stopsError = formState.errors.stops as { root?: { message?: string }; message?: string } | undefined;
   const stopsMessage = stopsError?.root?.message ?? stopsError?.message;
 
@@ -361,8 +393,8 @@ export function PublishRidePage() {
     );
   }
 
-  const included = CORRIDOR.filter((_, index) => stops[index]?.included);
-  const wholeWay = stops.reduce((sum, stop, index) => (stop.included && index !== firstIncluded ? sum + (Number(stop.priceFromPrevious) || 0) : sum), 0);
+  const included = stops.filter((stop) => stop.name !== '');
+  const wholeWay = stops.reduce((sum, stop, index) => (index > 0 ? sum + (Number(stop.priceFromPrevious) || 0) : sum), 0);
   const departure = watch('departure');
   const leaving = departure && !Number.isNaN(new Date(departure).getTime()) ? formatDateTime(departure) : null;
 
@@ -429,25 +461,30 @@ export function PublishRidePage() {
                 </p>
               )}
               <div className="mt-3 space-y-3">
-                {CORRIDOR.map((stop, index) => (
-                  <div key={stop.name} className="grid items-end gap-3 rounded-2xl border border-slate-200 p-3 sm:grid-cols-3">
-                    <label className="flex items-center gap-2 pb-2 font-medium">
-                      <input type="checkbox" className="h-4 w-4 rounded border-slate-300" {...register(`stops.${index}.included`)} />
-                      {t(stop.name)}
-                    </label>
-                    {stops[index]?.included && (
-                      <>
-                        {/* The first stop is where the ride leaves at the time above: its own minutes count for nothing. */}
-                        {index !== firstIncluded && (
+                {fields.map((field, index) => {
+                  const stop = stops[index];
+                  const between = index > 0 && index < fields.length - 1;
+                  return (
+                    <div key={field.id} className="grid items-end gap-3 rounded-2xl border border-slate-200 p-3 sm:grid-cols-3">
+                      <SelectField
+                        label={index === 0 ? t('From') : between ? t('Stop on the way {n}', { n: index }) : t('To')}
+                        value={stop?.name ?? ''}
+                        error={formState.errors.stops?.[index]?.name?.message}
+                        onChange={(event) => choosePlace(index, event.target.value)}
+                      >
+                        {!stop?.name && <option value="">{t('Choose a place')}</option>}
+                        <PlaceOptions />
+                      </SelectField>
+                      {/* The first stop is where the ride leaves at the time above: it has no minutes or price of its own. */}
+                      {index > 0 && stop?.name && (
+                        <>
                           <TextField
-                            label={t('Minutes from Kolhapur to {town}', { town: t(stop.name) })}
+                            label={t('Minutes from {start} to {town}', { start: t(stops[0].name), town: t(stop.name) })}
                             type="number"
                             min={0}
                             error={formState.errors.stops?.[index]?.offsetMinutes?.message}
                             {...register(`stops.${index}.offsetMinutes`)}
                           />
-                        )}
-                        {index !== firstIncluded && (
                           <TextField
                             label={t('Price to {town} (₹)', { town: t(stop.name) })}
                             type="number"
@@ -455,12 +492,27 @@ export function PublishRidePage() {
                             error={formState.errors.stops?.[index]?.priceFromPrevious?.message}
                             {...register(`stops.${index}.priceFromPrevious`)}
                           />
-                        )}
-                      </>
-                    )}
-                  </div>
-                ))}
+                        </>
+                      )}
+                      {between && (
+                        <Button tone="secondary" className="justify-self-start" onClick={() => removeStop(index)}>
+                          {t('Remove this stop')}
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+              {/* The server takes ten stops at most. */}
+              {fields.length < 10 && (
+                <Button
+                  tone="secondary"
+                  className="mt-3"
+                  onClick={() => insert(fields.length - 1, { name: '', lat: 0, lon: 0, offsetMinutes: 0, priceFromPrevious: 0 }, { shouldFocus: false })}
+                >
+                  {t('Add a stop on the way')}
+                </Button>
+              )}
             </fieldset>
 
             <div className="mt-5">
@@ -496,7 +548,7 @@ export function PublishRidePage() {
               </label>
               <TextField
                 label={t('Minutes you will go out of your way, in all, to pick passengers up at their own point')}
-                hint={t('0 for none: passengers then board only at your stops. Each pickup is worked out by road before it is offered.')}
+                hint={t('0 for none: passengers then board only at your stops. Each pickup is worked out before it is offered.')}
                 type="number"
                 min={0}
                 max={MAX_DETOUR_MINUTES}
@@ -562,7 +614,7 @@ export function PublishRidePage() {
               <div className="bg-gradient-to-br from-accent to-accent-strong px-4 py-3 text-white">
                 <p className="text-[13px] font-semibold uppercase tracking-wider text-white/80">{t('Your ride')}</p>
                 <p className="mt-1 text-[17px] font-bold leading-snug">
-                  {included.length ? included.map((stop) => t(stop.name)).join(' → ') : t('Not chosen yet')}
+                  {included.map((stop) => t(stop.name)).join(' → ')}
                 </p>
               </div>
               <dl className="divide-y divide-slate-900/[0.06] px-4 text-sm">

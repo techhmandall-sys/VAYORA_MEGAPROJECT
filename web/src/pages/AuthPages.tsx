@@ -12,7 +12,7 @@ import { loginSchema, registerSchema, type LoginForm, type RegisterForm } from '
 
 const CORRIDOR = 'M24 66 C 92 70, 104 22, 166 34 S 258 62, 296 20';
 
-/** The corridor, drawn: a road from Kolhapur to Pune with a car travelling it. Decoration only. */
+/** A road between two places with a car travelling it. Decoration only. */
 function RouteHero() {
   const t = useT();
   const still = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -32,8 +32,8 @@ function RouteHero() {
         </circle>
       </svg>
       <div className="relative flex justify-between text-sm font-semibold tracking-wide">
-        <span>{t('Kolhapur')}</span>
-        <span>{t('Pune')}</span>
+        <span>{t('From')}</span>
+        <span>{t('To')}</span>
       </div>
     </div>
   );

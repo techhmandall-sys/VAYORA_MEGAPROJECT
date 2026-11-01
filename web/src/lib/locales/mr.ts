@@ -245,8 +245,6 @@ export const mr: Record<string, string> = {
   'Choose a date': 'तारीख निवडा',
   'At least 1 seat': 'किमान 1 जागा',
   'At most 8 seats': 'जास्तीत जास्त 8 जागा',
-  'The destination must come after the starting point on the way to Pune':
-    'पुण्याकडे जाताना गंतव्यस्थान सुरुवातीच्या ठिकाणानंतर यायला हवे',
   'Enter the make': 'कंपनीचे नाव टाका',
   'Enter the model': 'मॉडेल टाका',
   'Too old': 'खूप जुने',
@@ -369,8 +367,8 @@ export const mr: Record<string, string> = {
   'Work out the route': 'मार्ग काढा',
   'Use the suggested prices and times': 'सुचवलेल्या किमती आणि वेळा वापरा',
   '{km} km by road, about {time} of driving.': 'रस्त्याने {km} किमी, सुमारे {time} ड्रायव्हिंग.',
-  'About {km} km in a straight line. The routing service is unavailable, so this is not a road distance and the times are rough guesses.':
-    'सरळ रेषेत सुमारे {km} किमी. मार्ग सेवा उपलब्ध नाही, त्यामुळे हे रस्त्याचे अंतर नाही आणि वेळा केवळ ढोबळ अंदाज आहेत.',
+  'About {km} km in a straight line. No road route is available for this trip, so this is not a road distance and the times are rough guesses.':
+    'सरळ रेषेत सुमारे {km} किमी. या प्रवासासाठी रस्त्याचा मार्ग उपलब्ध नाही, त्यामुळे हे रस्त्याचे अंतर नाही आणि वेळा केवळ ढोबळ अंदाज आहेत.',
   '{from} to {to}: {km} km, {time}, suggested {price} a seat': '{from} ते {to}: {km} किमी, {time}, सुचवलेली किंमत प्रति जागा {price}',
   'The suggestion is distance times a flat rate. The price is yours to set.':
     'ही सूचना अंतराला एका ठरावीक दराने गुणून काढली आहे. किंमत ठरवणे तुमच्या हातात आहे.',
@@ -385,7 +383,6 @@ export const mr: Record<string, string> = {
   'Stops and price per seat': 'थांबे आणि प्रति जागा किंमत',
   'Passengers can book between any two of your stops. Each price is for the stretch that ends at that stop.':
     'प्रवासी तुमच्या कोणत्याही दोन थांब्यांदरम्यान बुकिंग करू शकतात. प्रत्येक किंमत त्या थांब्यावर संपणाऱ्या टप्प्याची आहे.',
-  'Minutes from Kolhapur to {town}': 'कोल्हापूरपासून {town} पर्यंत मिनिटे',
   'Price to {town} (₹)': '{town} पर्यंतची किंमत (₹)',
   'Publishing…': 'प्रकाशित करत आहे…',
   'Publish ride': 'प्रवास प्रकाशित करा',
@@ -455,8 +452,6 @@ export const mr: Record<string, string> = {
   'Which point a click on the map sets': 'नकाशावर क्लिक केल्यास कोणते ठिकाण ठरेल',
   'A click sets my start': 'क्लिकने माझे सुरुवातीचे ठिकाण ठरवा',
   'A click sets my destination': 'क्लिकने माझे गंतव्यस्थान ठरवा',
-  'Map of the towns between Kolhapur and Pune. Click to choose an exact point.':
-    'कोल्हापूर आणि पुणे दरम्यानच्या शहरांचा नकाशा. अचूक ठिकाण निवडण्यासाठी क्लिक करा.',
   'Booked. {from} to {to}, leaving {time}.': 'बुक झाले. {from} ते {to}, निघण्याची वेळ {time}.',
   'Request sent. Your seats are held while the driver decides; see My bookings.':
     'विनंती पाठवली. चालक निर्णय घेईपर्यंत तुमच्या जागा राखून ठेवल्या आहेत; "माझी बुकिंग" पहा.',
@@ -952,8 +947,6 @@ export const mr: Record<string, string> = {
     'हे कर बीजक (टॅक्स इनव्हॉइस) नाही.',
   'Times are India Standard Time.':
     'वेळा भारतीय प्रमाण वेळेनुसार (IST) आहेत.',
-  'VAYORA, Kolhapur to Pune':
-    'VAYORA, कोल्हापूर ते पुणे',
   'Print or save as PDF':
     'छापा किंवा PDF म्हणून जतन करा',
   'To keep a copy, choose to save as PDF instead of a printer.':
@@ -1594,8 +1587,8 @@ export const mr: Record<string, string> = {
     'तुमच्यापैकी एकाला शांत प्रवास हवा आहे, दुसऱ्याला गप्पा आवडतात',
   'Minutes you will go out of your way, in all, to pick passengers up at their own point':
     'प्रवाशांना त्यांच्या स्वतःच्या ठिकाणाहून घेण्यासाठी तुम्ही एकूण किती मिनिटे मार्गापासून दूर जाल',
-  '0 for none: passengers then board only at your stops. Each pickup is worked out by road before it is offered.':
-    'काहीही नाही यासाठी 0: मग प्रवासी फक्त तुमच्या थांब्यांवर चढतात. प्रत्येक पिकअप देऊ करण्यापूर्वी रस्त्याच्या हिशोबाने काढले जाते.',
+  '0 for none: passengers then board only at your stops. Each pickup is worked out before it is offered.':
+    'काहीही नाही यासाठी 0: मग प्रवासी फक्त तुमच्या थांब्यांवर चढतात. प्रत्येक पिकअप देऊ करण्यापूर्वी काढले जाते.',
   'Enter whole minutes':
     'पूर्ण मिनिटे लिहा',
   'Enter 0 or more':
@@ -1839,8 +1832,6 @@ export const mr: Record<string, string> = {
   'No account uses this Google address yet. Choose passenger or driver to create one.':
     'या Google पत्त्याचे अजून कोणतेही खाते नाही. खाते तयार करण्यासाठी प्रवासी किंवा चालक निवडा.',
   // Front page
-  'Share the road between Kolhapur and Pune':
-    'कोल्हापूर आणि पुणे दरम्यानचा प्रवास वाटून घ्या',
   'Book a seat in a car already making the trip, or fill the empty seats in yours. If your plans change, VAYORA reminds you to give the seat back while someone else can still take it.':
     'आधीच हा प्रवास करणाऱ्या कारमध्ये सीट बुक करा, किंवा तुमच्या कारमधील रिकाम्या सीट भरा. तुमचे बेत बदलले, तर दुसरे कोणी ती सीट घेऊ शकेल तोपर्यंत VAYORA तुम्हाला ती परत देण्याची आठवण करून देते.',
   'Offer a ride':
@@ -1851,22 +1842,14 @@ export const mr: Record<string, string> = {
     'जितक्या लवकर रद्द कराल, तितके जास्त परत',
   'An emergency button on every trip':
     'प्रत्येक प्रवासात आपत्कालीन बटण',
-  'km of road, end to end':
-    'किमी रस्ता, एका टोकापासून दुसऱ्या टोकापर्यंत',
-  'towns on the way':
-    'वाटेतील शहरे',
   'days ahead you can book':
     'दिवस आधीपर्यंत बुक करता येते',
   'languages':
     'भाषा',
-  'About {seats} seats published here, typically':
-    'इथे साधारणपणे सुमारे {seats} जागा प्रकाशित होतात',
   'Reliability':
     'विश्वासार्हता',
   'How it works':
     'हे कसे चालते',
-  'Search the corridor':
-    'मार्गावर शोधा',
   'Choose where you start and where you are going, or a point on the map. Rides passing within reach are shown with the walk to where you board.':
     'तुम्ही कुठून सुरू करता आणि कुठे जाता ते निवडा, किंवा नकाशावरील एखादे ठिकाण. आवाक्यातून जाणारे प्रवास, बसण्याच्या ठिकाणापर्यंतच्या चालण्यासह दाखवले जातात.',
   'Book a seat':
@@ -1887,8 +1870,6 @@ export const mr: Record<string, string> = {
     'दिवस आधी: दुसरे कोणी ती बुक करू शकते',
   'Hours before: the seat is usually lost':
     'तास आधी: सीट बहुतेक रिकामीच जाते',
-  'Made for this road':
-    'याच रस्त्यासाठी बनवलेले',
   'Pickups on the way':
     'वाटेत पिकअप',
   'A driver can take a few minutes out of the way to pick you up where the road passes.':
@@ -2006,4 +1987,192 @@ export const mr: Record<string, string> = {
     'चालकाने कळवले की तुम्ही {seats} साठी बसला नाहीत. बुक करताना भरलेल्या सीटप्रमाणे, पूर्ण Rs {amount} देय आहेत: ते माझी बुकिंग मध्ये भरा.',
   'Your trip from {from} to {to} is complete. Rs {amount} is due: pay it in My bookings, or in cash to your driver.':
     '{from} ते {to} हा तुमचा प्रवास पूर्ण झाला. Rs {amount} देय आहेत: माझी बुकिंग मध्ये भरा, किंवा तुमच्या चालकाला रोख द्या.',
+  // Any route in India
+  'Choose a place':
+    'ठिकाण निवडा',
+  'Choose a different place from where you start':
+    'सुरुवातीच्या ठिकाणापेक्षा वेगळे ठिकाण निवडा',
+  'Choose a different place from the stop before':
+    'आधीच्या थांब्यापेक्षा वेगळे ठिकाण निवडा',
+  'Minutes from {start} to {town}':
+    '{start} पासून {town} पर्यंत मिनिटे',
+  'Stop on the way {n}':
+    'वाटेतील थांबा {n}',
+  'Add a stop on the way':
+    'वाटेत एक थांबा जोडा',
+  'Remove this stop':
+    'हा थांबा काढा',
+  'Map around your start and destination. Click to choose an exact point.':
+    'तुमच्या सुरुवातीच्या ठिकाणाभोवतीचा आणि गंतव्यस्थानाभोवतीचा नकाशा. अचूक ठिकाण निवडण्यासाठी क्लिक करा.',
+  'Share the road between cities across India':
+    'संपूर्ण भारतात शहरांदरम्यानचा प्रवास वाटून घ्या',
+  'Any route in India':
+    'भारतातील कोणताही मार्ग',
+  'cities to choose from':
+    'निवडण्यासाठी शहरे',
+  'Search your route':
+    'तुमचा मार्ग शोधा',
+  'Made for travelling between cities':
+    'शहरांदरम्यान प्रवासासाठी बनवलेले',
+  'Road distances and times are worked out between Kolhapur and Pune. On other routes they are a straight-line estimate, and say so.':
+    'रस्त्याचे अंतर आणि वेळ कोल्हापूर आणि पुणे दरम्यान काढले जातात. इतर मार्गांवर ते सरळ रेषेचा अंदाज असतात, आणि तसे सांगितले जाते.',
+  'The research behind VAYORA was run on the Kolhapur to Pune route.':
+    'VAYORA मागील संशोधन कोल्हापूर ते पुणे मार्गावर केले गेले.',
+  'VAYORA, shared rides between cities':
+    'VAYORA, शहरांदरम्यान सामायिक प्रवास',
+  // Places in India
+  'Maharashtra': 'महाराष्ट्र',
+  'Andhra Pradesh': 'आंध्र प्रदेश',
+  'Arunachal Pradesh': 'अरुणाचल प्रदेश',
+  'Assam': 'आसाम',
+  'Bihar': 'बिहार',
+  'Chandigarh': 'चंदीगड',
+  'Chhattisgarh': 'छत्तीसगड',
+  'Dadra and Nagar Haveli and Daman and Diu': 'दादरा आणि नगर हवेली आणि दमण आणि दीव',
+  'Delhi': 'दिल्ली',
+  'Goa': 'गोवा',
+  'Gujarat': 'गुजरात',
+  'Haryana': 'हरियाणा',
+  'Himachal Pradesh': 'हिमाचल प्रदेश',
+  'Jammu and Kashmir': 'जम्मू आणि काश्मीर',
+  'Jharkhand': 'झारखंड',
+  'Karnataka': 'कर्नाटक',
+  'Kerala': 'केरळ',
+  'Ladakh': 'लडाख',
+  'Madhya Pradesh': 'मध्य प्रदेश',
+  'Manipur': 'मणिपूर',
+  'Meghalaya': 'मेघालय',
+  'Mizoram': 'मिझोरम',
+  'Nagaland': 'नागालँड',
+  'Odisha': 'ओडिशा',
+  'Puducherry': 'पुदुच्चेरी',
+  'Punjab': 'पंजाब',
+  'Rajasthan': 'राजस्थान',
+  'Sikkim': 'सिक्कीम',
+  'Tamil Nadu': 'तमिळनाडू',
+  'Telangana': 'तेलंगणा',
+  'Tripura': 'त्रिपुरा',
+  'Uttar Pradesh': 'उत्तर प्रदेश',
+  'Uttarakhand': 'उत्तराखंड',
+  'West Bengal': 'पश्चिम बंगाल',
+  'Ahilyanagar': 'अहिल्यानगर',
+  'Amravati': 'अमरावती',
+  'Chhatrapati Sambhajinagar': 'छत्रपती संभाजीनगर',
+  'Jalgaon': 'जळगाव',
+  'Latur': 'लातूर',
+  'Mumbai': 'मुंबई',
+  'Nagpur': 'नागपूर',
+  'Nanded': 'नांदेड',
+  'Nashik': 'नाशिक',
+  'Navi Mumbai': 'नवी मुंबई',
+  'Ratnagiri': 'रत्नागिरी',
+  'Sangli': 'सांगली',
+  'Solapur': 'सोलापूर',
+  'Thane': 'ठाणे',
+  'Guntur': 'गुंटूर',
+  'Kurnool': 'कर्नूल',
+  'Nellore': 'नेल्लोर',
+  'Tirupati': 'तिरुपती',
+  'Vijayawada': 'विजयवाडा',
+  'Visakhapatnam': 'विशाखापट्टणम',
+  'Itanagar': 'इटानगर',
+  'Dibrugarh': 'दिब्रुगड',
+  'Guwahati': 'गुवाहाटी',
+  'Silchar': 'सिलचर',
+  'Gaya': 'गया',
+  'Muzaffarpur': 'मुझफ्फरपूर',
+  'Patna': 'पाटणा',
+  'Bilaspur': 'बिलासपूर',
+  'Raipur': 'रायपूर',
+  'Silvassa': 'सिल्वासा',
+  'New Delhi': 'नवी दिल्ली',
+  'Margao': 'मडगाव',
+  'Panaji': 'पणजी',
+  'Ahmedabad': 'अहमदाबाद',
+  'Bhavnagar': 'भावनगर',
+  'Gandhinagar': 'गांधीनगर',
+  'Jamnagar': 'जामनगर',
+  'Rajkot': 'राजकोट',
+  'Surat': 'सुरत',
+  'Vadodara': 'वडोदरा',
+  'Ambala': 'अंबाला',
+  'Faridabad': 'फरिदाबाद',
+  'Gurugram': 'गुरुग्राम',
+  'Hisar': 'हिसार',
+  'Dharamshala': 'धर्मशाला',
+  'Manali': 'मनाली',
+  'Shimla': 'शिमला',
+  'Jammu': 'जम्मू',
+  'Srinagar': 'श्रीनगर',
+  'Dhanbad': 'धनबाद',
+  'Jamshedpur': 'जमशेदपूर',
+  'Ranchi': 'रांची',
+  'Belagavi': 'बेळगाव',
+  'Bengaluru': 'बंगळुरू',
+  'Hubballi': 'हुबळी',
+  'Kalaburagi': 'कलबुर्गी',
+  'Mangaluru': 'मंगळुरू',
+  'Mysuru': 'म्हैसूर',
+  'Kochi': 'कोची',
+  'Kozhikode': 'कोझिकोड',
+  'Thiruvananthapuram': 'तिरुवनंतपुरम',
+  'Thrissur': 'त्रिशूर',
+  'Leh': 'लेह',
+  'Bhopal': 'भोपाळ',
+  'Gwalior': 'ग्वाल्हेर',
+  'Indore': 'इंदूर',
+  'Jabalpur': 'जबलपूर',
+  'Ujjain': 'उज्जैन',
+  'Imphal': 'इंफाळ',
+  'Shillong': 'शिलाँग',
+  'Aizawl': 'ऐझॉल',
+  'Kohima': 'कोहिमा',
+  'Bhubaneswar': 'भुवनेश्वर',
+  'Cuttack': 'कटक',
+  'Puri': 'पुरी',
+  'Rourkela': 'राउरकेला',
+  'Amritsar': 'अमृतसर',
+  'Jalandhar': 'जालंधर',
+  'Ludhiana': 'लुधियाना',
+  'Patiala': 'पटियाला',
+  'Ajmer': 'अजमेर',
+  'Bikaner': 'बिकानेर',
+  'Jaipur': 'जयपूर',
+  'Jodhpur': 'जोधपूर',
+  'Kota': 'कोटा',
+  'Udaipur': 'उदयपूर',
+  'Gangtok': 'गंगटोक',
+  'Chennai': 'चेन्नई',
+  'Coimbatore': 'कोइम्बतूर',
+  'Kanniyakumari': 'कन्याकुमारी',
+  'Madurai': 'मदुराई',
+  'Salem': 'सेलम',
+  'Tiruchirappalli': 'तिरुचिरापल्ली',
+  'Tirunelveli': 'तिरुनेलवेली',
+  'Vellore': 'वेल्लोर',
+  'Hyderabad': 'हैदराबाद',
+  'Nizamabad': 'निजामाबाद',
+  'Warangal': 'वारंगल',
+  'Agartala': 'आगरताळा',
+  'Agra': 'आग्रा',
+  'Ayodhya': 'अयोध्या',
+  'Bareilly': 'बरेली',
+  'Ghaziabad': 'गाझियाबाद',
+  'Gorakhpur': 'गोरखपूर',
+  'Kanpur': 'कानपूर',
+  'Lucknow': 'लखनौ',
+  'Mathura': 'मथुरा',
+  'Meerut': 'मेरठ',
+  'Noida': 'नोएडा',
+  'Prayagraj': 'प्रयागराज',
+  'Varanasi': 'वाराणसी',
+  'Dehradun': 'डेहराडून',
+  'Haridwar': 'हरिद्वार',
+  'Nainital': 'नैनिताल',
+  'Rishikesh': 'ऋषिकेश',
+  'Asansol': 'आसनसोल',
+  'Darjeeling': 'दार्जिलिंग',
+  'Durgapur': 'दुर्गापूर',
+  'Kolkata': 'कोलकाता',
+  'Siliguri': 'सिलिगुडी',
 };

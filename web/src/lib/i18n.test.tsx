@@ -165,7 +165,7 @@ describe('the app in another language', () => {
     open('/search', 'mr');
 
     expect(await screen.findByRole('heading', { name: 'प्रवास शोधा' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'कोल्हापूर' })).toHaveValue('Kolhapur'); // the server still gets the English name
+    expect(screen.getAllByRole('option', { name: 'कोल्हापूर' })[0]).toHaveValue('Kolhapur'); // the server still gets the English name
     await userEvent.clear(screen.getByLabelText('जागा'));
     await userEvent.type(screen.getByLabelText('जागा'), '0');
     await userEvent.click(screen.getByRole('button', { name: 'शोधा' }));

@@ -21,16 +21,16 @@ import { Link } from 'react-router-dom';
 
 import { CountUp } from '../components/countup';
 import { useT } from '../lib/i18n';
+import { PLACES } from '../lib/places';
 import { formatOneDecimal, formatRupees, formatTime, formatWeekday } from '../lib/format';
 
 // The corridor as drawn on the front page: north up, each town where it lies, so Pune sits
 // above and a little west of Kolhapur. Decoration only; the real route comes from OSRM.
-// typicalSeats is illustrative too: a round number for the tooltip, not a measured figure.
 const TOWNS = [
-  { name: 'Kolhapur', x: 146, y: 228, typicalSeats: 42 },
-  { name: 'Karad', x: 132, y: 164, typicalSeats: 15 },
-  { name: 'Satara', x: 92, y: 121, typicalSeats: 21 },
-  { name: 'Pune', x: 54, y: 29, typicalSeats: 46 },
+  { name: 'Kolhapur', x: 146, y: 228 },
+  { name: 'Karad', x: 132, y: 164 },
+  { name: 'Satara', x: 92, y: 121 },
+  { name: 'Pune', x: 54, y: 29 },
 ] as const;
 const ROAD = 'M146 228 C 152 202, 126 186, 132 164 S 98 140, 92 121 S 48 64, 54 29';
 // The towns are not evenly spaced along the curve; this approximates where each one falls
@@ -170,7 +170,6 @@ function CorridorArt() {
             className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-[135%] whitespace-nowrap rounded-xl bg-[#0f172a] px-2.5 py-1.5 text-center text-[11px] font-semibold text-white shadow-float"
           >
             <p>{t(hovered.name)}</p>
-            <p className="text-white/70">{t('About {seats} seats published here, typically', { seats: hovered.typicalSeats })}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -240,15 +239,10 @@ function Hero() {
       <div className="grid items-center gap-10 md:grid-cols-[1.15fr_1fr]">
         <div className="space-y-6">
           <p className="inline-flex flex-wrap items-center gap-x-2 rounded-full bg-white/15 px-3 py-1 text-[13px] font-semibold tracking-wide ring-1 ring-inset ring-white/25">
-            {TOWNS.map((town, index) => (
-              <span key={town.name} className="inline-flex items-center gap-2">
-                {index > 0 && <span aria-hidden="true">·</span>}
-                {t(town.name)}
-              </span>
-            ))}
+            {t('Any route in India')}
           </p>
           <h1 className="text-balance text-[34px] font-extrabold leading-[1.08] tracking-tight sm:text-5xl">
-            {t('Share the road between Kolhapur and Pune')}
+            {t('Share the road between cities across India')}
           </h1>
           <p className="max-w-xl text-[17px] leading-relaxed text-white/85">
             {t('Book a seat in a car already making the trip, or fill the empty seats in yours. If your plans change, VAYORA reminds you to give the seat back while someone else can still take it.')}
@@ -341,14 +335,12 @@ function ReliabilityCard() {
 function Facts() {
   const t = useT();
   const facts = [
-    // OSRM's road route through the four towns: 235.9 km (docs/TESTING.md).
-    { value: 236, label: t('km of road, end to end') },
-    { value: 4, label: t('towns on the way') },
+    { value: PLACES.length, label: t('cities to choose from') },
     { value: 7, label: t('days ahead you can book') },
     { value: 3, label: t('languages') },
   ];
   return (
-    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <dl className="grid gap-3 sm:grid-cols-3">
       {facts.map((fact) => (
         <div key={fact.label} className="flex flex-col rounded-2xl bg-surface px-4 py-4 text-center shadow-card ring-1 ring-slate-900/[0.04]">
           <dt className="text-[13px] font-medium text-slate-500">{fact.label}</dt>
@@ -370,7 +362,7 @@ function HowItWorks() {
   const steps: { icon: LucideIcon; title: string; body: string }[] = [
     {
       icon: Search,
-      title: t('Search the corridor'),
+      title: t('Search your route'),
       body: t('Choose where you start and where you are going, or a point on the map. Rides passing within reach are shown with the walk to where you board.'),
     },
     {
@@ -456,7 +448,7 @@ function Features() {
   ];
   return (
     <Reveal className="space-y-4">
-      <SectionTitle>{t('Made for this road')}</SectionTitle>
+      <SectionTitle>{t('Made for travelling between cities')}</SectionTitle>
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {features.map(({ icon: Icon, title, body }, index) => (
           <li
@@ -534,7 +526,9 @@ export function LandingPage() {
       <Features />
       <TwoSides />
       <footer className="border-t border-slate-900/[0.07] pt-6 text-center text-[13px] leading-relaxed text-slate-500">
-        {t('A final-year project at DYPCET, Kolhapur. Payments, text messages and calls are simulated unless real services are connected.')}
+        <p>{t('A final-year project at DYPCET, Kolhapur. Payments, text messages and calls are simulated unless real services are connected.')}</p>
+        <p className="mt-1">{t('Road distances and times are worked out between Kolhapur and Pune. On other routes they are a straight-line estimate, and say so.')}</p>
+        <p className="mt-1">{t('The research behind VAYORA was run on the Kolhapur to Pune route.')}</p>
       </footer>
     </div>
   );
