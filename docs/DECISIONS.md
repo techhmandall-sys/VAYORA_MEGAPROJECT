@@ -134,6 +134,8 @@ was decided while building within them.
 
 | Decision | Why | Cost |
 |---|---|---|
+| A search is never re-run by a timer; `/rides/availability` keeps results current instead (2026-11-01) | Each search writes `search_issued` and `candidates_returned`, and the primary metric divides by searches: a screen refreshing itself is not someone asking | One more endpoint. A filter or sort still only applies when asked for, because that is a search |
+| "Live" lists are re-read on a timer; only chat and the driver's position are pushed (2026-11-01) | The gateway owns ephemeral streams and core-api owns the truth, and no service forwards for another. Pushing bookings would have needed a path between them. The unread count, read every 15 seconds, tells every other list when to look again | News takes up to about 15 seconds, seats up to 20. Every "Live" label says when it last read |
 | An iOS-style look, light, dark or matching the device as the reader chooses in the header, VAYORA teal as the tint (2026-10-22, as the team chose) | Every colour class reads a CSS variable, so one set of dark values restyles every screen; the shared components carry the rest | |
 | Each role in its own tint: passengers teal, drivers indigo, administrators violet | A person always knows which side of the platform they are on | The brand colour is the passengers' only |
 | Entrances in CSS; exits, height changes and drag in Framer Motion (`framer-motion`) | CSS cannot animate an element leaving the page, a height to "auto", or a swipe | One more dependency, about 110 KB, in its own cached file |

@@ -23,7 +23,8 @@ more bookings and still move fewer people.
 |---|---|
 | Features | 87 of 95 verified, 7 partial, 1 not started: about 95% counting a partial feature as half ([feature matrix](docs/FEATURE_MATRIX.md)) |
 | Routes | Any route in India in the app, from 126 listed cities or a point on the map. Road distances between Kolhapur and Pune; elsewhere a labelled straight line until a bigger map is built ([how](docs/DEPLOYMENT.md#road-routes-across-india)) |
-| Tests | 343 Java, 266 web, 210 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
+| Interface | A side bar, or tabs on a phone, in light and dark, each role with its own tint. Screens keep themselves current without a reload |
+| Tests | 347 Java, 295 web, 210 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
 | Languages | English, Hindi and Marathi, on every screen, notification and error message |
 | Research | On Kolhapur to Pune alone. A SimPy simulator of the corridor: 60 simulated days, 30 seeds per variant, train and validation on disjoint seeds |
 | Data | All synthetic, plus one public dataset of real hotel cancellations used as a check |

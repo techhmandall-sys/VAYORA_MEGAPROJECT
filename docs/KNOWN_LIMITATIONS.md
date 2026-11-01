@@ -313,6 +313,12 @@ mistake for more. Updated 2026-11-01.
 
 ## Interface
 
+- **"Live" means re-read often, not pushed.** Only chat and the driver's position arrive as they happen.
+  News takes up to about 15 seconds to show, seats up to 20, and lists up to 30. A driver's position is
+  sent at most every 5 seconds, and only while they choose to share it.
+- A driver's position is drawn on the map with the line it has taken since the chat was opened. There is
+  no arrival estimate, because the app has no live traffic or road position to base one on.
+- A search result's seats are kept current for the first 30 results on screen.
 - **Screens were viewed in a browser only by a script, its screenshots checked by eye**
   (headless Edge, 2026-10-15 to 17, and single features since, last on 2026-10-21), not by a person using the app, and not on a phone. The map draws its tiles and pins there; the component tests still use
   a stand-in for it.

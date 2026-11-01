@@ -1,6 +1,30 @@
 # Progress
 
-## 2026-11-01 (latest) — any route in India, the research unchanged
+## 2026-11-01 (latest) — an interface that keeps itself current
+
+- **A side bar in place of the row of pills:** icons alone on a tablet, names on a wider screen,
+  administrators' pages grouped, a marker sliding between pages. On a phone, tabs along the bottom
+  with language and theme in More. A change of theme spreads out from the button.
+- **What is on screen stays current, for real.** A new notification floats in and has the lists read
+  again; bookings, rides and an administrator's figures are re-read every 30 seconds; a booking's
+  journey, its time to leaving and what cancelling returns all move by themselves; a seat hold counts
+  down; chat and the driver's position come through the gateway as they happen, the marker gliding.
+  Every "Live" label says when it last read, and stops saying Live when a read fails.
+- **A search is never repeated by a timer.** `/rides/search` writes `search_issued` to the event log,
+  so polling it would have bent completed rides per 100 searches. `GET /rides/availability` gives the
+  same seat count, holds included, and records nothing. A test holds this, and it was measured against
+  a real stack: a page left open read seats 4 times, searched once, and added no `search_issued`.
+- **Choosing a place:** typed in any of the three languages, by city or state, with the arrow keys,
+  recent places first and the nearest city to the device on offer. The ends swap, and the next seven
+  days are a press each. A route chosen on the front page waits past signing up.
+- **A made-up figure removed:** the front page showed an invented "Reliability 92%" that the app itself
+  never shows anyone, as scores are not shown to members. It now shows an example result, labelled.
+- Bugs this found, fixed: a map's panes rose over the sticky header; a list opening from one section
+  passed under the next.
+- core-api 347 and web 295 tests pass. Python and the gateway were not rerun: neither changed. Checked
+  with several browsers against a throwaway stack with the real routing and gateway (TESTING.md).
+
+## 2026-11-01 (before that) — any route in India, the research unchanged
 
 - **The team decided the platform serves all of India and the research stays on Kolhapur to Pune.**
   CLAUDE.md now says which is which. No simulator, experiment, config or reported number changed.
