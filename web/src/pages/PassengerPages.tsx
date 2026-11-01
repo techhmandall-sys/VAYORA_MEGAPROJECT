@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
-import { Armchair, Award, BadgeCheck, Car, CarTaxiFront, Clock, Footprints, Hourglass, Map as MapIcon, Route as RouteIcon, ShieldCheck, Shuffle, Sparkles, Ticket, TriangleAlert, UserRound, Users, Wallet, Zap } from 'lucide-react';
+import { Armchair, ArrowUpDown, Award, BadgeCheck, Car, CarTaxiFront, Check, Clock, Flag, Footprints, Hourglass, Map as MapIcon, MessagesSquare, Route as RouteIcon, Search, Send, ShieldCheck, Shuffle, SlidersHorizontal, Sparkles, Ticket, TriangleAlert, Undo2, UserRound, Users, Wallet, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { LeavesIn, LiveDot, LiveStatus, useTimeAhead } from '../components/live';
 import { laterLine, paidLine, PayDue, RefundTerms, SimulatedPaymentNotice, usePaymentTerms } from '../components/payment';
 import { RateForm, RatingSummary } from '../components/rating';
 import { RideChat } from '../components/RideChat';
@@ -16,11 +17,13 @@ import { CallButton } from '../components/call';
 import { initialsOf } from '../components/photo';
 import { Collapse } from '../components/collapse';
 import { SuccessCard } from '../components/success';
-import { Button, Card, Chip, ConfirmButton, Detail, Notice, Page, QueryState, SelectField, StatusBadge, StepperField, TextField } from '../components/ui';
+import { Avatar, Button, Card, Chip, ConfirmButton, Detail, Meter, More, Notice, Page, QueryState, Segmented, SelectField, StatusBadge, StepperField, TextField } from '../components/ui';
 import { api } from '../lib/api';
 import { placeNamed } from '../lib/places';
-import { PlaceOptions } from '../components/places';
-import { answerBy, formatDate, formatDateTime, formatRupees, formatTime, todayInIndia } from '../lib/format';
+import { PlaceField } from '../components/places';
+import { answerBy, formatDate, formatDateTime, formatDayMonth, formatRupees, formatTime, formatWeekday, todayInIndia } from '../lib/format';
+import { clockFace, LIVE_MS, refundNow, useNow } from '../lib/live';
+import { takeWantedRoute } from '../lib/recent';
 import { msg, useT, useUnits } from '../lib/i18n';
 import { matchReasonLabels } from '../lib/match';
 import { payAtCheckout } from '../lib/razorpay';
@@ -28,6 +31,7 @@ import { comfortLabels, luggageLabels, vehiclePhrases } from '../lib/vehicle';
 import { searchSchema, type SearchForm } from '../lib/schemas';
 import type {
   Booking,
+  Availability,
   Candidate,
   Comfort,
   FlexTier,
@@ -37,6 +41,7 @@ import type {
   RequestTerms,
   RickshawEstimate,
   Ride,
+  RideStatus,
   SearchSort,
   SeatHold,
 } from '../lib/types';
@@ -208,6 +213,56 @@ function RideRoute({ rideId, fromSeq, toSeq, pickup }: { rideId: number; fromSeq
   );
 }
 
+/** The next seven days as a press each, the horizon rides are booked within. */
+function DateChips({ value, onChoose }: { value: string; onChoose: (date: string) => void }) {
+  const t = useT();
+  const today = todayInIndia();
+  const days = Array.from({ length: 7 }, (_, index) => todayInIndia(new Date(Date.parse(`${today}T12:00:00+05:30`) + index * 86_400_000)));
+  return (
+    <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">
+      {days.map((day, index) => (
+        <button
+          key={day}
+          type="button"
+          aria-pressed={day === value}
+          onClick={() => onChoose(day)}
+          className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 ${
+            day === value ? 'bg-tint text-white shadow-sm' : 'bg-slate-900/[0.05] text-slate-700 hover:bg-slate-900/[0.09]'
+          }`}
+        >
+          {index === 0 ? t('Today') : index === 1 ? t('Tomorrow') : `${formatWeekday(`${day}T12:00:00+05:30`)} ${formatDayMonth(`${day}T12:00:00+05:30`)}`}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Seats held for the passenger, running out before their eyes. Tells the page when it has. */
+function HoldClock({ until, from, onEnd }: { until: string; from: number; onEnd: () => void }) {
+  const t = useT();
+  const now = useNow(1000);
+  const left = Date.parse(until) - now;
+  useEffect(() => {
+    if (left <= 0) onEnd();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [left <= 0]);
+  return (
+    <div className="mt-3 rounded-2xl bg-emerald-50 px-4 py-3 ring-1 ring-inset ring-emerald-200">
+      <div className="flex items-center justify-between gap-3">
+        <p role="status" className="text-sm font-medium text-emerald-900">
+          {t('Held for you until {time}. This is not a booking: book before then or the seats go back.', { time: formatTime(until) })}
+        </p>
+        <span aria-hidden="true" className="flex-none text-xl font-bold tabular-nums text-emerald-900">
+          {clockFace(left)}
+        </span>
+      </div>
+      <div className="mt-2">
+        <Meter fraction={left / Math.max(1, Date.parse(until) - from)} tone={left < 60_000 ? 'amber' : 'tint'} label={t('Time left on the hold')} />
+      </div>
+    </div>
+  );
+}
+
 export function SearchPage() {
   const t = useT();
   const units = useUnits();
@@ -226,6 +281,9 @@ export function SearchPage() {
   const [sorting, startSorting] = useTransition();
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // A route chosen on the front page before signing in, once.
+  const [wanted] = useState(takeWantedRoute);
+  const [turns, setTurns] = useState(0);
   // Exact points chosen on the map. Either replaces its town's centre.
   const [picked, setPicked] = useState<{ origin?: LatLon; destination?: LatLon }>({});
   const [setting, setSetting] = useState<'origin' | 'destination'>('origin');
@@ -236,9 +294,23 @@ export function SearchPage() {
   const idempotencyKeys = useRef(new Map<string, string>());
   const { register, handleSubmit, formState, watch, setValue, getValues } = useForm<SearchForm>({
     resolver: zodResolver(searchSchema),
-    defaultValues: { origin: 'Kolhapur', destination: 'Pune', date: todayInIndia(), seats: 1 },
+    defaultValues: { origin: wanted?.from ?? 'Kolhapur', destination: wanted?.to ?? 'Pune', date: todayInIndia(), seats: 1 },
   });
   const towns = { origin: watch('origin'), destination: watch('destination') };
+  const filtersSet = Object.keys(filterParams(filters)).length;
+
+  const chooseEnd = (end: 'origin' | 'destination', name: string) => {
+    setValue(end, name, { shouldValidate: formState.isSubmitted });
+    // An exact point belongs to the town it was chosen around.
+    setPicked((current) => ({ ...current, [end]: undefined }));
+  };
+
+  const swapEnds = () => {
+    setValue('origin', towns.destination, { shouldValidate: formState.isSubmitted });
+    setValue('destination', towns.origin, { shouldValidate: formState.isSubmitted });
+    setPicked((current) => ({ origin: current.destination, destination: current.origin }));
+    setTurns((was) => was + 1);
+  };
 
   const results = useQuery({
     queryKey: ['search', criteria],
@@ -261,6 +333,18 @@ export function SearchPage() {
       previousQuery && sameSearch(previousQuery.queryKey[1] as Criteria | null, criteria) ? previous : undefined,
   });
   const stale = sorting || results.isPlaceholderData;
+
+  // The seats left on what is on screen, read again and again. Never by searching again: a search
+  // is an event in the log, and this is the same count with none written (lib/live.ts).
+  const stretches = (results.data ?? []).slice(0, 30).map((candidate) => `${candidate.rideId}:${candidate.fromSeq}:${candidate.toSeq}`);
+  const seatsNow = useQuery({
+    queryKey: ['availability', stretches],
+    queryFn: () => api<Availability[]>(`/rides/availability?${new URLSearchParams(stretches.map((stretch) => ['stretch', stretch]))}`),
+    enabled: stretches.length > 0,
+    refetchInterval: LIVE_MS.seats,
+  });
+  const standing = (candidate: Candidate) =>
+    seatsNow.data?.find((now) => now.rideId === candidate.rideId && now.fromSeq === candidate.fromSeq && now.toSeq === candidate.toSeq);
 
   const book = useMutation({
     // `later`: book now and pay once the booking ends, on a ride whose driver accepts that.
@@ -306,14 +390,14 @@ export function SearchPage() {
   });
 
   // The seats held, and which result they are on. One hold at a time: a new one replaces it.
-  const [held, setHeld] = useState<{ key: string; until: string } | null>(null);
+  const [held, setHeld] = useState<{ key: string; until: string; from: number } | null>(null);
   const hold = useMutation({
     mutationFn: (candidate: Candidate) =>
       api<SeatHold>('/holds', {
         method: 'POST',
         body: { rideId: candidate.rideId, fromSeq: candidate.fromSeq, toSeq: candidate.toSeq, seats: criteria!.form.seats },
       }),
-    onSuccess: (placed, candidate) => setHeld({ key: candidateKey(candidate, criteria!.form.seats), until: placed.expiresAt }),
+    onSuccess: (placed, candidate) => setHeld({ key: candidateKey(candidate, criteria!.form.seats), until: placed.expiresAt, from: Date.now() }),
   });
 
   const mapPoints: MapPoint[] = [
@@ -358,14 +442,21 @@ export function SearchPage() {
             });
           })}
           noValidate
-          className="grid gap-4 sm:grid-cols-2"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2"
         >
-          <SelectField label={t('From')} error={formState.errors.origin?.message} {...register('origin')}>
-            <PlaceOptions />
-          </SelectField>
-          <SelectField label={t('To')} error={formState.errors.destination?.message} {...register('destination')}>
-            <PlaceOptions />
-          </SelectField>
+          <div className="grid grid-cols-1 items-start gap-2 sm:col-span-2 sm:grid-cols-[1fr_auto_1fr]">
+            <PlaceField label={t('From')} value={towns.origin} nearMe error={formState.errors.origin?.message} onChange={(name) => chooseEnd('origin', name)} />
+            <button
+              type="button"
+              aria-label={t('Swap start and destination')}
+              title={t('Swap start and destination')}
+              onClick={swapEnds}
+              className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/[0.05] text-teal-800 hover:bg-slate-900/[0.09] active:scale-90 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 sm:mt-[1.65rem]"
+            >
+              <ArrowUpDown aria-hidden="true" className="h-4 w-4 transition-transform duration-500 ease-spring sm:rotate-90" style={{ rotate: `${turns * 180}deg` }} />
+            </button>
+            <PlaceField label={t('To')} value={towns.destination} error={formState.errors.destination?.message} onChange={(name) => chooseEnd('destination', name)} />
+          </div>
           <TextField label={t('Date')} type="date" min={todayInIndia()} error={formState.errors.date?.message} {...register('date')} />
           <StepperField
             label={t('Seats')}
@@ -378,22 +469,44 @@ export function SearchPage() {
             onStep={(delta) => setValue('seats', Math.min(8, Math.max(1, Number(getValues('seats')) + delta)), { shouldValidate: true })}
             {...register('seats')}
           />
+          <div className="-mt-2 sm:col-span-2">
+            <DateChips value={watch('date')} onChoose={(date) => setValue('date', date, { shouldValidate: formState.isSubmitted })} />
+          </div>
 
-          <div className="space-y-3 sm:col-span-2">
-            <p className="text-sm text-slate-600">
-              {t(
-                'Rides are matched to the centre of each town unless you choose an exact point. Only rides with a stop near each end, or whose driver will come to your start, are shown.',
-              )}
-            </p>
-            <ul className="space-y-1 text-sm text-slate-700">
-              <li>{endLine('origin')}</li>
-              <li>{endLine('destination')}</li>
-            </ul>
+          <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+            <Button type="submit" className="px-6 py-2.5 text-[15px]">
+              <Search aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
+              {t('Search')}
+            </Button>
             <Button tone="secondary" aria-expanded={mapOpen} onClick={() => setMapOpen(!mapOpen)}>
+              <MapIcon aria-hidden="true" className="h-4 w-4" />
               {mapOpen ? t('Hide the map') : t('Choose exact points on a map')}
             </Button>
+            <Button tone="secondary" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>
+              <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
+              {filtersOpen ? t('Hide filters') : t('Filters')}
+              {filtersSet > 0 && (
+                <span key={filtersSet} aria-hidden="true" className="inline-flex min-w-[1.25rem] animate-badge-pop items-center justify-center rounded-full bg-tint px-1.5 text-[11px] font-bold leading-5 text-white">
+                  {filtersSet}
+                </span>
+              )}
+            </Button>
+          </div>
+
+          <div className="sm:col-span-2">
+            <Collapse open={mapOpen || picked.origin !== undefined || picked.destination !== undefined}>
+              <ul className="space-y-0.5 text-[13px] text-slate-600">
+                <li>{endLine('origin')}</li>
+                <li>{endLine('destination')}</li>
+              </ul>
+              <p className="mt-1 text-[13px] text-slate-500">
+                {t(
+                  'Rides are matched to the centre of each town unless you choose an exact point. Only rides with a stop near each end, or whose driver will come to your start, are shown.',
+                )}
+              </p>
+            </Collapse>
             <Collapse open={mapOpen}>
-              <div className="space-y-2">
+              <div className="mt-3 space-y-2">
                 <fieldset className="flex flex-wrap gap-4 text-sm">
                   <legend className="sr-only">{t('Which point a click on the map sets')}</legend>
                   <label className="flex items-center gap-1">
@@ -414,10 +527,7 @@ export function SearchPage() {
             </Collapse>
           </div>
 
-          <div className="space-y-3 sm:col-span-2">
-            <Button tone="secondary" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>
-              {filtersOpen ? t('Hide filters') : t('Filters')}
-            </Button>
+          <div className="sm:col-span-2">
             <Collapse open={filtersOpen}>
               <fieldset className="grid gap-4 rounded-2xl border border-slate-200 p-4 sm:grid-cols-2">
                 <legend className="px-1 text-sm font-medium text-slate-700">{t('Show only rides that')}</legend>
@@ -494,10 +604,6 @@ export function SearchPage() {
               </fieldset>
             </Collapse>
           </div>
-
-          <div className="sm:col-span-2">
-            <Button type="submit">{t('Search')}</Button>
-          </div>
         </form>
       </Card>
 
@@ -532,23 +638,29 @@ export function SearchPage() {
           {results.data?.length === 0 && <BusAlternatives from={criteria.form.origin} to={criteria.form.destination} />}
           {results.data && results.data.length > 0 && (
             <>
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                <h2 className="text-lg font-bold tracking-tight text-slate-900">
+                  {results.data.length === 1 ? t('{n} ride found', { n: results.data.length }) : t('{n} rides found', { n: results.data.length })}
+                </h2>
+                <LiveStatus query={seatsNow} label={t('Seats are live')} />
+              </div>
               <SimulatedPaymentNotice />
+              <Segmented<SearchSort>
+                label={t('Sort by')}
+                value={criteria.sort}
+                options={[
+                  { value: 'TIME', label: t('Earliest departure') },
+                  { value: 'PRICE', label: t('Lowest price') },
+                  { value: 'RATING', label: t('Best-rated driver') },
+                  { value: 'PROXIMITY', label: t('Nearest pickup') },
+                  { value: 'BEST_MATCH', label: t('Best match for both of you') },
+                ]}
+                onChange={(next) => {
+                  setSort(next);
+                  startSorting(() => setCriteria({ ...criteria, sort: next }));
+                }}
+              />
               <div className="grid max-w-xl gap-4 sm:grid-cols-2">
-                <SelectField
-                  label={t('Sort by')}
-                  value={criteria.sort}
-                  onChange={(event) => {
-                    const next = event.target.value as SearchSort;
-                    setSort(next);
-                    startSorting(() => setCriteria({ ...criteria, sort: next }));
-                  }}
-                >
-                  <option value="TIME">{t('Earliest departure')}</option>
-                  <option value="PRICE">{t('Lowest price')}</option>
-                  <option value="RATING">{t('Best-rated driver')}</option>
-                  <option value="PROXIMITY">{t('Nearest pickup')}</option>
-                  <option value="BEST_MATCH">{t('Best match for both of you')}</option>
-                </SelectField>
                 {checkout ? (
                   <p className="text-sm text-slate-600">
                     {t("You pay by card, UPI or a wallet in Razorpay's checkout when you book. A booking paid there is for this ride only: if the driver withdraws, everything comes back and other rides are suggested.")}
@@ -590,6 +702,10 @@ export function SearchPage() {
           <div aria-busy={stale} className={`stagger space-y-3 transition-opacity duration-200 ${stale ? 'opacity-50' : ''}`}>
           {results.data?.map((candidate) => {
             const key = candidateKey(candidate, criteria.form.seats);
+            const now = standing(candidate);
+            const seatsLeft = now?.seatsAvailable ?? candidate.seatsAvailable;
+            const gone = now !== undefined && now.status !== 'SCHEDULED' && now.status !== 'IN_PROGRESS';
+            const tooFew = seatsLeft < criteria.form.seats;
             return (
               <Card key={key}>
                 {/* One sentence for screen readers; the timeline below draws the same thing. */}
@@ -604,11 +720,12 @@ export function SearchPage() {
                       <span className="my-1 w-0.5 flex-1 rounded-full bg-gradient-to-b from-teal-600 to-teal-200" />
                       <span className="h-3 w-3 rounded-full bg-teal-600" />
                     </div>
-                    <div className="flex min-w-0 flex-col gap-3">
+                    <div className="flex min-w-0 flex-col gap-2">
                       <div>
                         <p className="text-xl font-bold leading-tight tabular-nums text-slate-900">{formatTime(candidate.boardingTime)}</p>
                         <p className="truncate text-sm text-slate-600">{candidate.detourMinutes != null ? t('Your start') : t(candidate.fromStop)}</p>
                       </div>
+                      <p className="text-xs font-medium text-slate-500">{units.duration(Math.max(0, Math.round((Date.parse(candidate.arrivalTime) - Date.parse(candidate.boardingTime)) / 60_000)))}</p>
                       <div>
                         <p className="text-xl font-bold leading-tight tabular-nums text-slate-900">{formatTime(candidate.arrivalTime)}</p>
                         <p className="truncate text-sm text-slate-600">{t(candidate.toStop)}</p>
@@ -628,24 +745,35 @@ export function SearchPage() {
                         <span className="block text-xs font-medium text-emerald-800">{t('A lower fee: this driver keeps their rides')}</span>
                       )}
                     </p>
-                    <Button className="mt-1 px-6" disabled={book.isPending} onClick={() => book.mutate({ candidate, later: false })}>
+                    <Button
+                      className="mt-1 px-6"
+                      disabled={book.isPending || gone || tooFew}
+                      busy={book.isPending && book.variables?.candidate === candidate && !book.variables.later}
+                      onClick={() => book.mutate({ candidate, later: false })}
+                    >
                       {candidate.instantBooking ? t('Book') : t('Request')}
                     </Button>
                     {candidate.payAfterRide && (
-                      <Button tone="secondary" disabled={book.isPending} onClick={() => book.mutate({ candidate, later: true })}>
+                      <Button
+                        tone="secondary"
+                        disabled={book.isPending || gone || tooFew}
+                        busy={book.isPending && book.variables?.candidate === candidate && book.variables.later}
+                        onClick={() => book.mutate({ candidate, later: true })}
+                      >
                         {candidate.instantBooking ? t('Book, pay after the ride') : t('Request, pay after the ride')}
                       </Button>
                     )}
                   </div>
                 </div>
 
+                {(gone || tooFew) && (
+                  <div className="mt-3">
+                    <Notice tone="info">{gone ? t('This ride is no longer available.') : t('Too few seats are left on this ride now.')}</Notice>
+                  </div>
+                )}
+
                 <div className="mt-4 flex items-center gap-3 border-t border-slate-900/[0.06] pt-4">
-                  <span
-                    aria-hidden="true"
-                    className="inline-flex h-10 w-10 flex-none items-center justify-center rounded-full bg-gradient-to-br from-[#14b8a6] to-[#0f766e] text-sm font-bold text-white shadow-sm"
-                  >
-                    {initialsOf(candidate.driverName)}
-                  </span>
+                  <Avatar initials={initialsOf(candidate.driverName)} />
                   <p className="min-w-0 text-sm">
                     <Link to={`/users/${candidate.driverId}`} className="font-semibold text-slate-900 hover:text-teal-800 hover:underline">
                       {candidate.driverName}
@@ -657,11 +785,12 @@ export function SearchPage() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  <Chip icon={Users} tone="sky">
-                    {candidate.seatsAvailable === 1
-                      ? t('{n} seat left', { n: candidate.seatsAvailable })
-                      : t('{n} seats left', { n: candidate.seatsAvailable })}
-                  </Chip>
+                  {/* Keyed by the count, so a seat taken or given back while this is on screen shows itself. */}
+                  <span key={seatsLeft} className="animate-badge-pop">
+                    <Chip icon={Users} tone={seatsLeft <= 1 ? 'amber' : 'sky'}>
+                      {seatsLeft === 1 ? t('{n} seat left', { n: seatsLeft }) : t('{n} seats left', { n: seatsLeft })}
+                    </Chip>
+                  </span>
                   {candidate.instantBooking ? (
                     <Chip icon={Zap} tone="emerald">{t('Confirms instantly')}</Chip>
                   ) : (
@@ -688,21 +817,6 @@ export function SearchPage() {
                       {t('Already on the road: it may reach {stop} before the time shown, so be there early.', { stop: t(candidate.fromStop) })}
                     </Detail>
                   )}
-                  {/* `vehicle` is what the driver typed: shown as text, not translated. */}
-                  {candidate.vehicle && <Detail icon={Car}>{[candidate.vehicle, ...vehiclePhrases(candidate, t)].join(' · ')}</Detail>}
-                  {candidate.insurer && candidate.insuredUntil && (
-                    <Detail icon={ShieldCheck}>
-                      {candidate.insuranceChecked
-                        ? t('Insurance: {insurer}, until {date}. VAYORA staff saw the policy; it was not checked with the insurer.', {
-                            insurer: candidate.insurer,
-                            date: formatDate(candidate.insuredUntil),
-                          })
-                        : t('Insurance declared by the driver: {insurer}, until {date}. Not checked.', {
-                            insurer: candidate.insurer,
-                            date: formatDate(candidate.insuredUntil),
-                          })}
-                    </Detail>
-                  )}
                   <button
                     type="button"
                     className="block w-full text-left"
@@ -721,6 +835,37 @@ export function SearchPage() {
                         }`}
                     </Detail>
                   </button>
+                  {criteria.sort === 'BEST_MATCH' && (
+                    <Detail icon={Sparkles} tone="text-teal-800">
+                      {[
+                        t('Match {score} of 100', { score: candidate.matchScore }),
+                        ...candidate.matchReasons.map((reason) => t(matchReasonLabels[reason])),
+                      ].join(' · ')}
+                    </Detail>
+                  )}
+                  {candidate.suggestFlexible && tier === 'EXACT' && (
+                    <Detail icon={Shuffle} tone="text-amber-800">
+                      {t('This driver has withdrawn some rides. A flexible booking would move you to another ride automatically.')}
+                    </Detail>
+                  )}
+                  <More label={t('More about this ride')}>
+                  <div className="space-y-1.5">
+                  {/* `vehicle` is what the driver typed: shown as text, not translated. */}
+                  {candidate.vehicle && <Detail icon={Car}>{[candidate.vehicle, ...vehiclePhrases(candidate, t)].join(' · ')}</Detail>}
+                  {candidate.insurer && candidate.insuredUntil && (
+                    <Detail icon={ShieldCheck}>
+                      {candidate.insuranceChecked
+                        ? t('Insurance: {insurer}, until {date}. VAYORA staff saw the policy; it was not checked with the insurer.', {
+                            insurer: candidate.insurer,
+                            date: formatDate(candidate.insuredUntil),
+                          })
+                        : t('Insurance declared by the driver: {insurer}, until {date}. Not checked.', {
+                            insurer: candidate.insurer,
+                            date: formatDate(candidate.insuredUntil),
+                          })}
+                    </Detail>
+                  )}
+                  <Detail icon={Award}>{driverRecord(candidate, t)}</Detail>
                   {(candidate.pickupRickshaw || candidate.dropoffRickshaw) && (
                     <button
                       type="button"
@@ -746,20 +891,8 @@ export function SearchPage() {
                       </div>
                     </button>
                   )}
-                  <Detail icon={Award}>{driverRecord(candidate, t)}</Detail>
-                  {criteria.sort === 'BEST_MATCH' && (
-                    <Detail icon={Sparkles} tone="text-teal-800">
-                      {[
-                        t('Match {score} of 100', { score: candidate.matchScore }),
-                        ...candidate.matchReasons.map((reason) => t(matchReasonLabels[reason])),
-                      ].join(' · ')}
-                    </Detail>
-                  )}
-                  {candidate.suggestFlexible && tier === 'EXACT' && (
-                    <Detail icon={Shuffle} tone="text-amber-800">
-                      {t('This driver has withdrawn some rides. A flexible booking would move you to another ride automatically.')}
-                    </Detail>
-                  )}
+                  </div>
+                  </More>
                 </div>
                 <div className="mt-4">
                   <Button tone="secondary" aria-expanded={routeShown === key} onClick={() => setRouteShown(routeShown === key ? null : key)}>
@@ -767,18 +900,12 @@ export function SearchPage() {
                     {routeShown === key ? t('Hide route') : t('Show route')}
                   </Button>
                   {held?.key !== key && (
-                    <Button tone="secondary" className="ml-2" disabled={hold.isPending} onClick={() => hold.mutate(candidate)}>
-                      <Hourglass aria-hidden="true" className="h-4 w-4" />
+                    <Button tone="secondary" className="ml-2" disabled={hold.isPending || gone || tooFew} busy={hold.isPending && hold.variables === candidate} onClick={() => hold.mutate(candidate)}>
+                      {!(hold.isPending && hold.variables === candidate) && <Hourglass aria-hidden="true" className="h-4 w-4" />}
                       {t('Hold while I decide')}
                     </Button>
                   )}
-                  {held?.key === key && (
-                    <p role="status" className="mt-2 text-sm font-medium text-emerald-800">
-                      {t('Held for you until {time}. This is not a booking: book before then or the seats go back.', {
-                        time: formatTime(held.until),
-                      })}
-                    </p>
-                  )}
+                  {held?.key === key && <HoldClock until={held.until} from={held.from} onEnd={() => setHeld(null)} />}
                   {hold.error && hold.variables && candidateKey(hold.variables, criteria.form.seats) === key && (
                     <p role="alert" className="mt-2 text-sm text-red-700">
                       {hold.error.message}
@@ -807,22 +934,218 @@ export function SearchPage() {
   );
 }
 
+const cancellable = (booking: Booking) => booking.status === 'PENDING' || booking.status === 'CONFIRMED';
+
+const JOURNEY = [
+  { label: msg('Requested'), icon: Send },
+  { label: msg('Accepted'), icon: Check },
+  { label: msg('Under way'), icon: Car },
+  { label: msg('Arrived'), icon: Flag },
+];
+
+/** How far a booking has got, from the booking and its ride as they stand now. */
+function Journey({ booking, rideStatus }: { booking: Booking; rideStatus?: RideStatus }) {
+  const t = useT();
+  const step = booking.status === 'PENDING' ? 0 : booking.status === 'COMPLETED' ? 3 : rideStatus === 'IN_PROGRESS' ? 2 : 1;
+  return (
+    <ol aria-label={t('How far this booking has got')} className="mt-4 grid max-w-md grid-cols-4">
+      {JOURNEY.map(({ label, icon: Icon }, index) => (
+        <li key={label} aria-current={index === step ? 'step' : undefined} className="relative flex flex-col items-center gap-1 text-center">
+          {index > 0 && (
+            <span aria-hidden="true" className={`absolute right-1/2 top-3.5 z-0 h-0.5 w-full transition-colors duration-700 ${index <= step ? 'bg-accent' : 'bg-slate-200'}`} />
+          )}
+          <span aria-hidden="true" className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full transition-colors duration-500 ${index <= step ? 'bg-accent text-white' : 'bg-slate-100 text-slate-500'}`}>
+            {index === step && step < 3 && <span className="absolute inset-0 animate-soft-ping rounded-full bg-accent" />}
+            <Icon className="relative h-3.5 w-3.5" strokeWidth={2.4} />
+          </span>
+          <span className={`text-[11px] font-medium leading-tight ${index === step ? 'font-semibold text-slate-900' : index < step ? 'text-slate-700' : 'text-slate-500'}`}>{t(label)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** What cancelling would return this minute, and when that falls, from the same tiers the server uses. */
+function RefundNow({ booking }: { booking: Booking }) {
+  const t = useT();
+  const terms = usePaymentTerms();
+  const ahead = useTimeAhead();
+  const now = useNow(60_000);
+  const hoursBefore = (Date.parse(booking.boardingTime) - now) / 3_600_000;
+  if (booking.status !== 'CONFIRMED' || booking.payAfterRide || booking.total === null || !terms.data || hoursBefore <= 0) return null;
+  const { share, nextShare, hoursUntilNext } = refundNow(terms.data.refundTiers, hoursBefore);
+  return (
+    <Detail icon={Undo2}>
+      {share === 0
+        ? t('If you cancel now, nothing comes back.')
+        : t('If you cancel now, {amount} of the fare comes back. In {time} that falls to {next}.', {
+            amount: formatRupees(booking.price * share),
+            time: ahead((hoursUntilNext ?? 0) * 3_600_000),
+            next: formatRupees(booking.price * (nextShare ?? 0)),
+          })}
+    </Detail>
+  );
+}
+
+function BookingCard({ booking, requestTerms, cancelling, onCancel }: {
+  booking: Booking;
+  requestTerms?: RequestTerms;
+  cancelling: boolean;
+  onCancel: () => void;
+}) {
+  const t = useT();
+  const [meetingShown, setMeetingShown] = useState(false);
+  const [chatShown, setChatShown] = useState(false);
+  const active = cancellable(booking);
+  // The ride's own state says when the driver has set off. Reading it records nothing.
+  const ride = useQuery({ queryKey: ['ride', booking.rideId], queryFn: () => api<Ride>(`/rides/${booking.rideId}`), enabled: active, refetchInterval: LIVE_MS.lists });
+  const underWay = active && ride.data?.status === 'IN_PROGRESS';
+
+  return (
+    <Card glow={underWay}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <p className="flex items-center gap-2 text-lg font-bold tracking-tight text-slate-900">
+              <span aria-hidden="true" className="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-teal-600/[0.12] text-teal-800">
+                <RouteIcon className="h-4 w-4" />
+              </span>
+              {t(booking.fromStop)} → {t(booking.toStop)}
+            </p>
+            {active && !underWay && <LeavesIn time={booking.boardingTime} />}
+          </div>
+          {(active || booking.status === 'COMPLETED') && <Journey booking={booking} rideStatus={ride.data?.status} />}
+          {underWay && (
+            <p role="status" className="mt-3 flex items-center gap-2 text-sm font-medium text-teal-800">
+              <LiveDot />
+              {t('Your ride is on the road. Open the chat to see where the driver is.')}
+            </p>
+          )}
+          <div className="mt-3 space-y-1.5">
+            <Detail icon={Clock}>
+              {booking.seats === 1
+                ? t('Leaves {time} · {n} seat', { time: formatDateTime(booking.boardingTime), n: booking.seats })
+                : t('Leaves {time} · {n} seats', { time: formatDateTime(booking.boardingTime), n: booking.seats })}
+            </Detail>
+            {booking.pickupLat != null && (
+              <Detail icon={Footprints} tone="text-teal-800">{t('Picked up at your own point after {stop}, not at the stop.', { stop: t(booking.fromStop) })}</Detail>
+            )}
+            {booking.driverName && (
+              <Detail icon={UserRound}>
+                {t('Driver')}{' '}
+                <Link to={`/users/${booking.driverId}`} className="font-semibold text-teal-800 hover:underline">
+                  {booking.driverName}
+                </Link>
+                {/* What the driver typed: shown as text, not translated. */}
+                {booking.vehicle && ` · ${booking.vehicle}`}
+              </Detail>
+            )}
+          </div>
+          <p className="mt-1.5 flex items-start gap-2 text-sm text-slate-600">
+            <Wallet aria-hidden="true" className="mt-0.5 h-4 w-4 flex-none opacity-70" />
+            {booking.total === null
+              ? t('Fare {amount}', { amount: formatRupees(booking.price) })
+              : t('{total} ({fare} fare + {fee} service fee)', {
+                  total: formatRupees(booking.total),
+                  fare: formatRupees(booking.price),
+                  fee: formatRupees(booking.serviceFee ?? 0),
+                })}
+            {booking.refunded !== null && ` · ${t('{amount} returned', { amount: formatRupees(booking.refunded) })}`}
+            {booking.payAfterRide &&
+              ` · ${
+                booking.paymentStatus === 'DUE' && booking.amountDue != null
+                  ? t('{amount} due', { amount: formatRupees(booking.amountDue) })
+                  : booking.paymentStatus === 'SETTLED'
+                    ? t('paid after the ride')
+                    : booking.paymentStatus === 'VOID'
+                      ? t('nothing owed')
+                      : t('pay after the ride')
+              }`}
+          </p>
+          <div className="mt-1.5">
+            <RefundNow booking={booking} />
+          </div>
+          <p className="mt-2">
+            <StatusBadge status={booking.status} />
+          </p>
+          {booking.flexTier && booking.flexTier !== 'EXACT' && (
+            <p className="mt-2 text-sm text-slate-600">
+              {booking.flexTier === 'FLEXIBLE'
+                ? t('If the driver withdraws, you are booked on another ride within 2 hours.')
+                : t('If the driver withdraws, you are booked on another ride that day.')}
+            </p>
+          )}
+          {booking.status === 'PENDING' && requestTerms && (
+            <p className="mt-2 text-sm text-slate-600">
+              {t('The driver has until {time} to answer. After that the request closes and everything you paid is returned.', {
+                time: formatDateTime(answerBy(booking.createdAt, booking.boardingTime, requestTerms)),
+              })}
+            </p>
+          )}
+          {active && <BoardingPassView bookingId={booking.id} />}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {active && (
+            <>
+              <Button tone="secondary" aria-expanded={meetingShown} onClick={() => setMeetingShown(!meetingShown)}>
+                <MapIcon aria-hidden="true" className="h-4 w-4" />
+                {meetingShown ? t('Hide meeting point') : t('Show meeting point')}
+              </Button>
+              <Button tone={underWay ? 'primary' : 'secondary'} aria-expanded={chatShown} onClick={() => setChatShown(!chatShown)}>
+                <MessagesSquare aria-hidden="true" className="h-4 w-4" />
+                {chatShown ? t('Close chat') : t('Open chat')}
+              </Button>
+              <ConfirmButton label={t('Cancel booking')} confirmLabel={t('Yes, cancel it')} disabled={cancelling} onConfirm={onCancel} />
+            </>
+          )}
+        </div>
+      </div>
+      {booking.status === 'CONFIRMED' && (
+        <div className="mt-3">
+          <CallButton bookingId={booking.id} label={t('Call the driver')} />
+        </div>
+      )}
+      {booking.paymentStatus === 'DUE' && booking.amountDue != null && (
+        <PayDue bookingId={booking.id} amount={booking.amountDue} description={`${t(booking.fromStop)} – ${t(booking.toStop)}`} />
+      )}
+      <Collapse open={meetingShown}>
+        <RideRoute
+          rideId={booking.rideId}
+          fromSeq={booking.fromSeq}
+          toSeq={booking.toSeq}
+          pickup={
+            booking.pickupLat != null && booking.pickupLon != null
+              ? { lat: booking.pickupLat, lon: booking.pickupLon, time: booking.boardingTime }
+              : undefined
+          }
+        />
+      </Collapse>
+      {chatShown && active && <RideChat rideId={booking.rideId} rideStatus={ride.data?.status} />}
+      {booking.status === 'COMPLETED' && booking.passengerConfirmed == null && <TripConfirmation bookingId={booking.id} />}
+      {booking.status === 'COMPLETED' && !booking.passengerRated && <RateForm bookingId={booking.id} legend={t('Rate your driver')} />}
+    </Card>
+  );
+}
+
 export function BookingsPage() {
   const t = useT();
   const queryClient = useQueryClient();
-  const bookings = useQuery({ queryKey: ['bookings'], queryFn: () => api<Booking[]>('/bookings') });
+  const bookings = useQuery({ queryKey: ['bookings'], queryFn: () => api<Booking[]>('/bookings'), refetchInterval: LIVE_MS.lists });
   // The same for every booking and rarely changed, so asked for once.
   const requestTerms = useQuery({ queryKey: ['booking-terms'], queryFn: () => api<RequestTerms>('/booking-terms'), staleTime: Infinity });
-  const [meetingShown, setMeetingShown] = useState<number | null>(null);
-  const [chatShown, setChatShown] = useState<number | null>(null);
   const cancel = useMutation({
     mutationFn: (id: number) => api<Booking>(`/bookings/${id}/cancel`, { method: 'POST' }),
     onSettled: () => void queryClient.invalidateQueries({ queryKey: ['bookings'] }),
   });
-  const cancellable = (booking: Booking) => booking.status === 'PENDING' || booking.status === 'CONFIRMED';
+  const upcoming = bookings.data?.filter(cancellable) ?? [];
+  const past = bookings.data?.filter((booking) => !cancellable(booking)) ?? [];
+  const list = (shown: Booking[]) =>
+    shown.map((booking) => (
+      <BookingCard key={booking.id} booking={booking} requestTerms={requestTerms.data} cancelling={cancel.isPending} onCancel={() => cancel.mutate(booking.id)} />
+    ));
 
   return (
-    <Page title={t('My bookings')}>
+    <Page title={t('My bookings')} aside={bookings.data && bookings.data.length > 0 ? <LiveStatus query={bookings} /> : undefined}>
       {cancel.error && <Notice tone="error">{cancel.error.message}</Notice>}
       <QueryState
         isPending={bookings.isPending}
@@ -833,129 +1156,11 @@ export function BookingsPage() {
         onRetry={() => void bookings.refetch()}
       />
       {bookings.data && bookings.data.length > 0 && <SimulatedPaymentNotice />}
-      {bookings.data?.some(cancellable) && <RefundTerms />}
-      {bookings.data?.map((booking) => (
-        <Card key={booking.id}>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="flex items-center gap-2 text-lg font-bold tracking-tight text-slate-900">
-                <span aria-hidden="true" className="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-teal-600/[0.12] text-teal-800">
-                  <RouteIcon className="h-4 w-4" />
-                </span>
-                {t(booking.fromStop)} → {t(booking.toStop)}
-              </p>
-              <div className="mt-3 space-y-1.5">
-              <Detail icon={Clock}>
-                {booking.seats === 1
-                  ? t('Leaves {time} · {n} seat', { time: formatDateTime(booking.boardingTime), n: booking.seats })
-                  : t('Leaves {time} · {n} seats', { time: formatDateTime(booking.boardingTime), n: booking.seats })}
-              </Detail>
-              {booking.pickupLat != null && (
-                <Detail icon={Footprints} tone="text-teal-800">{t('Picked up at your own point after {stop}, not at the stop.', { stop: t(booking.fromStop) })}</Detail>
-              )}
-              {booking.driverName && (
-                <Detail icon={UserRound}>
-                  {t('Driver')}{' '}
-                  <Link to={`/users/${booking.driverId}`} className="font-semibold text-teal-800 hover:underline">
-                    {booking.driverName}
-                  </Link>
-                  {/* What the driver typed: shown as text, not translated. */}
-                  {booking.vehicle && ` · ${booking.vehicle}`}
-                </Detail>
-              )}
-              </div>
-              <p className="mt-1.5 flex items-start gap-2 text-sm text-slate-600">
-                <Wallet aria-hidden="true" className="mt-0.5 h-4 w-4 flex-none opacity-70" />
-                {booking.total === null
-                  ? t('Fare {amount}', { amount: formatRupees(booking.price) })
-                  : t('{total} ({fare} fare + {fee} service fee)', {
-                      total: formatRupees(booking.total),
-                      fare: formatRupees(booking.price),
-                      fee: formatRupees(booking.serviceFee ?? 0),
-                    })}
-                {booking.refunded !== null && ` · ${t('{amount} returned', { amount: formatRupees(booking.refunded) })}`}
-                {booking.payAfterRide &&
-                  ` · ${
-                    booking.paymentStatus === 'DUE' && booking.amountDue != null
-                      ? t('{amount} due', { amount: formatRupees(booking.amountDue) })
-                      : booking.paymentStatus === 'SETTLED'
-                        ? t('paid after the ride')
-                        : booking.paymentStatus === 'VOID'
-                          ? t('nothing owed')
-                          : t('pay after the ride')
-                  }`}
-              </p>
-              <p className="mt-2">
-                <StatusBadge status={booking.status} />
-              </p>
-              {booking.flexTier && booking.flexTier !== 'EXACT' && (
-                <p className="mt-2 text-sm text-slate-600">
-                  {booking.flexTier === 'FLEXIBLE'
-                    ? t('If the driver withdraws, you are booked on another ride within 2 hours.')
-                    : t('If the driver withdraws, you are booked on another ride that day.')}
-                </p>
-              )}
-              {booking.status === 'PENDING' && requestTerms.data && (
-                <p className="mt-2 text-sm text-slate-600">
-                  {t('The driver has until {time} to answer. After that the request closes and everything you paid is returned.', {
-                    time: formatDateTime(answerBy(booking.createdAt, booking.boardingTime, requestTerms.data)),
-                  })}
-                </p>
-              )}
-              {cancellable(booking) && <BoardingPassView bookingId={booking.id} />}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {cancellable(booking) && (
-                <>
-                  <Button
-                    tone="secondary"
-                    aria-expanded={meetingShown === booking.id}
-                    onClick={() => setMeetingShown(meetingShown === booking.id ? null : booking.id)}
-                  >
-                    {meetingShown === booking.id ? t('Hide meeting point') : t('Show meeting point')}
-                  </Button>
-                  <Button
-                    tone="secondary"
-                    aria-expanded={chatShown === booking.id}
-                    onClick={() => setChatShown(chatShown === booking.id ? null : booking.id)}
-                  >
-                    {chatShown === booking.id ? t('Close chat') : t('Open chat')}
-                  </Button>
-                  <ConfirmButton
-                    label={t('Cancel booking')}
-                    confirmLabel={t('Yes, cancel it')}
-                    disabled={cancel.isPending}
-                    onConfirm={() => cancel.mutate(booking.id)}
-                  />
-                </>
-              )}
-            </div>
-          </div>
-          {booking.status === 'CONFIRMED' && (
-            <div className="mt-3">
-              <CallButton bookingId={booking.id} label={t('Call the driver')} />
-            </div>
-          )}
-          {booking.paymentStatus === 'DUE' && booking.amountDue != null && (
-            <PayDue bookingId={booking.id} amount={booking.amountDue} description={`${t(booking.fromStop)} – ${t(booking.toStop)}`} />
-          )}
-          <Collapse open={meetingShown === booking.id}>
-            <RideRoute
-              rideId={booking.rideId}
-              fromSeq={booking.fromSeq}
-              toSeq={booking.toSeq}
-              pickup={
-                booking.pickupLat != null && booking.pickupLon != null
-                  ? { lat: booking.pickupLat, lon: booking.pickupLon, time: booking.boardingTime }
-                  : undefined
-              }
-            />
-          </Collapse>
-          {chatShown === booking.id && cancellable(booking) && <RideChat rideId={booking.rideId} />}
-          {booking.status === 'COMPLETED' && booking.passengerConfirmed == null && <TripConfirmation bookingId={booking.id} />}
-          {booking.status === 'COMPLETED' && !booking.passengerRated && <RateForm bookingId={booking.id} legend={t('Rate your driver')} />}
-        </Card>
-      ))}
+      {upcoming.length > 0 && <RefundTerms />}
+      {upcoming.length > 0 && <h2 className="text-lg font-bold tracking-tight text-slate-900">{t('Coming up')}</h2>}
+      {list(upcoming)}
+      {past.length > 0 && <h2 className="pt-2 text-lg font-bold tracking-tight text-slate-900">{t('Earlier')}</h2>}
+      {list(past)}
     </Page>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PLACES, placeNamed, REGIONS, roughDriveMinutes } from './places';
+import { nearestPlace, PLACES, placeNamed, REGIONS, roughDriveMinutes } from './places';
 
 describe('the places a ride can use', () => {
   it('has no name twice, for the name is what the form and the server go by', () => {
@@ -27,6 +27,13 @@ describe('the places a ride can use', () => {
 
   it('knows nothing of a place not listed', () => {
     expect(placeNamed('Atlantis')).toBeUndefined();
+  });
+});
+
+describe('nearestPlace', () => {
+  it('finds the listed city closest to a point', () => {
+    expect(nearestPlace(16.71, 74.24).name).toBe('Kolhapur');
+    expect(nearestPlace(13.1, 80.3).name).toBe('Chennai');
   });
 });
 

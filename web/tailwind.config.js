@@ -16,9 +16,9 @@ export default {
       colors: {
         slate: shades('slate', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]),
         teal: shades('teal', [50, 100, 200, 600, 700, 800, 900]),
-        red: shades('red', [50, 100, 200, 300, 600, 700, 800, 900]),
-        emerald: shades('emerald', [50, 100, 200, 800, 900]),
-        amber: shades('amber', [50, 100, 200, 800, 900]),
+        red: shades('red', [50, 100, 200, 300, 500, 600, 700, 800, 900]),
+        emerald: shades('emerald', [50, 100, 200, 500, 800, 900]),
+        amber: shades('amber', [50, 100, 200, 500, 800, 900]),
         sky: shades('sky', [100, 900]),
         canvas: token('canvas'),
         surface: token('surface'),
@@ -44,6 +44,12 @@ export default {
       boxShadow: {
         card: '0 1px 2px rgb(0 0 0 / 0.04), 0 10px 30px -18px rgb(0 0 0 / 0.18)',
         float: '0 12px 40px -12px rgb(0 0 0 / 0.28), 0 2px 6px rgb(0 0 0 / 0.06)',
+        // A soft light in the role's tint, for what is under way.
+        glow: '0 10px 34px -10px rgb(var(--accent) / 0.55)',
+      },
+      backgroundImage: {
+        // The role's tint as a gradient. White text stays readable on it in both themes.
+        tint: 'linear-gradient(135deg, rgb(var(--accent)), rgb(var(--accent-strong)))',
       },
       transitionTimingFunction: { settle, spring },
       keyframes: {
@@ -54,6 +60,9 @@ export default {
         'badge-pop': { '0%': { transform: 'scale(0.4)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } },
         shimmer: { from: { backgroundPosition: '200% 0' }, to: { backgroundPosition: '-200% 0' } },
         'route-dash': { to: { strokeDashoffset: '-24' } },
+        'live-ping': { '0%': { transform: 'scale(1)', opacity: '0.7' }, '80%, 100%': { transform: 'scale(2.8)', opacity: '0' } },
+        'soft-ping': { '0%': { transform: 'scale(1)', opacity: '0.45' }, '80%, 100%': { transform: 'scale(1.55)', opacity: '0' } },
+        'menu-in': { from: { opacity: '0', transform: 'translateY(-6px) scale(0.98)' }, to: { opacity: '1', transform: 'none' } },
       },
       animation: {
         'page-in': `page-in 0.5s ${settle} both`,
@@ -63,6 +72,9 @@ export default {
         'badge-pop': `badge-pop 0.5s ${spring} both`,
         shimmer: 'shimmer 1.6s ease-in-out infinite',
         'route-dash': 'route-dash 1.2s linear infinite',
+        'live-ping': 'live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite',
+        'soft-ping': 'soft-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
+        'menu-in': `menu-in 0.22s ${settle} both`,
       },
     },
   },

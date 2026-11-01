@@ -485,6 +485,15 @@ export interface RequestTerms {
   closesMinutesBeforeBoarding: number;
 }
 
+/** How a stretch of a ride stands now: what keeps search results current without searching again. */
+export interface Availability {
+  rideId: number;
+  fromSeq: number;
+  toSeq: number;
+  status: RideStatus;
+  seatsAvailable: number;
+}
+
 /** Seats kept from other passengers for a few minutes. Not a booking. */
 export interface SeatHold {
   rideId: number;

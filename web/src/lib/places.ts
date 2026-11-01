@@ -226,16 +226,25 @@ const byName = new Map(PLACES.map((place) => [place.name, place]));
 
 export const placeNamed = (name: string): Place | undefined => byName.get(name);
 
+/** The straight line between two points, in kilometres. */
+function kmBetween(from: { lat: number; lon: number }, to: { lat: number; lon: number }): number {
+  const radians = (degrees: number) => (degrees * Math.PI) / 180;
+  const dLat = radians(to.lat - from.lat);
+  const dLon = radians(to.lon - from.lon);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(radians(from.lat)) * Math.cos(radians(to.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
 /**
  * A rough driving time between two points, in minutes, to the next five, only to pre-fill the
  * publish form until the driver works out the route or types their own: the straight line, a
  * third longer for how roads wind, at 50 km/h.
  */
 export function roughDriveMinutes(from: { lat: number; lon: number }, to: { lat: number; lon: number }): number {
-  const radians = (degrees: number) => (degrees * Math.PI) / 180;
-  const dLat = radians(to.lat - from.lat);
-  const dLon = radians(to.lon - from.lon);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(radians(from.lat)) * Math.cos(radians(to.lat)) * Math.sin(dLon / 2) ** 2;
-  const km = 2 * 6371 * Math.asin(Math.sqrt(h));
-  return Math.max(5, Math.ceil(((km * 1.33) / 50) * 12) * 5);
+  return Math.max(5, Math.ceil(((kmBetween(from, to) * 1.33) / 50) * 12) * 5);
+}
+
+/** The listed city closest to a point. */
+export function nearestPlace(lat: number, lon: number): Place {
+  return PLACES.reduce((best, place) => (kmBetween({ lat, lon }, place) < kmBetween({ lat, lon }, best) ? place : best));
 }

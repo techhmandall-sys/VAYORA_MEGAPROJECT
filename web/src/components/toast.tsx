@@ -5,13 +5,19 @@ import { createPortal } from 'react-dom';
 
 type ToastTone = 'success' | 'error' | 'info';
 
-interface Toast {
+interface ToastOptions {
+  /** Pressing the toast does this: where it is about. */
+  onClick?: () => void;
+  lingerMs?: number;
+}
+
+interface Toast extends ToastOptions {
   id: number;
   text: string;
   tone: ToastTone;
 }
 
-type ShowToast = (text: string, tone?: ToastTone) => void;
+type ShowToast = (text: string, tone?: ToastTone, options?: ToastOptions) => void;
 
 // Outside a provider a toast simply does not show: nothing breaks.
 const ToastContext = createContext<ShowToast>(() => {});
@@ -29,10 +35,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const next = useRef(0);
 
-  const show = useCallback<ShowToast>((text, tone = 'success') => {
+  const show = useCallback<ShowToast>((text, tone = 'success', options = {}) => {
     const id = ++next.current;
-    setToasts((shown) => [...shown.slice(-2), { id, text, tone }]);
-    window.setTimeout(() => setToasts((shown) => shown.filter((toast) => toast.id !== id)), SHOWN_FOR_MS);
+    setToasts((shown) => [...shown.slice(-2), { id, text, tone, ...options }]);
+    window.setTimeout(() => setToasts((shown) => shown.filter((toast) => toast.id !== id)), options.lingerMs ?? SHOWN_FOR_MS);
   }, []);
 
   return (
@@ -47,6 +53,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <AnimatePresence initial={false}>
             {toasts.map((toast) => {
               const Icon = icons[toast.tone];
+              const body = (
+                <>
+                  <Icon aria-hidden="true" className={`mt-0.5 h-5 w-5 flex-none ${tones[toast.tone]}`} />
+                  <span>{toast.text}</span>
+                </>
+              );
               return (
                 <motion.div
                   key={toast.id}
@@ -55,10 +67,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -16, scale: 0.96 }}
                   transition={{ type: 'spring', stiffness: 520, damping: 34 }}
-                  className="glass pointer-events-auto flex max-w-md items-center gap-2.5 rounded-full px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-float ring-1 ring-slate-900/[0.06]"
+                  className="glass pointer-events-auto max-w-md rounded-[1.4rem] text-sm font-semibold text-slate-900 shadow-float ring-1 ring-slate-900/[0.06]"
                 >
-                  <Icon aria-hidden="true" className={`h-5 w-5 flex-none ${tones[toast.tone]}`} />
-                  <span>{toast.text}</span>
+                  {toast.onClick ? (
+                    <button
+                      type="button"
+                      onClick={toast.onClick}
+                      className="flex w-full items-start gap-2.5 rounded-[1.4rem] px-4 py-2.5 text-left hover:bg-slate-900/[0.04] focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30"
+                    >
+                      {body}
+                    </button>
+                  ) : (
+                    <div className="flex items-start gap-2.5 px-4 py-2.5">{body}</div>
+                  )}
                 </motion.div>
               );
             })}

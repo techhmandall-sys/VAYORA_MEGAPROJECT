@@ -57,6 +57,18 @@ export const formatDayMonth = (iso: string): string => dateFormat('dayMonth', { 
 
 export const formatMonthYear = (iso: string): string => dateFormat('monthYear', { month: 'long', year: 'numeric' }).format(new Date(iso));
 
+/**
+ * How long ago, in the reader's language: "3 minutes ago". Never ahead of now: the clock on screen
+ * is read only every few seconds, and what has only just happened is "now", not "in 2 seconds".
+ */
+export function formatAgo(when: string | number, now: number = Date.now()): string {
+  const seconds = Math.min(0, Math.round(((typeof when === 'number' ? when : Date.parse(when)) - now) / 1000));
+  const size = Math.abs(seconds);
+  const [value, unit]: [number, Intl.RelativeTimeFormatUnit] =
+    size < 60 ? [seconds, 'second'] : size < 3600 ? [Math.round(seconds / 60), 'minute'] : size < 86_400 ? [Math.round(seconds / 3600), 'hour'] : [Math.round(seconds / 86_400), 'day'];
+  return new Intl.RelativeTimeFormat(LOCALES[language], { numeric: 'auto', style: 'short', numberingSystem: 'latn' } as Intl.RelativeTimeFormatOptions).format(value, unit);
+}
+
 export const formatRupees = (amount: number): string =>
   new Intl.NumberFormat(LOCALES[language], {
     style: 'currency',

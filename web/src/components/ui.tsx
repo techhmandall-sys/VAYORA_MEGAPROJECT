@@ -1,4 +1,5 @@
-import { AlertCircle, CheckCircle2, Inbox, Info, Minus, Plus, type LucideIcon } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, Inbox, Info, Loader2, Minus, Plus, type LucideIcon } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { forwardRef, useId, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 
 import { msg, useT } from '../lib/i18n';
@@ -7,7 +8,7 @@ import type { BookingStatus, RideStatus } from '../lib/types';
 import { Sheet } from './sheet';
 
 // Fields as iOS draws them: rounded, quiet until touched, a soft glow of the tint when focused.
-const controlBase =
+export const controlBase =
   'block w-full rounded-xl border border-slate-200 bg-surface px-3.5 py-2.5 text-[15px] text-slate-900 shadow-sm ' +
   'placeholder:text-slate-400 hover:border-slate-300 focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-600/15 ' +
   'aria-[invalid=true]:border-red-600 aria-[invalid=true]:ring-red-600/15';
@@ -19,13 +20,13 @@ interface FieldShell {
   hint?: string;
 }
 
-function useFieldIds(error?: string, hint?: string) {
+export function useFieldIds(error?: string, hint?: string) {
   const id = useId();
   const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
   return { id, describedBy };
 }
 
-function FieldFrame({ id, label, error, hint, children }: FieldShell & { id: string; children: ReactNode }) {
+export function FieldFrame({ id, label, error, hint, children }: FieldShell & { id: string; children: ReactNode }) {
   // Validation messages come from the schemas in English; this is where they are translated.
   const t = useT();
   return (
@@ -105,11 +106,17 @@ const tones: Record<Tone, string> = {
   danger: 'bg-danger text-white shadow-md shadow-danger/25 hover:bg-danger-strong',
 };
 
-/** A capsule that gives under the finger, as iOS buttons do. */
-export function Button({ tone = 'primary', className = '', ...button }: { tone?: Tone } & ButtonHTMLAttributes<HTMLButtonElement>) {
+/**
+ * A capsule that gives under the finger, as iOS buttons do.
+ *
+ * @param busy the button's action is under way: it shows a spinner and cannot be pressed again
+ */
+export function Button({ tone = 'primary', className = '', busy = false, disabled, children, ...button }: { tone?: Tone; busy?: boolean } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
+      disabled={disabled || busy}
+      aria-busy={busy || undefined}
       className={
         `inline-flex select-none items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ` +
         `transition-[transform,background-color,box-shadow,opacity] duration-150 ease-settle active:scale-[0.96] ` +
@@ -117,7 +124,101 @@ export function Button({ tone = 'primary', className = '', ...button }: { tone?:
         `disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none ${tones[tone]} ${className}`
       }
       {...button}
-    />
+    >
+      {busy && <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />}
+      {children}
+    </button>
+  );
+}
+
+/** Someone's initials on the role's tint. */
+export function Avatar({ initials, size = 'md' }: { initials: string; size?: 'sm' | 'md' | 'lg' }) {
+  const sizes = { sm: 'h-8 w-8 text-xs', md: 'h-10 w-10 text-sm', lg: 'h-12 w-12 text-base' };
+  return (
+    <span aria-hidden="true" className={`inline-flex flex-none items-center justify-center rounded-full bg-tint font-bold text-white shadow-sm ${sizes[size]}`}>
+      {initials}
+    </span>
+  );
+}
+
+/** One choice of a few, drawn as pills, with a marker that slides to the one chosen. */
+export function Segmented<T extends string>({ label, value, options, onChange }: {
+  label: string;
+  value: T;
+  options: readonly { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  const id = useId();
+  return (
+    <div>
+      <p id={id} className="text-[13px] font-medium text-slate-600">
+        {label}
+      </p>
+      <div role="radiogroup" aria-labelledby={id} className="no-scrollbar mt-1.5 flex gap-1 overflow-x-auto rounded-full bg-slate-900/[0.05] p-1">
+        {options.map((option) => {
+          const chosen = option.value === value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={chosen}
+              onClick={() => onChange(option.value)}
+              className={`relative shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 ${
+                chosen ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {chosen && (
+                <motion.span
+                  layoutId={`segment-${id}`}
+                  aria-hidden="true"
+                  transition={{ type: 'spring', stiffness: 520, damping: 40 }}
+                  className="absolute inset-0 rounded-full bg-surface shadow-sm ring-1 ring-slate-900/[0.06]"
+                />
+              )}
+              <span className="relative">{option.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** How full something is, as a thin bar that glides when it changes. */
+export function Meter({ fraction, tone = 'tint', label }: { fraction: number; tone?: 'tint' | 'amber' | 'red'; label: string }) {
+  const colour = { tint: 'bg-teal-600', amber: 'bg-amber-500', red: 'bg-red-500' }[tone];
+  const percent = Math.round(Math.max(0, Math.min(1, fraction)) * 100);
+  return (
+    <div role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} className="h-1.5 overflow-hidden rounded-full bg-slate-900/[0.08]">
+      <div className={`h-full rounded-full transition-[width] duration-700 ease-settle ${colour}`} style={{ width: `${percent}%` }} />
+    </div>
+  );
+}
+
+/** A figure that matters, with what it counts beneath it. */
+export function Stat({ icon: Icon, label, tone = 'bg-teal-100 text-teal-900', children }: { icon: LucideIcon; label: string; tone?: string; children: ReactNode }) {
+  return (
+    <div className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-slate-900/[0.04] transition-transform duration-300 ease-settle hover:-translate-y-0.5">
+      <span aria-hidden="true" className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <p className="mt-3 text-[28px] font-bold leading-tight tracking-tight tabular-nums text-slate-900">{children}</p>
+      <p className="text-sm font-medium text-slate-600">{label}</p>
+    </div>
+  );
+}
+
+/** More to read, folded away until asked for. It stays in the page for find-in-page and screen readers. */
+export function More({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <details className="more">
+      <summary className="inline-flex items-center gap-1 rounded-full py-1 text-sm font-medium text-teal-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30">
+        {label}
+        <ChevronDown aria-hidden="true" className="more-chevron h-4 w-4" />
+      </summary>
+      <div className="mt-2">{children}</div>
+    </details>
   );
 }
 
@@ -266,8 +367,16 @@ export function StatusBadge({ status }: { status: BookingStatus | RideStatus }) 
   const t = useT();
   const [label, style] = statusLabel[status];
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${style}`}>
-      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+    // Keyed by the status, so a booking that changes while on screen pops into its new state.
+    <span key={status} className={`inline-flex animate-badge-pop items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${style}`}>
+      {status === 'IN_PROGRESS' ? (
+        <span aria-hidden="true" className="relative flex h-1.5 w-1.5">
+          <span className="absolute inline-flex h-full w-full animate-live-ping rounded-full bg-current" />
+          <span className="relative h-1.5 w-1.5 rounded-full bg-current" />
+        </span>
+      ) : (
+        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+      )}
       {t(label)}
     </span>
   );
@@ -304,19 +413,31 @@ export function Detail({ icon: Icon, tone = 'text-slate-600', children }: { icon
   );
 }
 
-/** A screen: a large title, as in iOS, and its sections arriving one after another. */
-export function Page({ title, children }: { title: string; children: ReactNode }) {
+/**
+ * A screen: a large title, as in iOS, and its sections arriving one after another.
+ *
+ * @param aside beside the title: how current the screen is, or its main action
+ */
+export function Page({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
   return (
     <section className="stagger space-y-6">
-      <h1 className="text-[28px] font-bold leading-tight tracking-tight text-slate-900 sm:text-[34px]">{title}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h1 className="text-[28px] font-bold leading-tight tracking-tight text-slate-900 sm:text-[34px]">{title}</h1>
+        {aside}
+      </div>
       {children}
     </section>
   );
 }
 
-export function Card({ children }: { children: ReactNode }) {
+/** @param glow what is under way right now stands out, in the role's tint */
+export function Card({ children, glow = false }: { children: ReactNode; glow?: boolean }) {
   return (
-    <div className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-slate-900/[0.04] transition-shadow duration-300 hover:shadow-float sm:p-5">
+    <div
+      className={`rounded-2xl bg-surface p-4 transition-shadow duration-300 sm:p-5 ${
+        glow ? 'shadow-glow ring-2 ring-teal-600/40' : 'shadow-card ring-1 ring-slate-900/[0.04] hover:shadow-float'
+      }`}
+    >
       {children}
     </div>
   );

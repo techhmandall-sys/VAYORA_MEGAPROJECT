@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Car, CarFront, IndianRupee, Users } from 'lucide-react';
+import { Car, CarFront, IndianRupee, MessagesSquare, Users } from 'lucide-react';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { LeavesIn, LiveStatus, useTimeAhead } from '../components/live';
 import { SimulatedPaymentNotice } from '../components/payment';
 import { RateForm } from '../components/rating';
 import { CheckCode } from '../components/boarding';
@@ -16,12 +17,13 @@ import { RouteMap } from '../components/RouteMap';
 import { WeeklyPayoutChart } from '../components/charts';
 import { Collapse } from '../components/collapse';
 import { CountUp } from '../components/countup';
-import { Button, Card, ConfirmButton, Notice, Page, QueryState, SelectField, StatusBadge, TextField } from '../components/ui';
+import { Button, Card, ConfirmButton, Meter, Notice, Page, QueryState, SelectField, Stat, StatusBadge, TextField } from '../components/ui';
 import { api } from '../lib/api';
-import { PlaceOptions } from '../components/places';
+import { PlaceField } from '../components/places';
 import { placeNamed, roughDriveMinutes } from '../lib/places';
 import { formatDateTime, formatRupees, formatTime } from '../lib/format';
 import { msg, useT, useUnits } from '../lib/i18n';
+import { LIVE_MS, useNow } from '../lib/live';
 import { rideSchema, toPublishRequest, vehicleSchema, type RideForm, type VehicleForm, MAX_DETOUR_MINUTES, MAX_REPEAT_WEEKS, ridesPublished, toVehicleRequest } from '../lib/schemas';
 import { comfortLabels, luggageLabels, vehiclePhrases } from '../lib/vehicle';
 import type { Booking, Comfort, Luggage, MyProfile, Ride, RoutePreview, Settlement, Vehicle } from '../lib/types';
@@ -466,15 +468,12 @@ export function PublishRidePage() {
                   const between = index > 0 && index < fields.length - 1;
                   return (
                     <div key={field.id} className="grid items-end gap-3 rounded-2xl border border-slate-200 p-3 sm:grid-cols-3">
-                      <SelectField
+                      <PlaceField
                         label={index === 0 ? t('From') : between ? t('Stop on the way {n}', { n: index }) : t('To')}
                         value={stop?.name ?? ''}
                         error={formState.errors.stops?.[index]?.name?.message}
-                        onChange={(event) => choosePlace(index, event.target.value)}
-                      >
-                        {!stop?.name && <option value="">{t('Choose a place')}</option>}
-                        <PlaceOptions />
-                      </SelectField>
+                        onChange={(name) => choosePlace(index, name)}
+                      />
                       {/* The first stop is where the ride leaves at the time above: it has no minutes or price of its own. */}
                       {index > 0 && stop?.name && (
                         <>
@@ -624,7 +623,7 @@ export function PublishRidePage() {
                 <SummaryRow label={t('Rides to publish')} value={String(publishing)} />
               </dl>
             </div>
-            <Button type="submit" disabled={publish.isPending} className="w-full py-3">
+            <Button type="submit" busy={publish.isPending} className="w-full py-3">
               {publish.isPending ? t('Publishing…') : t('Publish ride')}
             </Button>
           </aside>
@@ -659,11 +658,16 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** The most seats taken at once on a ride: its fullest stretch. */
+const seatsTaken = (ride: Ride) => Math.max(0, ...ride.segments.map((segment) => segment.seatsTotal - segment.seatsAvailable));
+
 export function RidesPage() {
   const t = useT();
   const units = useUnits();
   const queryClient = useQueryClient();
-  const rides = useQuery({ queryKey: ['rides'], queryFn: () => api<Ride[]>('/rides/mine') });
+  const rides = useQuery({ queryKey: ['rides'], queryFn: () => api<Ride[]>('/rides/mine'), refetchInterval: LIVE_MS.lists });
+  const ahead = rides.data?.filter((ride) => ride.status === 'SCHEDULED' || ride.status === 'IN_PROGRESS') ?? [];
+  const next = ahead.filter((ride) => ride.status === 'SCHEDULED').map((ride) => ride.departureTime).sort()[0];
   const act = useMutation({
     mutationFn: ({ ride, action }: { ride: number; action: 'start' | 'complete' | 'cancel' }) =>
       api<Ride>(`/rides/${ride}/${action}`, { method: 'POST' }),
@@ -675,7 +679,24 @@ export function RidesPage() {
   });
 
   return (
-    <Page title={t('My rides')}>
+    <Page title={t('My rides')} aside={rides.data && rides.data.length > 0 ? <LiveStatus query={rides} /> : undefined}>
+      {ahead.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Stat icon={Car} label={t('Rides ahead')}>
+            <CountUp value={ahead.length} format={(n) => String(Math.round(n))} />
+          </Stat>
+          <Stat icon={Users} label={t('Seats booked on them')} tone="bg-emerald-100 text-emerald-900">
+            <CountUp value={ahead.reduce((sum, ride) => sum + seatsTaken(ride), 0)} format={(n) => String(Math.round(n))} />
+          </Stat>
+          {next && (
+            <div className="col-span-2 flex flex-col justify-center rounded-2xl bg-tint p-4 text-white shadow-glow sm:col-span-1">
+              <p className="text-sm font-medium text-white/85">{t('Your next ride')}</p>
+              <p className="mt-1 text-lg font-bold">{formatDateTime(next)}</p>
+              <p className="text-sm text-white/85"><NextRideIn time={next} /></p>
+            </div>
+          )}
+        </div>
+      )}
       {series.data && (
         <Notice tone="success">
           {t('{n} rides cancelled. Every passenger has been refunded and told.', { n: series.data.withdrawn })}
@@ -692,10 +713,13 @@ export function RidesPage() {
         onRetry={() => void rides.refetch()}
       />
       {rides.data?.map((ride) => (
-        <Card key={ride.id}>
+        <Card key={ride.id} glow={ride.status === 'IN_PROGRESS'}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="font-medium">{ride.stops.map((stop) => t(stop.name)).join(' → ')}</p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <p className="text-lg font-bold tracking-tight text-slate-900">{ride.stops.map((stop) => t(stop.name)).join(' → ')}</p>
+                {ride.status === 'SCHEDULED' && <LeavesIn time={ride.departureTime} />}
+              </div>
               <p className="mt-1 text-sm text-slate-600">
                 {t('Leaves {time}', { time: formatDateTime(ride.departureTime) })} ·{' '}
                 {ride.instantBooking ? t('Instant booking') : t('You approve requests')}
@@ -724,7 +748,7 @@ export function RidesPage() {
             <div className="flex flex-wrap gap-2">
               {ride.status === 'SCHEDULED' && (
                 <>
-                  <Button disabled={act.isPending} onClick={() => act.mutate({ ride: ride.id, action: 'start' })}>
+                  <Button disabled={act.isPending} busy={act.isPending && act.variables?.ride === ride.id && act.variables.action === 'start'} onClick={() => act.mutate({ ride: ride.id, action: 'start' })}>
                     {t('Start ride')}
                   </Button>
                   <ConfirmButton
@@ -754,18 +778,24 @@ export function RidesPage() {
               )}
             </div>
           </div>
-          <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-600">
-            {ride.segments.map((segment) => (
-              <li key={segment.seq}>
-                {t('{from} → {to}: {free} of {total} seats free, {price}', {
-                  from: t(ride.stops[segment.seq].name),
-                  to: t(ride.stops[segment.seq + 1].name),
-                  free: segment.seatsAvailable,
-                  total: segment.seatsTotal,
-                  price: formatRupees(segment.price),
-                })}
-              </li>
-            ))}
+          <ul className="mt-4 grid gap-x-6 gap-y-3 text-sm text-slate-600 sm:grid-cols-2">
+            {ride.segments.map((segment) => {
+              const stretch = t('{from} → {to}: {free} of {total} seats free, {price}', {
+                from: t(ride.stops[segment.seq].name),
+                to: t(ride.stops[segment.seq + 1].name),
+                free: segment.seatsAvailable,
+                total: segment.seatsTotal,
+                price: formatRupees(segment.price),
+              });
+              return (
+                <li key={segment.seq}>
+                  {stretch}
+                  <div className="mt-1.5">
+                    <Meter fraction={segment.seatsTotal === 0 ? 0 : (segment.seatsTotal - segment.seatsAvailable) / segment.seatsTotal} label={stretch} />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
           <RideBookings ride={ride} />
         </Card>
@@ -784,6 +814,7 @@ function RideBookings({ ride }: { ride: Ride }) {
     queryKey: ['rides', ride.id, 'bookings'],
     queryFn: () => api<Booking[]>(`/rides/${ride.id}/bookings`),
     enabled: open,
+    refetchInterval: open && live ? LIVE_MS.lists : false,
   });
   const decide = useMutation({
     mutationFn: ({ booking, action }: { booking: number; action: 'accept' | 'reject' | 'no-show' | 'cash-received' }) =>
@@ -799,10 +830,12 @@ function RideBookings({ ride }: { ride: Ride }) {
     <div className="mt-4 border-t border-slate-200 pt-3">
       <div className="flex flex-wrap gap-2">
         <Button tone="secondary" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <Users aria-hidden="true" className="h-4 w-4" />
           {open ? t('Hide passengers') : t('Show passengers')}
         </Button>
         {live && (
           <Button tone="secondary" aria-expanded={chatOpen} onClick={() => setChatOpen(!chatOpen)}>
+            <MessagesSquare aria-hidden="true" className="h-4 w-4" />
             {chatOpen ? t('Close chat') : t('Open chat')}
           </Button>
         )}
@@ -884,7 +917,7 @@ function RideBookings({ ride }: { ride: Ride }) {
                     )}
                     {booking.status === 'PENDING' && ride.status === 'SCHEDULED' && (
                       <>
-                        <Button disabled={decide.isPending} onClick={() => decide.mutate({ booking: booking.id, action: 'accept' })}>
+                        <Button disabled={decide.isPending} busy={decide.isPending && decide.variables?.booking === booking.id && decide.variables.action === 'accept'} onClick={() => decide.mutate({ booking: booking.id, action: 'accept' })}>
                           {t('Accept')}
                         </Button>
                         <Button
@@ -926,6 +959,15 @@ function RideBookings({ ride }: { ride: Ride }) {
   );
 }
 
+/** The next ride's countdown, its own component so that only it re-renders with the clock. */
+function NextRideIn({ time }: { time: string }) {
+  const t = useT();
+  const ahead = useTimeAhead();
+  const now = useNow(30_000);
+  const left = Date.parse(time) - now;
+  return <>{left > 0 ? t('Leaves in {time}', { time: ahead(left) }) : t('Time to set off')}</>;
+}
+
 const settlementReason: Record<Settlement['reason'], string> = {
   TRIP_COMPLETED: msg('Trip completed'),
   PASSENGER_NO_SHOW: msg('Passenger did not board'),
@@ -937,6 +979,7 @@ export function EarningsPage() {
   const settlements = useQuery({ queryKey: ['settlements'], queryFn: () => api<Settlement[]>('/settlements') });
   const cashFees = useQuery({ queryKey: ['settlements', 'cash-fees'], queryFn: () => api<{ held: number }>('/settlements/cash-fees') });
   const total = settlements.data?.reduce((sum, settlement) => sum + settlement.amount, 0) ?? 0;
+  const lastWeek = settlements.data?.filter((settlement) => Date.now() - Date.parse(settlement.createdAt) < 7 * 86_400_000) ?? [];
 
   return (
     <Page title={t('Earnings')}>
@@ -962,6 +1005,18 @@ export function EarningsPage() {
           <p className="mt-1 text-5xl font-bold tracking-tight tabular-nums text-slate-900">
             <CountUp value={total} format={formatRupees} />
           </p>
+          <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+            <div>
+              <dt className="text-slate-600">{t('In the last 7 days')}</dt>
+              <dd className="text-lg font-bold tabular-nums text-slate-900">
+                <CountUp value={lastWeek.reduce((sum, settlement) => sum + settlement.amount, 0)} format={formatRupees} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-600">{t('Payouts')}</dt>
+              <dd className="text-lg font-bold tabular-nums text-slate-900">{settlements.data.length}</dd>
+            </div>
+          </dl>
           <div className="mt-6">
             <WeeklyPayoutChart payouts={settlements.data} />
           </div>

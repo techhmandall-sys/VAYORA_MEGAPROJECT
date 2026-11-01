@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import { cleanup } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { forwardRef, useImperativeHandle, type ReactNode } from 'react';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import { MotionGlobalConfig } from 'framer-motion';
@@ -46,8 +46,17 @@ vi.mock('react-leaflet', () => {
     TileLayer: () => null,
     Polyline: ({ positions }: { positions: unknown[] }) => <span data-testid="route" data-points={positions.length} />,
     CircleMarker: ({ children }: { children: ReactNode }) => <span data-testid="marker">{children}</span>,
+    Marker: forwardRef<unknown, { children: ReactNode; position: [number, number] }>(function Marker({ children, position }, ref) {
+      useImperativeHandle(ref, () => ({ setLatLng: () => undefined }));
+      return <span data-testid="moving" data-at={position.join(',')}>{children}</span>;
+    }),
     Tooltip: ({ children }: { children: ReactNode }) => <span>{children}</span>,
-    useMap: () => ({ fitBounds: () => undefined, setView: () => undefined }),
+    useMap: () => ({
+      fitBounds: () => undefined,
+      setView: () => undefined,
+      getZoom: () => 8,
+      getBounds: () => ({ pad: () => ({ contains: () => true }) }),
+    }),
     useMapEvents: (handlers: { click?: typeof onClick }) => {
       onClick = handlers.click;
       return null;

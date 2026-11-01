@@ -1846,8 +1846,6 @@ export const hi: Record<string, string> = {
     'दिन पहले तक बुक कर सकते हैं',
   'languages':
     'भाषाएँ',
-  'Reliability':
-    'स्थिरता',
   'How it works':
     'यह कैसे काम करता है',
   'Choose where you start and where you are going, or a point on the map. Rides passing within reach are shown with the walk to where you board.':
@@ -2175,4 +2173,95 @@ export const hi: Record<string, string> = {
   'Durgapur': 'दुर्गापुर',
   'Kolkata': 'कोलकाता',
   'Siliguri': 'सिलीगुड़ी',
+  // The live interface
+  'Could not refresh':
+    'ताज़ा नहीं हो सका',
+  'Live':
+    'लाइव',
+  'updated {time}':
+    '{time} अपडेट हुआ',
+  'Refresh now':
+    'अभी ताज़ा करें',
+  'Leaves in {time}':
+    '{time} में रवाना',
+  'Back online':
+    'फिर से ऑनलाइन',
+  'You are offline. What you see may be out of date.':
+    'आप ऑफ़लाइन हैं। जो दिख रहा है वह पुराना हो सकता है।',
+  'See all notifications':
+    'सभी सूचनाएँ देखें',
+  'Recent notifications':
+    'हाल की सूचनाएँ',
+  'Operations':
+    'संचालन',
+  'Trust and safety':
+    'विश्वास और सुरक्षा',
+  'Insights':
+    'विश्लेषण',
+  'Recent':
+    'हाल के',
+  'Near me':
+    'मेरे पास',
+  'No place by that name is listed. Choose the nearest, then pick the exact point on the map.':
+    'इस नाम की कोई जगह सूची में नहीं है। सबसे नज़दीकी चुनें, फिर नक्शे पर सटीक स्थान चुनें।',
+  'Today':
+    'आज',
+  'Tomorrow':
+    'कल',
+  'Time left on the hold':
+    'होल्ड का बचा समय',
+  'Swap start and destination':
+    'शुरुआत और गंतव्य बदलें',
+  '{n} ride found':
+    '{n} सवारी मिली',
+  '{n} rides found':
+    '{n} सवारियाँ मिलीं',
+  'Seats are live':
+    'सीटें लाइव हैं',
+  'This ride is no longer available.':
+    'यह सवारी अब उपलब्ध नहीं है।',
+  'Too few seats are left on this ride now.':
+    'इस सवारी में अब बहुत कम सीटें बची हैं।',
+  'More about this ride':
+    'इस सवारी के बारे में और',
+  'Requested':
+    'अनुरोध किया',
+  'Accepted':
+    'स्वीकृत',
+  'Under way':
+    'चल पड़ी',
+  'Arrived':
+    'पहुँच गए',
+  'How far this booking has got':
+    'यह बुकिंग कहाँ तक पहुँची है',
+  'If you cancel now, nothing comes back.':
+    'यदि आप अभी रद्द करते हैं, तो कुछ भी वापस नहीं मिलेगा।',
+  'If you cancel now, {amount} of the fare comes back. In {time} that falls to {next}.':
+    'यदि आप अभी रद्द करते हैं, तो किराए के {amount} वापस मिलेंगे। {time} में यह घटकर {next} हो जाएगा।',
+  'Your ride is on the road. Open the chat to see where the driver is.':
+    'आपकी सवारी रास्ते में है। चालक कहाँ है, यह देखने के लिए चैट खोलें।',
+  'Coming up':
+    'आने वाली',
+  'Earlier':
+    'पहले की',
+  'Last sent {time}.':
+    'आखिरी बार {time} भेजा।',
+  'Connected':
+    'जुड़ा हुआ',
+  'Connection lost. Reconnecting…':
+    'कनेक्शन टूट गया। फिर से जोड़ा जा रहा है…',
+  'Rides ahead':
+    'आने वाली सवारियाँ',
+  'Seats booked on them':
+    'उन पर बुक की गई सीटें',
+  'Your next ride':
+    'आपकी अगली सवारी',
+  'Time to set off':
+    'चलने का समय',
+  'In the last 7 days':
+    'पिछले 7 दिनों में',
+  'Payouts':
+    'भुगतान',
+  'Example':
+    'उदाहरण',
 };

@@ -1,10 +1,13 @@
+import { Send } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
 import { useAuth } from '../lib/auth';
-import { formatTime } from '../lib/format';
+import { formatAgo, formatTime } from '../lib/format';
 import { msg, useT } from '../lib/i18n';
-import { useRideChannel, type RealtimeError } from '../lib/realtime';
+import { useNow } from '../lib/live';
+import { useRideChannel, type RealtimeError, type RidePosition } from '../lib/realtime';
 import type { RideStatus } from '../lib/types';
+import { LiveDot } from './live';
 import { RouteMap } from './RouteMap';
 import { Button, Notice } from './ui';
 
@@ -14,6 +17,8 @@ const POSITION_INTERVAL_MS = 5000;
 // GeolocationPositionError.PERMISSION_DENIED. The other two codes (no fix, too slow) pass:
 // the watch keeps running, so a moment without signal must not end sharing.
 const PERMISSION_DENIED = 1;
+// A position older than this is shown as where the driver was, not where they are.
+const STALE_MS = 60_000;
 
 const problems: Record<RealtimeError, string> = {
   invalid: msg('That message cannot be sent. Check it is not empty or too long.'),
@@ -32,7 +37,9 @@ function SharePosition({ send }: { send: (lat: number, lon: number) => Promise<{
   const [sharing, setSharing] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [lost, setLost] = useState(false);
+  const [sentAt, setSentAt] = useState<number | null>(null);
   const lastSent = useRef(0);
+  const now = useNow(5000);
 
   useEffect(() => {
     setLost(false);
@@ -48,6 +55,7 @@ function SharePosition({ send }: { send: (lat: number, lon: number) => Promise<{
         if (Date.now() - lastSent.current < POSITION_INTERVAL_MS) return;
         lastSent.current = Date.now();
         void send(position.coords.latitude, position.coords.longitude).then((sent) => {
+          if (sent.ok) setSentAt(Date.now());
           if (!sent.ok && sent.error && sent.error !== 'rate_limited') {
             setProblem(problems[sent.error]);
             setSharing(false);
@@ -81,7 +89,44 @@ function SharePosition({ send }: { send: (lat: number, lon: number) => Promise<{
       >
         {sharing ? t('Stop sharing my position') : t('Share my position with passengers')}
       </Button>
-      {sharing && <p className="text-sm text-slate-600">{t('Passengers on this ride can see where you are until you stop or the ride ends.')}</p>}
+      {sharing && (
+        <p className="flex items-center gap-2 text-sm text-slate-600">
+          <LiveDot state={lost ? 'waiting' : 'live'} />
+          <span>
+            {t('Passengers on this ride can see where you are until you stop or the ride ends.')}
+            {sentAt !== null && ` ${t('Last sent {time}.', { time: formatAgo(sentAt, now) })}`}
+          </span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Where the driver is, as it comes in: the marker glides there, leaving a line of where they have been. */
+function DriverOnTheMap({ position }: { position: RidePosition }) {
+  const t = useT();
+  const now = useNow(5000);
+  const [trail, setTrail] = useState<[number, number][]>([[position.lat, position.lon]]);
+  useEffect(() => {
+    setTrail((was) => {
+      const last = was[was.length - 1];
+      return last[0] === position.lat && last[1] === position.lon ? was : [...was, [position.lat, position.lon]];
+    });
+  }, [position.lat, position.lon]);
+  const stale = now - Date.parse(position.at) > STALE_MS;
+  return (
+    <div className="space-y-2">
+      <p className="flex flex-wrap items-center gap-x-2 text-sm text-slate-700" role="status">
+        <LiveDot state={stale ? 'waiting' : 'live'} />
+        <span>{t("The driver's position at {time}", { time: formatTime(position.at) })}</span>
+        <span className="text-slate-500">{formatAgo(position.at, now)}</span>
+      </p>
+      <RouteMap
+        path={trail}
+        points={[]}
+        moving={{ lat: position.lat, lon: position.lon, label: t('The driver'), emphasis: true }}
+        describe={t("Map showing the driver's last known position")}
+      />
     </div>
   );
 }
@@ -101,6 +146,13 @@ export function RideChat({ rideId, rideStatus }: { rideId: number; rideStatus?: 
   const [text, setText] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const list = useRef<HTMLOListElement>(null);
+  const messageCount = channel.messages.length;
+
+  // The newest message in view, as in any chat.
+  useEffect(() => {
+    if (list.current) list.current.scrollTop = list.current.scrollHeight;
+  }, [messageCount, channel.phase]);
 
   if (channel.phase === 'connecting') return <Notice tone="info">{t('Connecting…')}</Notice>;
   if (channel.phase === 'refused') return <Notice tone="info">{t('The chat is only for the driver and passengers booked on this ride.')}</Notice>;
@@ -119,22 +171,16 @@ export function RideChat({ rideId, rideStatus }: { rideId: number; rideStatus?: 
 
   return (
     <div className="mt-3 space-y-3 rounded-2xl bg-surface p-3 shadow-card ring-1 ring-slate-900/[0.05]">
+      <p className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+        <LiveDot state={channel.connected ? 'live' : 'waiting'} />
+        {channel.connected ? t('Connected') : t('Connection lost. Reconnecting…')}
+      </p>
       {channel.role === 'DRIVER' && (rideStatus ?? channel.rideStatus) === 'IN_PROGRESS' && <SharePosition send={channel.sendPosition} />}
 
-      {channel.position && channel.role === 'PASSENGER' && (
-        <div className="space-y-2">
-          <p className="text-sm text-slate-700" role="status">
-            {t("The driver's position at {time}", { time: formatTime(channel.position.at) })}
-          </p>
-          <RouteMap
-            points={[{ lat: channel.position.lat, lon: channel.position.lon, label: t('The driver'), emphasis: true }]}
-            describe={t("Map showing the driver's last known position")}
-          />
-        </div>
-      )}
+      {channel.position && channel.role === 'PASSENGER' && <DriverOnTheMap position={channel.position} />}
 
       {/* Rendered as text: a message is whatever someone typed. Screen readers announce new ones. */}
-      <ol aria-live="polite" aria-label={t('Messages')} className="max-h-72 space-y-3 overflow-y-auto px-1 py-1">
+      <ol ref={list} aria-live="polite" aria-label={t('Messages')} className="thin-scroll max-h-72 space-y-3 overflow-y-auto scroll-smooth px-1 py-1">
         {channel.messages.length === 0 && <li className="py-4 text-center text-sm text-slate-500">{t('No messages yet.')}</li>}
         {channel.messages.map((message) => {
           // Bubbles as in iMessage: one's own on the right in the tint, everyone else's on the left.
@@ -171,7 +217,8 @@ export function RideChat({ rideId, rideStatus }: { rideId: number; rideStatus?: 
             className="mt-1 block w-full rounded-xl border border-slate-200 bg-surface px-3.5 py-2.5 text-[15px] shadow-sm focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-600/15"
           />
         </div>
-        <Button type="submit" disabled={sending || text.trim() === ''}>
+        <Button type="submit" disabled={text.trim() === ''} busy={sending}>
+          {!sending && <Send aria-hidden="true" className="h-4 w-4" />}
           {sending ? t('Sending…') : t('Send')}
         </Button>
       </form>

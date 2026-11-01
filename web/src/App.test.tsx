@@ -1,12 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AppRoutes } from './App';
 import { AuthProvider } from './lib/auth';
-import { setFormatLanguage } from './lib/format';
+import { setFormatLanguage, todayInIndia } from './lib/format';
+import { placeNamed } from './lib/places';
 import { LanguageProvider, type Language } from './lib/i18n';
 import type { Booking, Candidate, Role, Session } from './lib/types';
 
@@ -17,6 +18,13 @@ function signIn(role: Role) {
     user: { id: 1, email: 'user@example.test', fullName: 'Asha Patil', role },
   };
   sessionStorage.setItem('vayora.session', JSON.stringify(session));
+}
+
+/** Chooses a place in a place field, as someone would: by typing part of it. */
+async function pickPlace(label: string, place: string) {
+  await userEvent.click(screen.getByLabelText(label));
+  await userEvent.keyboard(place);
+  await userEvent.click(await screen.findByRole('option', { name: place }));
 }
 
 function open(path: string) {
@@ -55,6 +63,8 @@ function serve(routes: Record<string, () => Response>) {
     if (!match && key === 'GET /booking-terms') return json({ answerWithinMinutes: 720, closesMinutesBeforeBoarding: 120 });
     // The navigation asks for this on every signed-in page.
     if (!match && key === 'GET /notifications/unread-count') return json({ unread: 0 });
+    // And the search results, for the seats left now.
+    if (!match && key === 'GET /rides/availability') return json([]);
     if (!match) throw new Error(`unexpected request: ${key}`);
     return routes[match]();
   });
@@ -608,7 +618,7 @@ describe('maps, routes and location search', () => {
     expect([first.get('destLat'), first.get('destLon')]).toEqual(['18.5204', '73.8567']);
     expect(first.get('sort')).toBe('TIME');
 
-    await userEvent.selectOptions(screen.getByLabelText('Sort by'), 'Nearest pickup');
+    await userEvent.click(screen.getByRole('radio', { name: 'Nearest pickup' }));
     await screen.findByText(/Pickup 2\.0 km/);
     const urls = searchUrls(fetchMock);
     expect(urls[urls.length - 1].searchParams.get('sort')).toBe('PROXIMITY');
@@ -648,7 +658,8 @@ describe('maps, routes and location search', () => {
 
     expect(await screen.findByText('Board here: Kolhapur')).toBeInTheDocument();
     expect(screen.getByText('Get off here: Pune')).toBeInTheDocument();
-    expect(screen.getByTestId('route')).toHaveAttribute('data-points', '4');
+    // The line is drawn twice, a pale edge under the tint.
+    expect(screen.getAllByTestId('route')[0]).toHaveAttribute('data-points', '4');
     expect(screen.getByText(/The whole ride is 235\.9 km by road\./)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Map of the ride through Kolhapur, Satara, Pune' })).toBeInTheDocument();
   });
@@ -940,7 +951,7 @@ describe('earnings (driver)', () => {
     });
     open('/earnings');
 
-    expect(await screen.findByText('₹780')).toBeInTheDocument();
+    expect((await screen.findAllByText('₹780')).length).toBeGreaterThan(0);
     expect(screen.getByText('Trip completed')).toBeInTheDocument();
     expect(screen.getByText('Passenger cancelled late')).toBeInTheDocument();
     expect(await screen.findByText(/Payments here are simulated/)).toBeInTheDocument();
@@ -1400,7 +1411,7 @@ describe('search filters', () => {
     await userEvent.selectOptions(screen.getByLabelText('Leave in the'), 'Evening, from 5');
     await userEvent.click(screen.getByLabelText('Have a driver with a confirmed email or phone'));
     await userEvent.click(screen.getByRole('button', { name: 'Search' }));
-    await userEvent.selectOptions(await screen.findByLabelText('Sort by'), 'Lowest price');
+    await userEvent.click(await screen.findByRole('radio', { name: 'Lowest price' }));
 
     await waitFor(() => expect(searches(fetchMock)).toHaveLength(2));
     for (const sent of searches(fetchMock)) {
@@ -1536,7 +1547,7 @@ describe('my vehicles', () => {
 });
 
 describe('holding seats', () => {
-  const placed = { rideId: 12, fromSeq: 0, toSeq: 2, seats: 2, expiresAt: '2026-11-01T10:05:00Z' };
+  const placed = { rideId: 12, fromSeq: 0, toSeq: 2, seats: 2, expiresAt: new Date(Date.now() + 5 * 60_000).toISOString() };
 
   it('holds the seats searched for, says it is not a booking, and forgets the hold once booked', async () => {
     signIn('PASSENGER');
@@ -1599,7 +1610,7 @@ describe('publishing a ride through the page', () => {
     await userEvent.type(screen.getByLabelText('Seats offered'), '2');
     await userEvent.click(screen.getByLabelText('Confirm bookings instantly, without asking me'));
     await userEvent.click(screen.getByRole('button', { name: 'Add a stop on the way' }));
-    await userEvent.selectOptions(screen.getByLabelText('Stop on the way 1'), 'Satara');
+    await pickPlace('Stop on the way 1', 'Satara');
     await userEvent.clear(screen.getByLabelText('Price to Satara (₹)'));
     await userEvent.type(screen.getByLabelText('Price to Satara (₹)'), '270');
     await userEvent.clear(screen.getByLabelText('Price to Pune (₹)'));
@@ -1665,12 +1676,12 @@ describe('publishing a ride through the page', () => {
     open('/rides/new');
 
     fireEvent.change(await screen.findByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
-    await userEvent.selectOptions(screen.getByLabelText('From'), 'Mumbai');
-    await userEvent.selectOptions(screen.getByLabelText('To'), 'Panaji');
+    await pickPlace('From', 'Mumbai');
+    await pickPlace('To', 'Panaji');
     await userEvent.click(screen.getByRole('button', { name: 'Add a stop on the way' }));
-    await userEvent.selectOptions(screen.getByLabelText('Stop on the way 1'), 'Pune');
+    await pickPlace('Stop on the way 1', 'Pune');
     await userEvent.click(screen.getByRole('button', { name: 'Add a stop on the way' }));
-    await userEvent.selectOptions(screen.getByLabelText('Stop on the way 2'), 'Ratnagiri');
+    await pickPlace('Stop on the way 2', 'Ratnagiri');
     await userEvent.click(screen.getAllByRole('button', { name: 'Remove this stop' })[0]);
     expect(screen.queryByLabelText('Stop on the way 2')).not.toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('Price to Ratnagiri (₹)'), '500');
@@ -1714,7 +1725,7 @@ describe('publishing a ride through the page', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Work out the route' }));
     expect(await screen.findByText('230 km by road, about 3 h 11 min of driving.')).toBeInTheDocument();
 
-    await userEvent.selectOptions(screen.getByLabelText('To'), 'Chennai');
+    await pickPlace('To', 'Chennai');
     expect(screen.queryByText(/230 km by road/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Use the suggested prices and times' })).not.toBeInTheDocument();
   });
@@ -2426,7 +2437,7 @@ describe('electric range', () => {
     open('/rides/new');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Add a stop on the way' }));
-    await userEvent.selectOptions(screen.getByLabelText('Stop on the way 1'), 'Satara');
+    await pickPlace('Stop on the way 1', 'Satara');
     await userEvent.click(screen.getByRole('button', { name: 'Work out the route' }));
     expect(await screen.findByText(/This route is longer than the 200 km your vehicle covers on a full charge/)).toBeInTheDocument();
     expect(screen.queryByText(/cannot be published/)).not.toBeInTheDocument();
@@ -2704,7 +2715,7 @@ describe('push notifications', () => {
     let current: typeof subscription | null = null;
     const subscribe = vi.fn(async () => (current = subscription));
     const registration = { pushManager: { subscribe, getSubscription: async () => current } };
-    vi.stubGlobal('navigator', Object.assign(Object.create(navigator), {
+    vi.stubGlobal('navigator', Object.assign(Object.create(navigator, { onLine: { value: true } }), {
       serviceWorker: { register: vi.fn(async () => registration), getRegistration: async () => registration },
     }));
     vi.stubGlobal('PushManager', function PushManager() {});
@@ -3217,7 +3228,7 @@ describe('best match for both people', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
     await screen.findAllByRole('button', { name: /^(Book|Request)/ });
     expect(screen.queryByText(/Match 88 of 100/)).not.toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByLabelText('Sort by'), 'Best match for both of you');
+    await userEvent.click(screen.getByRole('radio', { name: 'Best match for both of you' }));
 
     expect(
       await screen.findByText(
@@ -3507,5 +3518,353 @@ describe('paying after the ride', () => {
 
     expect(await screen.findByText('Paid after the ride')).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([url, init]) => init?.method === 'POST' && String(url).endsWith('/bookings/90/cash-received'))).toBe(true);
+  });
+});
+
+describe('a screen that keeps itself current', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const reads = (fetchMock: ReturnType<typeof serve>, path: string) =>
+    fetchMock.mock.calls.filter(([url]) => new URL(String(url)).pathname.endsWith(path)).length;
+  const wait = (milliseconds: number) => act(async () => {
+    await vi.advanceTimersByTimeAsync(milliseconds);
+  });
+
+  it('reads the seats left again and again but never searches again: a search is an event in the log', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    signIn('PASSENGER');
+    const fetchMock = serve({ 'GET /rides/search': () => json([candidate]) });
+    open('/search');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
+    await screen.findByText('Ravi Jadhav');
+    await wait(65_000);
+
+    expect(reads(fetchMock, '/rides/search')).toBe(1);
+    expect(reads(fetchMock, '/rides/availability')).toBeGreaterThanOrEqual(3);
+    const asked = fetchMock.mock.calls.map(([url]) => String(url)).find((url) => url.includes('/rides/availability'))!;
+    expect(new URL(asked).searchParams.getAll('stretch')).toEqual(['12:0:2']);
+  });
+
+  it('shows a seat taken while the results are on screen, and will not book what no longer fits', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /rides/search': () => json([{ ...candidate, seatsAvailable: 3, instantBooking: true }]),
+      'GET /rides/availability': () => json([{ rideId: 12, fromSeq: 0, toSeq: 2, status: 'SCHEDULED', seatsAvailable: 0 }]),
+    });
+    open('/search');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
+
+    expect(await screen.findByText('0 seats left')).toBeInTheDocument();
+    expect(screen.getByText('Too few seats are left on this ride now.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Book' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Hold while I decide' })).toBeDisabled();
+  });
+
+  it('says so when a ride on screen is withdrawn', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /rides/search': () => json([{ ...candidate, instantBooking: true }]),
+      'GET /rides/availability': () => json([{ rideId: 12, fromSeq: 0, toSeq: 2, status: 'CANCELLED', seatsAvailable: 3 }]),
+    });
+    open('/search');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
+
+    expect(await screen.findByText('This ride is no longer available.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Book' })).toBeDisabled();
+  });
+
+  it('counts a hold down and offers it again when it runs out', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /rides/search': () => json([candidate]),
+      'POST /holds': () => json({ rideId: 12, fromSeq: 0, toSeq: 2, seats: 1, expiresAt: new Date(Date.now() + 1500).toISOString() }, 201),
+    });
+    open('/search');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Hold while I decide' }));
+
+    expect(await screen.findByRole('meter', { name: 'Time left on the hold' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Hold while I decide' }, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.queryByRole('meter', { name: 'Time left on the hold' })).not.toBeInTheDocument();
+  });
+
+  it('brings news in without a reload: the message floats in and the lists are read again', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    signIn('PASSENGER');
+    let unread = 0;
+    const fetchMock = serve({
+      'GET /notifications/unread-count': () => json({ unread }),
+      'GET /notifications': () => json([{ id: 'n1', type: 'BOOKING', message: 'The driver accepted your booking.', text: null, bookingId: 90, createdAt: new Date().toISOString(), read: false }]),
+      'GET /bookings': () => json([]),
+    });
+    open('/bookings');
+    await screen.findByRole('heading', { name: 'My bookings' });
+    await screen.findByText('You have no bookings yet.');
+    const before = reads(fetchMock, '/bookings');
+
+    unread = 1;
+    await wait(16_000);
+
+    const message = await screen.findByRole('button', { name: 'The driver accepted your booking.' });
+    expect(reads(fetchMock, '/bookings')).toBeGreaterThan(before);
+    expect(document.title).toBe('(1) VAYORA');
+
+    await userEvent.click(message);
+    expect(await screen.findByRole('heading', { name: 'Notifications' })).toBeInTheDocument();
+  });
+
+  it('raises nothing for the unread count it first finds: that is not news', async () => {
+    signIn('PASSENGER');
+    serve({ 'GET /notifications/unread-count': () => json({ unread: 4 }), 'GET /bookings': () => json([]) });
+    open('/bookings');
+
+    await screen.findByText('You have no bookings yet.');
+    await waitFor(() => expect(document.title).toBe('(4) VAYORA'));
+    expect(screen.queryByRole('button', { name: /accepted/ })).not.toBeInTheDocument();
+  });
+
+  it('says when there is no connection, and when it comes back', async () => {
+    signIn('PASSENGER');
+    serve({ 'GET /bookings': () => json([]) });
+    open('/bookings');
+    await screen.findByRole('heading', { name: 'My bookings' });
+    const online = vi.spyOn(navigator, 'onLine', 'get');
+
+    online.mockReturnValue(false);
+    act(() => void window.dispatchEvent(new Event('offline')));
+    expect(await screen.findByText('You are offline. What you see may be out of date.')).toBeInTheDocument();
+
+    online.mockReturnValue(true);
+    act(() => void window.dispatchEvent(new Event('online')));
+    expect(await screen.findByText('Back online')).toBeInTheDocument();
+    expect(screen.queryByText('You are offline. What you see may be out of date.')).not.toBeInTheDocument();
+    online.mockRestore();
+  });
+
+  it('opens the newest notifications from the bell and marks them read in place', async () => {
+    signIn('PASSENGER');
+    const fetchMock = serve({
+      'GET /notifications/unread-count': () => json({ unread: 1 }),
+      'GET /notifications': () => json([{ id: 'n1', type: 'BOOKING', message: 'Your trip is complete.', text: null, bookingId: 90, createdAt: new Date().toISOString(), read: false }]),
+      'POST /notifications/read-all': () => new Response(null, { status: 204 }),
+      'GET /bookings': () => json([]),
+    });
+    open('/bookings');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Recent notifications' }));
+
+    expect(await screen.findByText('Your trip is complete.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Mark all as read' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url, init]) => init?.method === 'POST' && String(url).endsWith('/notifications/read-all'))).toBe(true));
+    expect(screen.getByRole('link', { name: 'See all notifications' })).toHaveAttribute('href', '/notifications');
+  });
+});
+
+describe('a booking as it goes', () => {
+  const inHours = (hours: number) => new Date(Date.now() + hours * 3_600_000).toISOString();
+  const stage = (name: string) => within(screen.getByRole('list', { name: 'How far this booking has got' })).getByText(name).closest('li');
+
+  it('shows how far it has got, how long until it leaves, and what cancelling returns right now', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /bookings': () => json([{ ...booking, status: 'CONFIRMED', boardingTime: inHours(30) }]),
+      'GET /rides/12': () => json(rideWithRoute),
+    });
+    open('/bookings');
+
+    expect(await screen.findByText(/Leaves in 1 day|Leaves in 30 h/)).toBeInTheDocument();
+    expect(stage('Accepted')).toHaveAttribute('aria-current', 'step');
+    // Thirty hours out is the 50% tier; six hours from now it falls to nothing.
+    expect(await screen.findByText('If you cancel now, ₹260 of the fare comes back. In 6 h that falls to ₹0.')).toBeInTheDocument();
+  });
+
+  it('says when nothing would come back', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /bookings': () => json([{ ...booking, status: 'CONFIRMED', boardingTime: inHours(3) }]),
+      'GET /rides/12': () => json(rideWithRoute),
+    });
+    open('/bookings');
+
+    expect(await screen.findByText('If you cancel now, nothing comes back.')).toBeInTheDocument();
+  });
+
+  it('says nothing of a refund on a booking paid after the ride, which took nothing', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /bookings': () => json([{ ...booking, status: 'CONFIRMED', boardingTime: inHours(30), payAfterRide: true, paymentStatus: 'DEFERRED' }]),
+      'GET /rides/12': () => json(rideWithRoute),
+    });
+    open('/bookings');
+
+    await screen.findByRole('list', { name: 'How far this booking has got' });
+    expect(screen.queryByText(/If you cancel now/)).not.toBeInTheDocument();
+  });
+
+  it('moves on when the driver sets off, and points to where they are', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /bookings': () => json([{ ...booking, status: 'CONFIRMED', boardingTime: inHours(1) }]),
+      'GET /rides/12': () => json({ ...rideWithRoute, status: 'IN_PROGRESS' }),
+    });
+    open('/bookings');
+
+    expect(await screen.findByText('Your ride is on the road. Open the chat to see where the driver is.')).toBeInTheDocument();
+    expect(stage('Under way')).toHaveAttribute('aria-current', 'step');
+  });
+
+  it('keeps bookings coming up apart from earlier ones', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /bookings': () => json([
+        { ...booking, id: 91, status: 'COMPLETED', passengerRated: true, passengerConfirmed: true },
+        { ...booking, id: 92, status: 'CONFIRMED', boardingTime: inHours(30) },
+      ]),
+      'GET /rides/12': () => json(rideWithRoute),
+    });
+    open('/bookings');
+
+    expect(await screen.findByRole('heading', { name: 'Coming up' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Earlier' })).toBeInTheDocument();
+  });
+});
+
+describe('choosing a place', () => {
+  it('finds it from a few letters, takes the arrow keys, and searches from where it is', async () => {
+    signIn('PASSENGER');
+    const fetchMock = serve({ 'GET /rides/search': () => json([]) });
+    open('/search');
+    const from = await screen.findByLabelText('From');
+
+    await userEvent.click(from);
+    await userEvent.keyboard('che');
+    expect(screen.getByRole('option', { name: 'Chennai' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Pune' })).not.toBeInTheDocument();
+    await userEvent.keyboard('{ArrowDown}{ArrowUp}{Enter}');
+
+    expect(from).toHaveValue('Chennai');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/rides/search'))).toBe(true));
+    const asked = new URL(String(fetchMock.mock.calls.find(([url]) => String(url).includes('/rides/search'))![0]));
+    expect(asked.searchParams.get('originLat')).toBe(String(placeNamed('Chennai')!.lat));
+  });
+
+  it('finds the places of a state, and says when there is no such place', async () => {
+    signIn('PASSENGER');
+    serve({});
+    open('/search');
+
+    await userEvent.click(await screen.findByLabelText('To'));
+    await userEvent.keyboard('Goa');
+    expect(screen.getByRole('option', { name: 'Panaji' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Margao' })).toBeInTheDocument();
+
+    await userEvent.keyboard('{Backspace}{Backspace}{Backspace}atlantis');
+    expect(screen.getByText(/No place by that name is listed/)).toBeInTheDocument();
+  });
+
+  it('leaves what was chosen alone when nothing new is picked', async () => {
+    signIn('PASSENGER');
+    serve({});
+    open('/search');
+    const to = await screen.findByLabelText('To');
+
+    await userEvent.click(to);
+    await userEvent.keyboard('Chen{Escape}');
+
+    expect(to).toHaveValue('Pune');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('offers the nearest listed city to where the device is', async () => {
+    signIn('PASSENGER');
+    serve({});
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: { getCurrentPosition: (found: (position: { coords: { latitude: number; longitude: number } }) => void) => found({ coords: { latitude: 19.1, longitude: 72.9 } }) },
+    });
+    open('/search');
+    const from = await screen.findByLabelText('From');
+
+    await userEvent.click(from);
+    await userEvent.click(screen.getByRole('option', { name: 'Near me' }));
+
+    await waitFor(() => expect(from).toHaveValue('Mumbai'));
+    delete (navigator as { geolocation?: unknown }).geolocation;
+  });
+
+  it('swaps the two ends, and takes a date from the next seven days in a press', async () => {
+    signIn('PASSENGER');
+    serve({});
+    open('/search');
+    const from = await screen.findByLabelText('From');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Swap start and destination' }));
+    expect(from).toHaveValue('Pune');
+    expect(screen.getByLabelText('To')).toHaveValue('Kolhapur');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tomorrow' }));
+    const today = todayInIndia();
+    expect(screen.getByLabelText('Date')).toHaveValue(todayInIndia(new Date(Date.parse(`${today}T12:00:00+05:30`) + 86_400_000)));
+    expect(screen.getByRole('button', { name: 'Tomorrow' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('carries a route chosen on the front page past signing up to the search', async () => {
+    open('/');
+    await pickPlace('To', 'Mumbai');
+    await userEvent.click(screen.getByRole('button', { name: 'Find a ride' }));
+    expect(await screen.findByRole('heading', { name: 'Create an account' })).toBeInTheDocument();
+    expect(screen.getByLabelText('I want to')).toHaveValue('PASSENGER');
+    cleanup();
+
+    signIn('PASSENGER');
+    serve({});
+    open('/search');
+
+    expect(await screen.findByLabelText('To')).toHaveValue('Mumbai');
+  });
+});
+
+describe('a driver\'s rides at a glance', () => {
+  const ride = {
+    ...rideWithRoute,
+    seriesSize: 1,
+    maxTwoInBack: false,
+    womenOnly: false,
+    notes: null,
+    departureTime: new Date(Date.now() + 3 * 3_600_000).toISOString(),
+    segments: [
+      { seq: 0, price: 270, seatsTotal: 3, seatsAvailable: 1 },
+      { seq: 1, price: 250, seatsTotal: 3, seatsAvailable: 2 },
+    ],
+  };
+
+  it('counts what is ahead from the fullest stretch of each ride, and shows each stretch filling', async () => {
+    signIn('DRIVER');
+    serve({ 'GET /rides/mine': () => json([ride]) });
+    open('/rides');
+
+    expect(await screen.findByText('Rides ahead')).toBeInTheDocument();
+    expect(screen.getByText('Seats booked on them')).toBeInTheDocument();
+    expect(screen.getByText('Your next ride')).toBeInTheDocument();
+    expect(screen.getAllByText(/Leaves in 3 h/).length).toBeGreaterThan(0);
+    expect(screen.getByRole('meter', { name: /Kolhapur → Satara/ })).toHaveAttribute('aria-valuenow', '67');
+    expect(screen.getByRole('meter', { name: /Satara → Pune/ })).toHaveAttribute('aria-valuenow', '33');
+  });
+
+  it('leaves the figures out when nothing is ahead', async () => {
+    signIn('DRIVER');
+    serve({ 'GET /rides/mine': () => json([{ ...ride, status: 'COMPLETED' }]) });
+    open('/rides');
+
+    await screen.findByRole('meter', { name: /Kolhapur → Satara/ });
+    expect(screen.queryByText('Rides ahead')).not.toBeInTheDocument();
   });
 });

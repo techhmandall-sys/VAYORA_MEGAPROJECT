@@ -1,4 +1,4 @@
-import { AnimatePresence, animate, motion, useInView, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
   BatteryCharging,
@@ -17,11 +17,13 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { CountUp } from '../components/countup';
+import { PlaceField } from '../components/places';
 import { useT } from '../lib/i18n';
 import { PLACES } from '../lib/places';
+import { wantRoute } from '../lib/recent';
 import { formatOneDecimal, formatRupees, formatTime, formatWeekday } from '../lib/format';
 
 // The corridor as drawn on the front page: north up, each town where it lies, so Pune sits
@@ -230,12 +232,44 @@ function FloatingChip({ icon: Icon, className, delay, children }: { icon: Lucide
   );
 }
 
+/** The first thing to do here: say where to. The route waits on the search page, past signing up. */
+function RoutePicker() {
+  const t = useT();
+  const navigate = useNavigate();
+  const [from, setFrom] = useState('Kolhapur');
+  const [to, setTo] = useState('Pune');
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        wantRoute(from, to);
+        navigate('/register?as=passenger');
+      }}
+      className="grid gap-3 rounded-2xl bg-surface p-4 text-slate-900 shadow-float sm:grid-cols-2"
+    >
+      <PlaceField label={t('From')} value={from} onChange={setFrom} />
+      <PlaceField label={t('To')} value={to} onChange={setTo} />
+      <button
+        type="submit"
+        disabled={from === to}
+        className="inline-flex items-center justify-center gap-2 rounded-full bg-tint px-5 py-3 text-[15px] font-bold text-white shadow-glow transition-transform hover:-translate-y-0.5 active:scale-[0.97] focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 disabled:pointer-events-none disabled:opacity-40 sm:col-span-2"
+      >
+        <Search aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
+        {t('Find a ride')}
+      </button>
+    </form>
+  );
+}
+
 function Hero() {
   const t = useT();
   return (
-    <section className="relative isolate overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#14b8a6] via-[#0f766e] to-[#134e4a] px-6 pb-10 pt-9 text-white shadow-float sm:px-10 sm:pb-12 sm:pt-12">
-      <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 -z-10 h-72 w-72 rounded-full bg-[#5eead4]/30 blur-3xl" />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-20 -z-10 h-80 w-80 rounded-full bg-[#fde68a]/20 blur-3xl" />
+    <section className="relative isolate z-10 rounded-[2rem] bg-gradient-to-br from-[#14b8a6] via-[#0f766e] to-[#134e4a] px-6 pb-10 pt-9 text-white shadow-float sm:px-10 sm:pb-12 sm:pt-12">
+      {/* Clipped on their own: a place list opening from the hero must be free to pass its edge. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[2rem]">
+        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#5eead4]/30 blur-3xl" />
+        <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-[#fde68a]/20 blur-3xl" />
+      </div>
       <div className="grid items-center gap-10 md:grid-cols-[1.15fr_1fr]">
         <div className="space-y-6">
           <p className="inline-flex flex-wrap items-center gap-x-2 rounded-full bg-white/15 px-3 py-1 text-[13px] font-semibold tracking-wide ring-1 ring-inset ring-white/25">
@@ -247,14 +281,8 @@ function Hero() {
           <p className="max-w-xl text-[17px] leading-relaxed text-white/85">
             {t('Book a seat in a car already making the trip, or fill the empty seats in yours. If your plans change, VAYORA reminds you to give the seat back while someone else can still take it.')}
           </p>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              to="/register?as=passenger"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-[15px] font-bold text-[#0f766e] shadow-lg shadow-black/10 transition-transform hover:-translate-y-0.5 active:scale-[0.97] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/50"
-            >
-              <Search aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
-              {t('Find a ride')}
-            </Link>
+          <RoutePicker />
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             <Link
               to="/register?as=driver"
               className="inline-flex items-center gap-2 rounded-full bg-white/15 px-5 py-3 text-[15px] font-bold text-white ring-1 ring-inset ring-white/40 transition-transform hover:-translate-y-0.5 hover:bg-white/20 active:scale-[0.97] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/50"
@@ -262,49 +290,33 @@ function Hero() {
               {t('Offer a ride')}
               <ArrowRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
             </Link>
+            <p className="text-sm text-white/80">
+              {t('Already have an account?')}{' '}
+              <Link to="/login" className="font-semibold text-white underline decoration-white/50 underline-offset-4 hover:decoration-white">
+                {t('Sign in')}
+              </Link>
+            </p>
           </div>
-          <p className="text-sm text-white/80">
-            {t('Already have an account?')}{' '}
-            <Link to="/login" className="font-semibold text-white underline decoration-white/50 underline-offset-4 hover:decoration-white">
-              {t('Sign in')}
-            </Link>
-          </p>
         </div>
         <CorridorArt />
       </div>
-      <ReliabilityCard />
+      <ExampleCard />
     </section>
   );
 }
 
-/** A live-looking example booking, to show what the durability model's number means
- * before anyone signs up. Decoration: the figures are illustrative, not from any booking. */
-function ReliabilityCard() {
+/** What a search result looks like, and says that it is an example: its figures are from no ride. */
+function ExampleCard() {
   const t = useT();
-  const reduce = useReducedMotion() ?? false;
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-10% 0px' });
-  const [percent, setPercent] = useState(0);
-
-  useEffect(() => {
-    if (!inView) return undefined;
-    if (reduce) {
-      setPercent(92);
-      return undefined;
-    }
-    const controls = animate(0, 92, { duration: 1, ease: [0.22, 1, 0.36, 1], onUpdate: setPercent });
-    return () => controls.stop();
-  }, [inView, reduce]);
-
-  // Friday evening, a week out from a fixed date: illustrative only, not a real booking.
+  // Friday evening, from a fixed date: illustrative only, not a real booking.
   const departure = '2026-10-30T18:30:00+05:30';
   const driverName = 'Rahul S.';
   return (
     <div
-      ref={ref}
       aria-hidden="true"
-      className="relative z-10 mt-6 hidden w-[15rem] rounded-2xl bg-white/95 p-3.5 text-[#0f172a] shadow-float backdrop-blur sm:ml-auto sm:block"
+      className="relative z-0 mt-6 hidden w-[15rem] rounded-2xl bg-white/95 p-3.5 text-[#0f172a] shadow-float backdrop-blur sm:ml-auto sm:block"
     >
+      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#64748b]">{t('Example')}</p>
       <div className="flex items-center justify-between gap-1.5 text-[13px] font-semibold">
         <span className="truncate">{driverName}</span>
         <span className="flex flex-none items-center gap-1">
@@ -312,22 +324,14 @@ function ReliabilityCard() {
           {formatOneDecimal(4.8)}
         </span>
       </div>
-      <div className="mt-0.5 flex items-center justify-between gap-1.5 text-[12px] text-slate-500">
+      <div className="mt-0.5 flex items-center justify-between gap-1.5 text-[12px] text-[#64748b]">
         <span className="truncate">{`${formatWeekday(departure)} ${formatTime(departure)}`}</span>
-        <span className="flex-none font-semibold text-slate-700">{formatRupees(420)}</span>
+        <span className="flex-none font-semibold text-[#334155]">{formatRupees(420)}</span>
       </div>
-      <div className="mt-2.5 space-y-1">
-        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wide text-slate-500">
-          <span>{t('Reliability')}</span>
-          <span className="tabular-nums text-teal-700">{`${Math.round(percent)}%`}</span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-full bg-slate-900/[0.08]">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-500"
-            style={{ transform: `scaleX(${percent / 100})`, transformOrigin: 'left' }}
-          />
-        </div>
-      </div>
+      <p className="mt-2.5 flex flex-wrap gap-1.5 text-[11px] font-semibold">
+        <span className="rounded-full bg-[#e0f2fe] px-2 py-0.5 text-[#075985]">{t('{n} seats left', { n: 3 })}</span>
+        <span className="rounded-full bg-[#d1fae5] px-2 py-0.5 text-[#065f46]">{t('Confirms instantly')}</span>
+      </p>
     </div>
   );
 }

@@ -5,9 +5,11 @@ import { Link } from 'react-router-dom';
 
 import { reportReasons } from '../components/report';
 import { CountUp } from '../components/countup';
-import { Button, Card, ConfirmButton, Notice, Page, QueryState, SelectField, StatusBadge, TextField } from '../components/ui';
+import { LiveStatus } from '../components/live';
+import { Button, Card, ConfirmButton, Meter, Notice, Page, QueryState, SelectField, StatusBadge, TextField } from '../components/ui';
 import { api } from '../lib/api';
 import { msg, useT } from '../lib/i18n';
+import { LIVE_MS } from '../lib/live';
 import { idDocumentLabels } from '../lib/idDocuments';
 import { formatDate, formatDateTime, formatRupees } from '../lib/format';
 import type { AdminOverview, AuditEntry, BookingStatus, BusService, DisputedTrip, Stopover, SupplyGap, Member, MemberReport, ReportOutcome, RideStatus, Role, WaitingCheck } from '../lib/types';
@@ -38,7 +40,7 @@ const sum = (counts: Record<string, number>) => Object.values(counts).reduce((to
 /** A headline figure with its icon, counting up when the page opens. */
 function Tile({ label, value, icon: Icon, tone }: { label: string; value: number; icon: LucideIcon; tone: string }) {
   return (
-    <div className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-slate-900/[0.04]">
+    <div className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-slate-900/[0.04] transition-transform duration-300 ease-settle hover:-translate-y-0.5">
       <span aria-hidden="true" className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`}>
         <Icon className="h-5 w-5" />
       </span>
@@ -53,17 +55,23 @@ function Tile({ label, value, icon: Icon, tone }: { label: string; value: number
 function Counts({ title, counts }: { title: string; counts: Record<string, number> }) {
   const t = useT();
   const entries = Object.entries(counts);
+  const all = sum(counts);
   return (
     <Card>
       <h2 className="text-sm font-medium text-slate-500">{title}</h2>
       {entries.length === 0 ? (
         <p className="mt-2 text-sm text-slate-600">{t('None yet.')}</p>
       ) : (
-        <dl className="mt-2 space-y-1 text-sm">
+        <dl className="mt-2 space-y-2.5 text-sm">
           {entries.map(([code, count]) => (
-            <div key={code} className="flex justify-between gap-4">
-              <dt className="text-slate-600">{t(codeLabels[code] ?? code)}</dt>
-              <dd className="font-medium">{count}</dd>
+            <div key={code}>
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-600">{t(codeLabels[code] ?? code)}</dt>
+                <dd className="font-medium tabular-nums">{count}</dd>
+              </div>
+              <div className="mt-1">
+                <Meter fraction={all === 0 ? 0 : count / all} label={t(codeLabels[code] ?? code)} />
+              </div>
             </div>
           ))}
         </dl>
@@ -74,9 +82,9 @@ function Counts({ title, counts }: { title: string; counts: Record<string, numbe
 
 export function OverviewPage() {
   const t = useT();
-  const overview = useQuery({ queryKey: ['admin', 'overview'], queryFn: () => api<AdminOverview>('/admin/overview') });
+  const overview = useQuery({ queryKey: ['admin', 'overview'], queryFn: () => api<AdminOverview>('/admin/overview'), refetchInterval: LIVE_MS.lists });
   return (
-    <Page title={t('Overview')}>
+    <Page title={t('Overview')} aside={overview.data ? <LiveStatus query={overview} /> : undefined}>
       <QueryState isPending={overview.isPending} error={overview.error} isEmpty={false} empty="" onRetry={() => void overview.refetch()} />
       {overview.data && (
         <>

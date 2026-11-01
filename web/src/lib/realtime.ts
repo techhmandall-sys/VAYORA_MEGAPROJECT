@@ -36,13 +36,15 @@ export type Sent = { ok: true } | { ok: false; error: RealtimeError };
 interface Channel {
   /** connecting: not yet answered. joined: live. refused: not on this ride. unavailable: cannot reach the gateway. */
   phase: 'connecting' | 'joined' | 'refused' | 'unavailable';
+  /** A joined channel whose connection dropped keeps what it had and comes back by itself. */
+  connected: boolean;
   role: 'DRIVER' | 'PASSENGER' | null;
   rideStatus: RideStatus | null;
   messages: ChatMessage[];
   position: RidePosition | null;
 }
 
-const START: Channel = { phase: 'connecting', role: null, rideStatus: null, messages: [], position: null };
+const START: Channel = { phase: 'connecting', connected: false, role: null, rideStatus: null, messages: [], position: null };
 
 export function useRideChannel(rideId: number): Channel & {
   send: (text: string) => Promise<Sent>;
@@ -62,7 +64,7 @@ export function useRideChannel(rideId: number): Channel & {
       try {
         const answer = await socket.timeout(ACK_TIMEOUT_MS).emitWithAck('ride:join', { rideId });
         if (answer.ok) {
-          setChannel({ phase: 'joined', role: answer.role, rideStatus: answer.rideStatus, messages: answer.messages, position: answer.location });
+          setChannel({ phase: 'joined', connected: true, role: answer.role, rideStatus: answer.rideStatus, messages: answer.messages, position: answer.location });
         } else {
           setChannel({ ...START, phase: answer.error === 'not_a_member' ? 'refused' : 'unavailable' });
         }
@@ -71,7 +73,10 @@ export function useRideChannel(rideId: number): Channel & {
       }
     };
     socket.on('connect', join);
-    socket.on('connect_error', () => setChannel((current) => ({ ...current, phase: 'unavailable' })));
+    socket.on('disconnect', () => setChannel((current) => ({ ...current, connected: false })));
+    socket.on('connect_error', () =>
+      setChannel((current) => (current.phase === 'joined' ? { ...current, connected: false } : { ...current, phase: 'unavailable' })),
+    );
     socket.on('chat:message', (message: ChatMessage) => {
       if (message.rideId !== rideId) return;
       setChannel((current) =>

@@ -38,6 +38,7 @@
     --red-100: 255 228 226;
     --red-200: 254 205 202;
     --red-300: 252 165 160;
+    --red-500: 239 68 68;
     --red-600: 215 0 21;
     --red-700: 190 18 32;
     --red-800: 155 22 30;
@@ -46,12 +47,14 @@
     --emerald-50: 236 252 242;
     --emerald-100: 211 247 224;
     --emerald-200: 168 237 196;
+    --emerald-500: 16 185 129;
     --emerald-800: 4 110 64;
     --emerald-900: 6 82 52;
 
     --amber-50: 255 248 230;
     --amber-100: 255 238 196;
     --amber-200: 253 220 150;
+    --amber-500: 245 158 11;
     --amber-800: 150 72 0;
     --amber-900: 120 56 6;
 
@@ -95,6 +98,7 @@
       --red-100: 70 18 18;
       --red-200: 98 26 26;
       --red-300: 140 36 36;
+      --red-500: 248 113 113;
       --red-600: 255 69 58;
       --red-700: 255 105 97;
       --red-800: 255 150 143;
@@ -103,12 +107,14 @@
       --emerald-50: 10 40 26;
       --emerald-100: 13 56 35;
       --emerald-200: 20 86 54;
+      --emerald-500: 52 211 153;
       --emerald-800: 110 225 160;
       --emerald-900: 150 238 188;
 
       --amber-50: 48 32 6;
       --amber-100: 66 44 8;
       --amber-200: 96 64 12;
+      --amber-500: 251 191 36;
       --amber-800: 255 196 90;
       --amber-900: 255 214 130;
 
@@ -240,6 +246,42 @@
     backdrop-filter: saturate(180%) blur(20px);
   }
 
+  /* The canvas behind every screen: a faint wash of the role's tint, fixed as the page scrolls. */
+  .ambient::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(62rem 30rem at 88% -10%, rgb(var(--teal-600) / 0.11), transparent 70%),
+      radial-gradient(46rem 26rem at -8% 8%, rgb(var(--teal-600) / 0.06), transparent 70%);
+  }
+
+  /* A thin scrollbar for a panel inside the page, such as the sidebar. */
+  .thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--slate-300)) transparent;
+  }
+
+  /* More to read, folded away until asked for. */
+  .more > summary {
+    list-style: none;
+    cursor: pointer;
+  }
+  .more > summary::-webkit-details-marker {
+    display: none;
+  }
+  .more > summary .more-chevron {
+    transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .more[open] > summary .more-chevron {
+    transform: rotate(180deg);
+  }
+  .more[open] > :not(summary) {
+    @apply animate-pop-in;
+  }
+
   /* A select with iOS's chevron in place of the system arrow. */
   .select-ios {
     appearance: none;
@@ -276,6 +318,12 @@
   .stagger > *:nth-child(7) { animation-delay: 270ms; }
   .stagger > *:nth-child(8) { animation-delay: 315ms; }
   .stagger > *:nth-child(n + 9) { animation-delay: 360ms; }
+  /* What is in use rises above what follows: a list opening from it must not pass underneath,
+     and each section's entrance animation makes it a layer of its own. */
+  .stagger > *:focus-within {
+    position: relative;
+    z-index: 20;
+  }
 
   .no-scrollbar {
     scrollbar-width: none;
@@ -310,6 +358,51 @@
   }
   :root[data-theme='dark'] .leaflet-control-attribution a {
     color: rgb(var(--teal-800));
+  }
+}
+
+/* Lines and pins that take the role's tint, whichever theme. Leaflet adds these classes itself. */
+.live-marker {
+  position: relative;
+}
+.live-marker span {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgb(var(--teal-600));
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+}
+.live-marker::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgb(var(--teal-600) / 0.45);
+  animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* A change of theme spreads out from where it was pressed, where the browser can do that. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  animation: theme-reveal 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--reveal-x, 50%) var(--reveal-y, 0%));
+  }
+  to {
+    clip-path: circle(150vmax at var(--reveal-x, 50%) var(--reveal-y, 0%));
+  }
+}
+
+@media print {
+  .ambient::before {
+    display: none;
   }
 }
 

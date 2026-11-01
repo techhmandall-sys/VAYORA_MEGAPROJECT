@@ -198,6 +198,36 @@ describe('live position', () => {
     expect(screen.getByRole('img', { name: "Map showing the driver's last known position" })).toBeInTheDocument();
   });
 
+  it('moves the driver on the map as positions come in, drawing where they have been', async () => {
+    joinedAs('PASSENGER', 'IN_PROGRESS');
+    openChat();
+    await screen.findByText('Leaving in ten minutes.');
+
+    act(() => gateway.push('location', { rideId: 12, lat: 17.289, lon: 74.1818, at: new Date().toISOString() }));
+    expect(await screen.findByTestId('moving')).toBeInTheDocument();
+    act(() => gateway.push('location', { rideId: 12, lat: 17.31, lon: 74.19, at: new Date().toISOString() }));
+
+    await waitFor(() => expect(screen.getAllByTestId('route')[0]).toHaveAttribute('data-points', '2'));
+    expect(screen.getAllByTestId('moving')).toHaveLength(1);
+  });
+
+  it('keeps what was said on screen when the connection drops, and says it is coming back', async () => {
+    joinedAs('PASSENGER');
+    openChat();
+    await screen.findByText('Leaving in ten minutes.');
+    expect(screen.getByText('Connected')).toBeInTheDocument();
+
+    act(() => gateway.push('disconnect'));
+
+    expect(await screen.findByText('Connection lost. Reconnecting…')).toBeInTheDocument();
+    expect(screen.getByText('Leaving in ten minutes.')).toBeInTheDocument();
+
+    await act(async () => {
+      gateway.push('connect');
+    });
+    expect(await screen.findByText('Connected')).toBeInTheDocument();
+  });
+
   it('offers position sharing to the driver only while the ride is under way', async () => {
     joinedAs('DRIVER', 'SCHEDULED');
     const { unmount } = openChat('DRIVER');
