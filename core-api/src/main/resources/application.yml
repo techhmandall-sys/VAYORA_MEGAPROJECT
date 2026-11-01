@@ -45,7 +45,7 @@ vayora:
     # Longest core-api waits for a score before going on without one.
     timeout: PT2S
   hazard:
-    # When confirmed bookings are re-scored (corridor time). "-" turns it off.
+    # When confirmed bookings are re-scored (India time). "-" turns it off.
     scoring-cron: ${HAZARD_SCORING_CRON:0 0 6 * * *}
   payment:
     # The platform's fee, as a fraction of the fare, charged on top of it.
@@ -106,6 +106,10 @@ vayora:
     cache-ttl: P7D
     # Only used to guess a driving time when there is no road route.
     fallback-speed-kmh: 50
+    # OSRM answers for any point by moving it to the nearest road on its map, even hundreds of km
+    # away. A point moved further than this is off the map: the route is then a labelled straight
+    # line, not a road distance. On the corridor, points move metres.
+    max-snap-metres: 2000
   detour:
     # Detour tolerance (feature 28): the most a driver may offer in all on one ride, and how
     # far from a ride's road a passenger's start may be for a pickup there to be worked out.

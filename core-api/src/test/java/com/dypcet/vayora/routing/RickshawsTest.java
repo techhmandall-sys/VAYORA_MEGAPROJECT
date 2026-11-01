@@ -44,7 +44,7 @@ class RickshawsTest {
                 stored.put(key, value);
             }
         };
-        return new Rickshaws(new RouteService(null, cache, new ObjectMapper(), 50.0),
+        return new Rickshaws(new RouteService(null, cache, new ObjectMapper(), 50.0, 2000),
                 new RickshawProperties(offerBeyondMetres, List.of(fares)));
     }
 

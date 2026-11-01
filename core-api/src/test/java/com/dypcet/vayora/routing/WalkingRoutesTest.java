@@ -46,7 +46,7 @@ class WalkingRoutesTest {
         RestClient.Builder builder = RestClient.builder().baseUrl("http://osrm-foot");
         osrm = MockRestServiceServer.bindTo(builder).build();
         cache = new MapCache();
-        walking = new WalkingRoutes(builder.build(), cache);
+        walking = new WalkingRoutes(builder.build(), cache, 2000);
     }
 
     @Test
@@ -74,7 +74,18 @@ class WalkingRoutesTest {
     }
 
     @Test
+    void aPointMovedFarToReachAFootpathGivesNothingRatherThanAWalkElsewhere() {
+        osrm.expect(requestTo(URL)).andRespond(withSuccess(
+                "{\"code\": \"Ok\", \"waypoints\": [{\"distance\": 705000.0}, {\"distance\": 508000.0}],"
+                        + " \"routes\": [{\"duration\": 612.4, \"distance\": 850.0}]}",
+                MediaType.APPLICATION_JSON));
+
+        assertThat(walking.seconds(START, STOP)).isEmpty();
+        assertThat(cache.entries).isEmpty();
+    }
+
+    @Test
     void withNoWalkingServiceConfiguredThereIsNothingToAsk() {
-        assertThat(new WalkingRoutes(null, cache).seconds(START, STOP)).isEmpty();
+        assertThat(new WalkingRoutes(null, cache, 2000).seconds(START, STOP)).isEmpty();
     }
 }

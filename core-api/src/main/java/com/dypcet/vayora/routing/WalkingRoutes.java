@@ -27,18 +27,22 @@ public class WalkingRoutes {
 
     private final RestClient client;
     private final RouteCache cache;
+    private final double maxSnapMetres;
 
     @Autowired
     public WalkingRoutes(RestClient.Builder builder, RouteCache cache,
             @Value("${vayora.osrm.foot-url}") String baseUrl,
-            @Value("${vayora.osrm.timeout}") Duration timeout) {
-        this(baseUrl.isBlank() ? null : builder.baseUrl(baseUrl).requestFactory(timeouts(timeout)).build(), cache);
+            @Value("${vayora.osrm.timeout}") Duration timeout,
+            @Value("${vayora.osrm.max-snap-metres}") double maxSnapMetres) {
+        this(baseUrl.isBlank() ? null : builder.baseUrl(baseUrl).requestFactory(timeouts(timeout)).build(), cache,
+                maxSnapMetres);
     }
 
     /** @param client null when no walking service is configured */
-    WalkingRoutes(RestClient client, RouteCache cache) {
+    WalkingRoutes(RestClient client, RouteCache cache, double maxSnapMetres) {
         this.client = client;
         this.cache = cache;
+        this.maxSnapMetres = maxSnapMetres;
     }
 
     private static SimpleClientHttpRequestFactory timeouts(Duration timeout) {
@@ -64,6 +68,7 @@ public class WalkingRoutes {
             JsonNode body = client.get().uri("/route/v1/foot/" + coordinates + "?overview=false")
                     .retrieve().body(JsonNode.class);
             double seconds = body == null || !"Ok".equals(body.path("code").asText())
+                            || !RouteService.onTheMap(body, maxSnapMetres)
                     ? -1 : body.path("routes").path(0).path("duration").asDouble(-1);
             if (seconds < 0) {
                 return OptionalDouble.empty();

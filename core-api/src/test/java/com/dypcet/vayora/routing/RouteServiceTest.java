@@ -61,7 +61,7 @@ class RouteServiceTest {
         RestClient.Builder builder = RestClient.builder().baseUrl("http://osrm");
         osrm = MockRestServiceServer.bindTo(builder).build();
         cache = new MapCache();
-        routes = new RouteService(builder.build(), cache, mapper, 50.0);
+        routes = new RouteService(builder.build(), cache, mapper, 50.0, 2000);
     }
 
     @Test
@@ -113,6 +113,29 @@ class RouteServiceTest {
     }
 
     @Test
+    void aPointMovedFarToReachARoadGivesALabelledStraightLineNotAShortRoadElsewhere() {
+        // As OSRM really answered on the corridor's map for Chennai to Bengaluru: both points moved
+        // hundreds of km to the map's edge, "Ok", and 69.7 km by road where the truth is over 280.
+        String offTheMap = "{\"code\": \"Ok\", \"waypoints\": [{\"distance\": 705000.0}, {\"distance\": 10.0},"
+                + " {\"distance\": 508000.0}], " + ANSWER.substring(ANSWER.indexOf("\"routes\""));
+        osrm.expect(requestTo(URL)).andRespond(withSuccess(offTheMap, MediaType.APPLICATION_JSON));
+
+        Route route = routes.through(List.of(KOLHAPUR, SATARA, PUNE));
+
+        assertThat(route.source()).isEqualTo("STRAIGHT_LINE");
+        assertThat(cache.entries).isEmpty();
+    }
+
+    @Test
+    void aPointMovedOnlyMetresToReachARoadIsStillARoute() {
+        String onTheMap = "{\"code\": \"Ok\", \"waypoints\": [{\"distance\": 4.0}, {\"distance\": 900.0},"
+                + " {\"distance\": 23.0}], " + ANSWER.substring(ANSWER.indexOf("\"routes\""));
+        osrm.expect(requestTo(URL)).andRespond(withSuccess(onTheMap, MediaType.APPLICATION_JSON));
+
+        assertThat(routes.through(List.of(KOLHAPUR, SATARA, PUNE)).source()).isEqualTo("OSRM");
+    }
+
+    @Test
     void anAnswerWithNoRouteIsTreatedAsAnOutage() {
         osrm.expect(requestTo(URL)).andRespond(
                 withSuccess("{\"code\": \"NoRoute\", \"routes\": []}", MediaType.APPLICATION_JSON));
@@ -122,7 +145,7 @@ class RouteServiceTest {
 
     @Test
     void withNoRoutingServiceConfiguredNothingIsCalled() {
-        RouteService unconfigured = new RouteService(null, cache, mapper, 50.0);
+        RouteService unconfigured = new RouteService(null, cache, mapper, 50.0, 2000);
 
         Route route = unconfigured.through(List.of(KOLHAPUR, PUNE));
 

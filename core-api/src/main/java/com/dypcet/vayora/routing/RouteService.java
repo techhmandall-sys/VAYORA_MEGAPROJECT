@@ -52,22 +52,26 @@ public class RouteService {
     private final RouteCache cache;
     private final ObjectMapper mapper;
     private final double fallbackSpeedKmh;
+    private final double maxSnapMetres;
 
     @Autowired
     public RouteService(RestClient.Builder builder, RouteCache cache, ObjectMapper mapper,
             @Value("${vayora.osrm.url}") String baseUrl,
             @Value("${vayora.osrm.timeout}") Duration timeout,
-            @Value("${vayora.osrm.fallback-speed-kmh}") double fallbackSpeedKmh) {
+            @Value("${vayora.osrm.fallback-speed-kmh}") double fallbackSpeedKmh,
+            @Value("${vayora.osrm.max-snap-metres}") double maxSnapMetres) {
         this(baseUrl.isBlank() ? null : builder.baseUrl(baseUrl).requestFactory(timeouts(timeout)).build(),
-                cache, mapper, fallbackSpeedKmh);
+                cache, mapper, fallbackSpeedKmh, maxSnapMetres);
     }
 
     /** @param client null when no routing service is configured */
-    RouteService(RestClient client, RouteCache cache, ObjectMapper mapper, double fallbackSpeedKmh) {
+    RouteService(RestClient client, RouteCache cache, ObjectMapper mapper, double fallbackSpeedKmh,
+            double maxSnapMetres) {
         this.client = client;
         this.cache = cache;
         this.mapper = mapper;
         this.fallbackSpeedKmh = fallbackSpeedKmh;
+        this.maxSnapMetres = maxSnapMetres;
     }
 
     private static SimpleClientHttpRequestFactory timeouts(Duration timeout) {
@@ -114,6 +118,9 @@ public class RouteService {
                 || !body.path("routes").has(0)) {
             throw new IllegalStateException("OSRM found no route");
         }
+        if (!onTheMap(body, maxSnapMetres)) {
+            throw new IllegalStateException("A point is off OSRM's map");
+        }
         JsonNode route = body.path("routes").get(0);
         List<Leg> legs = new ArrayList<>();
         for (JsonNode leg : route.path("legs")) {
@@ -128,6 +135,20 @@ public class RouteService {
         }
         return new Route(route.path("distance").asDouble(), route.path("duration").asDouble(),
                 legs, path, OSRM);
+    }
+
+    /**
+     * Whether OSRM stayed near every point it was given. It moves each one to the nearest road on
+     * its map and answers Ok however far that is, so a route between two places off the map comes
+     * back as a short road somewhere else entirely.
+     */
+    static boolean onTheMap(JsonNode body, double maxSnapMetres) {
+        for (JsonNode waypoint : body.path("waypoints")) {
+            if (waypoint.path("distance").asDouble() > maxSnapMetres) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private Optional<Route> read(String json) {
