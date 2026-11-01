@@ -92,11 +92,11 @@ Listed so nobody mistakes the section above for the whole picture.
 | **Rate limiting is per account only**, and only on sign-in and confirmation codes | One address cannot be guessed at quickly, but one client can try a few passwords against each of many addresses. Anyone can lock a member's password sign-in for 15 minutes by guessing wrong on purpose. Nothing else is limited |
 | **Tokens cannot be revoked** and there is no refresh token | A stolen token works for up to 12 hours. Suspension is the only cut-off |
 | **The token is in `sessionStorage`** | Any script running on the page can read it. There is no content security policy to limit which scripts run |
-| **No HTTPS** in the provided configuration | Tokens and passwords cross the network in the clear |
+| **No HTTPS on a local run**, only in the online setup (`docker-compose.prod.yml`), which has never run on a real server | Locally, tokens and passwords cross the network in the clear |
 | **Sign-up reveals whether an email is registered** | By its 409 |
 | **One shared signing secret** between core-api and the gateway | A compromise of either lets an attacker mint tokens for both |
-| **intel has no authentication** | Anyone who can reach its port can call it. It holds no data, but it should not be exposed |
-| **Databases have development passwords** and their ports are published to the host | In `docker-compose.yml` for convenience |
+| **intel has no authentication** except on live what-if runs | Anyone who can reach its port can call it. It holds no data. The online setup keeps its port closed and passes on only `/v1/whatif/*` |
+| **Databases have development passwords** and their ports are published to the host on a local run | In `docker-compose.yml` for convenience. The online setup demands a real PostgreSQL password and closes the ports, but MongoDB and Redis still have no password of their own |
 | **Administrators can read every confirmation code** | In the simulated outbox. It must not exist alongside a real sender |
 | **No content security policy and no HSTS** | The headers above are the basic set; HSTS would need HTTPS first |
 | **Only the JavaScript dependencies have been scanned**, by `npm audit` (2026-10-24) | None in the gateway or in what the browser runs, after moving to zod 4 and body-parser 1.20.9. Three moderate remain in Tailwind 3's build tools, which parse only the project's own CSS. Java and Python dependencies and the images are unscanned |
@@ -105,9 +105,8 @@ Listed so nobody mistakes the section above for the whole picture.
 
 ## Before any real use
 
-At the least: HTTPS in front of every service; real secrets from a secret store; database
-ports closed to the outside; rate limiting by client as well as by account; a way to
-revoke tokens; intel and
-the databases on a private network; a content security policy; the mock sender and mock
+At the least: the online setup (`docker-compose.prod.yml`), which gives HTTPS, closed ports and intel
+and the databases on a private network, tried on a real server; real secrets from a secret store;
+rate limiting by client as well as by account; a way to revoke tokens; a content security policy; the mock sender and mock
 payment provider replaced, and the outbox removed; and a review by someone who does this
 for a living.

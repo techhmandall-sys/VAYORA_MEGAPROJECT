@@ -181,6 +181,13 @@ cp .env.example .env
 set -a; . ./.env; set +a; sh infra/check-health.sh
 ```
 
+## Putting it online
+
+One command on a server with a domain name: `sh scripts/deploy.sh`. It adds HTTPS, closes every
+port but 80 and 443, and refuses to start without real secrets. See
+[DEPLOYMENT](docs/DEPLOYMENT.md#putting-vayora-online). It has been tried on one machine with a local
+certificate, not yet on a real server.
+
 ## Real services, off until you switch them on
 
 Out of the box nothing leaves the platform: payments are simulated and no money moves,
@@ -196,8 +203,8 @@ tested against a stand-in; none has yet been tried against the real service.
 | Any SMTP server | Codes and notification copies by email | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `VAYORA_MAIL_FROM` |
 | Web Push | Push notifications in the browser | `VAYORA_PUSH_PUBLIC_KEY`, `VAYORA_PUSH_PRIVATE_KEY` (`node scripts/vapid-keys.mjs` makes a pair) |
 
-`.env` is never committed. Every setting and what breaks is in
-[DEPLOYMENT](docs/DEPLOYMENT.md).
+`.env` is never committed. Step-by-step setup for each is in
+[DEPLOYMENT](docs/DEPLOYMENT.md#switching-on-real-services), with every setting and what breaks.
 
 ## Tests
 

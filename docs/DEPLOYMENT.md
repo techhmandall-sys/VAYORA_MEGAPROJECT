@@ -126,17 +126,104 @@ platform, in the `events` table, kept apart by `run_id`.
 | Walks say "in a straight line" | The walking graph (`osrm-foot`) is not running or still building. Check `docker compose logs osrm-build-foot` |
 | No administrator | `ADMIN_EMAIL` and `ADMIN_PASSWORD` were not set when core-api started. Set them and restart it |
 
+## Switching on real services
+
+The code for each of these is finished and tested against a stand-in; none has been tried with
+the real service. Each needs an account of your own, and turns on when its settings are in
+`.env`. Put keys only in `.env`, never in a chat, a commit or a screenshot. After changing
+`.env`, run `run.bat` again. Pages and prices on these sites change, so follow what they show.
+
+**Google sign-in (feature 2), free**
+
+1. At console.cloud.google.com, create a project.
+2. Set up the OAuth consent screen: external, named VAYORA, with your own Google address as a
+   test user. While it is in testing, only test users can sign in.
+3. Under Credentials, create an OAuth client ID of type "Web application". Add
+   `http://localhost:5173` as an authorised JavaScript origin, and `https://<your address>` too
+   once VAYORA is online.
+4. Put it in `.env` as `GOOGLE_CLIENT_ID=...`. No secret is needed.
+5. http://localhost:8080/api/v1/auth/google should now show it, and the sign-in page a Google
+   button. Sign in once with a real account: that is the test no stand-in can do.
+
+**Payments (feature 46), free in test mode, where no real money moves**
+
+1. Sign up at razorpay.com and stay in Test Mode.
+2. Under Account & Settings, API Keys, generate a test key.
+3. Put both in `.env`: `RAZORPAY_KEY_ID=rzp_test_...` and `RAZORPAY_KEY_SECRET=...`.
+4. Book a ride: Razorpay's checkout opens. Pay with one of its published test cards or test UPI
+   IDs. Every screen and receipt says test mode.
+
+**Texts and masked calls (features 64 and 61)**
+
+1. Sign up at twilio.com, confirm your own phone number, and get a Twilio number.
+2. Put all three in `.env`: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`.
+3. On My account, add your phone and ask for a code. It should arrive as a text.
+4. A trial account can only reach numbers you have confirmed, and texts to Indian numbers need
+   the sender registered under TRAI's DLT rules, so they may not arrive until that is done. A
+   masked call costs two paid legs.
+
+## Putting VAYORA online
+
+`docker-compose.prod.yml` runs everything on one server behind Caddy, which gets and renews its
+HTTPS certificate by itself. Only ports 80 and 443 are open: the databases and the model are
+reachable only from inside, and core-api's health and metrics stay inside too. It refuses to start
+without real secrets.
+
+**You need**
+
+- A Linux server with a public address, ports 80 and 443 open, about 2 CPUs, 4 GB of memory and
+  40 GB of disk. All the services together were measured idling at 1.3 GB; the first run also
+  builds images and the road graphs, which take more and have not been measured on a server.
+  A student can often get credit: see the GitHub Student Developer Pack and Azure for Students.
+- A domain name pointing at that server. A free subdomain such as DuckDNS's works. Without one,
+  HTTPS cannot be set up.
+
+The research database is not needed online and stays where it is: a new server starts empty.
+
+**Steps, on the server**
+
+```sh
+curl -fsSL https://get.docker.com | sh
+git clone https://github.com/techhmandall-sys/Vayora.git && cd Vayora
+cp .env.production.example .env
+nano .env                  # fill in the first block; openssl rand -base64 48 makes each secret
+sh scripts/deploy.sh       # the first run downloads the road map and takes a while
+```
+
+Then open `https://<your address>` and sign in as the administrator you set in `.env`. To update
+later: `git pull && sh scripts/deploy.sh`.
+
+Before others use it: payments, texts and calls stay simulated until switched on, and the screens
+say so. Administrators can read every confirmation code in the simulated outbox. Do not run
+`scripts/demo-data.mjs` against a public server: its accounts share one password.
+
+**Backups.** `sh scripts/backup.sh` writes the databases to `backups/<date>/`. Copy that folder off
+the server, and run it from cron to make it a habit.
+
+**Restoring a backup**, as tried on 2026-11-01 (an account was deleted and came back):
+
+```sh
+C="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
+$C stop core-api gateway
+$C exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner' < backups/<date>/postgres.dump
+$C exec -T mongo mongorestore --quiet --archive --gzip --drop < backups/<date>/mongo.archive.gz
+$C up -d --wait core-api gateway
+```
+
+**How far this has been tried.** On one machine, with a local certificate and without the road
+services: HTTPS, closed ports, each path reaching its service, a WebSocket through the edge, signing
+up and searching, and a backup restored. **It has never run on a real server or with a real
+certificate.** The service worker did not register against the local certificate, as browsers refuse
+one; expect it to with a real one, unconfirmed.
+
 ## What a real deployment would need
 
-None of this exists.
+The online setup above covers HTTPS, closed ports and backups. A deployment people rely on would
+still need all of this, none of which exists:
 
-- HTTPS, and a reverse proxy in front of web, core-api and the gateway.
-- Secrets from a secret store, not from a file or a default.
-- Databases on a private network with their own credentials, backups, and a tested
-  restore.
-- intel reachable only from core-api, except `/v1/whatif/*`, which an administrator's
-  browser calls and which checks the token itself. The model and scheduler endpoints have
-  no authentication and must not be exposed.
+- Secrets from a secret store, not from a file on the server.
+- MongoDB and Redis with their own credentials. Today only their private network protects them.
+- Backups taken and copied off the server automatically, with the restore practised.
 - More than one core-api instance would need the simulated outbox gone (it is in
   memory) and has not been tried.
 - More than one gateway instance would need a Socket.IO adapter so that a message

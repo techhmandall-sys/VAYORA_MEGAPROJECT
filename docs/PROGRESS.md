@@ -1,5 +1,18 @@
 # Progress
 
+## 2026-11-01 (later still) — ready to go online, given a server
+
+- **`docker-compose.prod.yml` and `scripts/deploy.sh`:** one command on a server with a domain
+  name. Caddy serves HTTPS and passes each path to its owner; only ports 80 and 443 are open; it
+  refuses to start without real secrets. `scripts/backup.sh` and a restore that was tried.
+- **Tried on one machine only**, with a local certificate and without the road services. It has never
+  run on a real server, which needs the team's own account (DEPLOYMENT.md, Putting VAYORA online).
+- **Step-by-step setup for Google, Razorpay and Twilio** in DEPLOYMENT.md: those features are finished
+  in code and wait only on the team's accounts.
+- CI passed on `main` for the first time, with everything above it included except this entry's work.
+- All the services together were measured idling at 1.3 GB of memory.
+- No test suite was rerun for this: no application code changed.
+
 ## 2026-11-01 (last) — staff checks, tax invoices, and what code cannot finish
 
 - **Features 7, 8, 35 and 58 are now real, as checks by a person.** A driver can ask, an

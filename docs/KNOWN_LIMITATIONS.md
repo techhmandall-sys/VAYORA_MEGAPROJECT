@@ -313,6 +313,9 @@ mistake for more. Updated 2026-11-01.
 
 ## Environment
 
+- **VAYORA has never run on a real server.** The online setup was tried on one machine, with a local
+  certificate and without the road services. Everything about its first run on a server, including
+  how much memory building the road graphs needs, is unmeasured.
 - The host has Java 26 and Python 3.14; the project targets Java 21 and Python 3.11.
   Builds and tests run in containers that pin the right versions.
 - Something emptied the working tree before this work began. The cause is unknown.

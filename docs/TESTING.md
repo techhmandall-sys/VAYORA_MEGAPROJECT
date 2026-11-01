@@ -146,6 +146,7 @@ and again every number came out exactly as committed.
 
 ## Checked by hand against the running stack
 
+- **The online setup** (2026-11-01, headless Edge, one machine with a local certificate, without the road services): only ports 80 and 443 published; refuses to start without its secrets; HTTPS with HSTS and no server name; each path reaching its owner; core-api's health and intel's model and scheduler not reachable from outside; a WebSocket to the gateway through the edge; signing up and searching with nothing over plain HTTP; `scripts/backup.sh`, then an account deleted and brought back by the documented restore, the app healthy afterwards. Never on a real server.
 - **Staff checks** (2026-11-01, headless Edge against a throwaway stack with real PostgreSQL, MongoDB and Redis): a driver declared a licence and insurance and asked; a passenger still saw "not checked"; an administrator refused the insurance with a reason and checked the licence; the driver saw both outcomes and both notifications and asked again; the passenger then saw the badge, the chip and the insurance line on a real search, and the filter kept the driver; changing the document took the badge away; both decisions were in the audit log. No page errors.
 - **Demo data** (2026-10-24): `scripts/demo-data.mjs` against a throwaway stack made 36
   rides and 4 bookings; run again it added none; a passenger's search for the next day
