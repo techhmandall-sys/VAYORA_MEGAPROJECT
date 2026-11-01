@@ -77,7 +77,7 @@ public class TripService {
 
     // How far either side of the withdrawn ride an alternative may leave.
     private static final Duration ALTERNATIVES_WINDOW = Duration.ofHours(3);
-    private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
 
     private final JdbcTemplate jdbc;
     private final ReferralService referrals;
@@ -239,7 +239,7 @@ public class TripService {
                     : Text.of("No other ride with seats leaves near that time. Buses listed by VAYORA staff"
                             + " (check with the operator before travelling): {buses}.", "buses", listed);
         }
-        DateTimeFormatter time = DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH).withZone(CORRIDOR_ZONE);
+        DateTimeFormatter time = DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH).withZone(INDIA_ZONE);
         return Text.of("Other rides that could take you: {rides}. Search again to book one.", "rides",
                 others.stream().map(c -> c.detourMinutes() != null
                         ? Text.of("{time} with {driver}, picking you up at your own point", "time",
@@ -257,7 +257,7 @@ public class TripService {
         List<String> names = jdbc.queryForList(
                 "SELECT name FROM ride_stops WHERE ride_id = ? AND seq IN (?, ?) ORDER BY seq",
                 String.class, rideId, booking.fromSeq(), booking.toSeq());
-        LocalTime boarding = booking.boardingTime().atZone(CORRIDOR_ZONE).toLocalTime();
+        LocalTime boarding = booking.boardingTime().atZone(INDIA_ZONE).toLocalTime();
         LocalTime from = boarding.isBefore(LocalTime.of(1, 0)) ? LocalTime.MIN : boarding.minusHours(1);
         List<Bus> found = buses.between(names.get(0), names.get(1), from, 3);
         return found.stream()

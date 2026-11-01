@@ -32,7 +32,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class DocumentCheckService {
 
-    private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
 
     public enum Kind {
         IDENTITY,
@@ -213,7 +213,7 @@ public class DocumentCheckService {
         if (until.get(0) == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Declare this car's insurance first");
         }
-        if (until.get(0).isBefore(LocalDate.now(clock.withZone(CORRIDOR_ZONE)))) {
+        if (until.get(0).isBefore(LocalDate.now(clock.withZone(INDIA_ZONE)))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "That insurance has already ended");
         }
     }

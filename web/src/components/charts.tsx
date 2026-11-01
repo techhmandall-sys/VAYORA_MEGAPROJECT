@@ -1,13 +1,13 @@
 import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
-import { formatDayMonth, formatRupees, todayInCorridor } from '../lib/format';
+import { formatDayMonth, formatRupees, todayInIndia } from '../lib/format';
 import { useT } from '../lib/i18n';
 
 const DAY = 86_400_000;
 
-/** Days since 1970 on the corridor's calendar. */
-function corridorDay(iso: string): number {
+/** Days since 1970 on India's calendar. */
+function indiaDay(iso: string): number {
   const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(iso));
   return Math.floor(Date.parse(`${ymd}T00:00:00Z`) / DAY);
 }
@@ -50,10 +50,10 @@ export function WeeklyPayoutChart({ payouts, weeks = 8 }: { payouts: { amount: n
     return () => observer.disconnect();
   }, []);
 
-  const thisWeek = mondayOf(corridorDay(`${todayInCorridor()}T12:00:00Z`));
+  const thisWeek = mondayOf(indiaDay(`${todayInIndia()}T12:00:00Z`));
   const starts = Array.from({ length: weeks }, (_, i) => thisWeek - 7 * (weeks - 1 - i));
   const totals = starts.map((start) =>
-    payouts.filter((payout) => mondayOf(corridorDay(payout.createdAt)) === start).reduce((sum, payout) => sum + payout.amount, 0),
+    payouts.filter((payout) => mondayOf(indiaDay(payout.createdAt)) === start).reduce((sum, payout) => sum + payout.amount, 0),
   );
   const top = niceCeiling(Math.max(...totals));
   const plotW = W - PAD.left - PAD.right;

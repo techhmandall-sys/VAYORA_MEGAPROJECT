@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class HazardScoringService {
 
     private static final Logger log = LoggerFactory.getLogger(HazardScoringService.class);
-    private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
     /** Arbitrary; only has to be unique among this application's advisory locks. */
     private static final long SCORING_LOCK = 4972001L;
 
@@ -91,7 +91,7 @@ public class HazardScoringService {
             return new Summary(0, 0, 0, true);
         }
         Instant now = clock.instant();
-        Instant today = now.atZone(CORRIDOR_ZONE).toLocalDate().atStartOfDay(CORRIDOR_ZONE).toInstant();
+        Instant today = now.atZone(INDIA_ZONE).toLocalDate().atStartOfDay(INDIA_ZONE).toInstant();
 
         List<Candidate> candidates = jdbc.query("""
                 SELECT b.id, b.hazard_features::text AS features, b.accepted_at,

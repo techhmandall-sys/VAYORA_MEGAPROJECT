@@ -20,7 +20,7 @@ import { Button, Card, Chip, ConfirmButton, Detail, Notice, Page, QueryState, Se
 import { api } from '../lib/api';
 import { placeNamed } from '../lib/places';
 import { PlaceOptions } from '../components/places';
-import { answerBy, formatDate, formatDateTime, formatRupees, formatTime, todayInCorridor } from '../lib/format';
+import { answerBy, formatDate, formatDateTime, formatRupees, formatTime, todayInIndia } from '../lib/format';
 import { msg, useT, useUnits } from '../lib/i18n';
 import { matchReasonLabels } from '../lib/match';
 import { payAtCheckout } from '../lib/razorpay';
@@ -236,7 +236,7 @@ export function SearchPage() {
   const idempotencyKeys = useRef(new Map<string, string>());
   const { register, handleSubmit, formState, watch, setValue, getValues } = useForm<SearchForm>({
     resolver: zodResolver(searchSchema),
-    defaultValues: { origin: 'Kolhapur', destination: 'Pune', date: todayInCorridor(), seats: 1 },
+    defaultValues: { origin: 'Kolhapur', destination: 'Pune', date: todayInIndia(), seats: 1 },
   });
   const towns = { origin: watch('origin'), destination: watch('destination') };
 
@@ -366,7 +366,7 @@ export function SearchPage() {
           <SelectField label={t('To')} error={formState.errors.destination?.message} {...register('destination')}>
             <PlaceOptions />
           </SelectField>
-          <TextField label={t('Date')} type="date" min={todayInCorridor()} error={formState.errors.date?.message} {...register('date')} />
+          <TextField label={t('Date')} type="date" min={todayInIndia()} error={formState.errors.date?.message} {...register('date')} />
           <StepperField
             label={t('Seats')}
             type="number"

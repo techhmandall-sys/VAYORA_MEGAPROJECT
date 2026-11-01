@@ -38,7 +38,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class FlexibleRebooking {
 
     private static final Logger log = LoggerFactory.getLogger(FlexibleRebooking.class);
-    private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
     // Enough to step past rides this passenger cannot book (a women-only ride, say).
     private static final int TRIED = 5;
 
@@ -151,6 +151,6 @@ public class FlexibleRebooking {
     }
 
     private static String time(Candidate ride) {
-        return DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH).withZone(CORRIDOR_ZONE).format(ride.boardingTime());
+        return DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH).withZone(INDIA_ZONE).format(ride.boardingTime());
     }
 }

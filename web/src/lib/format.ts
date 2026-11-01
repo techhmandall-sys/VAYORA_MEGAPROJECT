@@ -1,5 +1,5 @@
 // Dates, times, money and distances, in the language the reader chose. Times are shown
-// in the corridor's time zone whatever the browser's is.
+// in India's time zone whatever the browser's is.
 
 const ZONE = 'Asia/Kolkata';
 
@@ -93,8 +93,8 @@ export function durationParts(minutes: number): { hours: number; minutes: number
   return { hours: Math.floor(minutes / 60), minutes: minutes % 60 };
 }
 
-/** Today's date in the corridor, as the yyyy-mm-dd a date input wants. */
-export function todayInCorridor(now: Date = new Date()): string {
+/** Today's date in India, as the yyyy-mm-dd a date input wants. */
+export function todayInIndia(now: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: ZONE }).format(now);
 }
 

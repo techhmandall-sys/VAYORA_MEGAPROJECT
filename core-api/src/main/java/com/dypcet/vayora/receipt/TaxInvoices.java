@@ -31,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class TaxInvoices {
 
-    private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
     private static final Pattern GSTIN = Pattern.compile("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]");
     // Maharashtra, taken as where the service is supplied: the first two characters of a GSTIN
     // name the state. A simplification for rides elsewhere, in docs/KNOWN_LIMITATIONS.md.
@@ -105,7 +105,7 @@ public class TaxInvoices {
         if (issued.isPresent() || !due || !configured() || charged.signum() <= 0) {
             return issued;
         }
-        String year = financialYear(LocalDate.now(clock.withZone(CORRIDOR_ZONE)));
+        String year = financialYear(LocalDate.now(clock.withZone(INDIA_ZONE)));
         jdbc.update("INSERT INTO tax_invoice_series (financial_year, last_serial) VALUES (?, 0) ON CONFLICT DO NOTHING", year);
         int last = jdbc.queryForObject("SELECT last_serial FROM tax_invoice_series WHERE financial_year = ? FOR UPDATE",
                 Integer.class, year);

@@ -77,7 +77,7 @@ public class VehicleService {
                 .divide(consumptionKwhPer100Km, 0, RoundingMode.DOWN).intValueExact();
     }
 
-    private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
 
     private final JdbcTemplate jdbc;
     private final Clock clock;
@@ -118,7 +118,7 @@ public class VehicleService {
      * (DocumentCheckService); declaring again starts that over.
      */
     public Vehicle declareInsurance(long vehicleId, long ownerId, String insurer, LocalDate insuredUntil) {
-        if (insuredUntil.isBefore(LocalDate.now(clock.withZone(CORRIDOR_ZONE)))) {
+        if (insuredUntil.isBefore(LocalDate.now(clock.withZone(INDIA_ZONE)))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "That insurance has already ended");
         }
         if (jdbc.update("UPDATE vehicles SET insurer = ?, insured_until = ? WHERE id = ? AND owner_id = ?",

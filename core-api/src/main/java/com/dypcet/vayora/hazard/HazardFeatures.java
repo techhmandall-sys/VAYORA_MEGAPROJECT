@@ -20,7 +20,7 @@ public class HazardFeatures {
 
     public static final String VERSION = "f2";
 
-    private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
 
     private final JdbcTemplate jdbc;
 
@@ -44,7 +44,7 @@ public class HazardFeatures {
         Map<String, Double> features = new LinkedHashMap<>();
         features.put("lead_hours", Duration.between(now, boarding).toSeconds() / 3600.0);
         features.put("seats", (double) seats);
-        features.put("departure_hour", (double) boarding.atZone(CORRIDOR_ZONE).getHour());
+        features.put("departure_hour", (double) boarding.atZone(INDIA_ZONE).getHour());
         // A search here names a day, not a time, so there is no preferred time to be
         // far from. The model was trained with real gaps; see KNOWN_LIMITATIONS.
         features.put("desired_gap_hours", 0.0);

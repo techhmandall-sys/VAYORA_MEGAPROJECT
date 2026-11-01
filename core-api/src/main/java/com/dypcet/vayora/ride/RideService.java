@@ -53,7 +53,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class RideService {
 
     /** A search date is a calendar day in India, which has one time zone. */
-    private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
     private static final String BOARDING = "r.departure_time + make_interval(mins => o.offset_minutes)";
     private static final int MAX_REPEAT_WEEKS = 8;
     // Matches the web card's "x km to pickup" hint: below this, feature 91's plain walk
@@ -523,7 +523,7 @@ public class RideService {
 
     /** The same time of day in India, so many weeks on. */
     private static Instant weeksLater(Instant time, int weeks) {
-        return time.atZone(CORRIDOR_ZONE).plusWeeks(weeks).toInstant();
+        return time.atZone(INDIA_ZONE).plusWeeks(weeks).toInstant();
     }
 
     /**
@@ -736,7 +736,7 @@ public class RideService {
      */
     public List<Candidate> alternatives(long passengerId, long withdrawnRideId, Point origin,
             Point destination, Instant boarding, int seats, Duration window, int most) {
-        return find(passengerId, origin, destination, boarding.atZone(CORRIDOR_ZONE).toLocalDate(),
+        return find(passengerId, origin, destination, boarding.atZone(INDIA_ZONE).toLocalDate(),
                 seats, Sort.TIME, Filters.NONE, false).stream()
                 .filter(c -> c.rideId() != withdrawnRideId)
                 .filter(c -> Duration.between(boarding, c.boardingTime()).abs().compareTo(window) <= 0)
@@ -758,14 +758,14 @@ public class RideService {
                 .addValue("olat", origin.lat()).addValue("olon", origin.lon())
                 .addValue("dlat", destination.lat()).addValue("dlon", destination.lon())
                 .addValue("radius", maxAccessMetres)
-                .addValue("dayStart", utc(date.atStartOfDay(CORRIDOR_ZONE).toInstant()))
-                .addValue("dayEnd", utc(date.plusDays(1).atStartOfDay(CORRIDOR_ZONE).toInstant()))
+                .addValue("dayStart", utc(date.atStartOfDay(INDIA_ZONE).toInstant()))
+                .addValue("dayEnd", utc(date.plusDays(1).atStartOfDay(INDIA_ZONE).toInstant()))
                 .addValue("now", utc(clock.instant()))
                 .addValue("midRouteCutoff", utc(clock.instant().plus(midRouteLead)))
                 .addValue("keptSince", utc(keptRides.windowStart()))
                 .addValue("seats", seats)
                 .addValue("passenger", passengerId)
-                .addValue("zone", CORRIDOR_ZONE.getId())
+                .addValue("zone", INDIA_ZONE.getId())
                 .addValue("earliestHour", filters.earliestHour())
                 .addValue("latestHour", filters.latestHour())
                 .addValue("maxPrice", filters.maxPricePerSeat())
@@ -1041,7 +1041,7 @@ public class RideService {
             if (stops == null) {
                 return c;
             }
-            LocalDate day = c.boardingTime().atZone(CORRIDOR_ZONE).toLocalDate();
+            LocalDate day = c.boardingTime().atZone(INDIA_ZONE).toLocalDate();
             Rickshaws.Estimate pickup = c.detourMinutes() != null ? null
                     : rickshaws.between(origin, stops[0], stops[0], c.pickupDistanceM(), day).orElse(null);
             Rickshaws.Estimate dropoff = rickshaws.between(stops[1], destination, stops[1], c.dropoffDistanceM(), day)

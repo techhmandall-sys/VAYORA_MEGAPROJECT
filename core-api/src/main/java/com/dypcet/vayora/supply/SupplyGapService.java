@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SupplyGapService {
 
-    private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
 
     /**
      * @param emptySearches searches for that day and stretch that were offered no ride
@@ -105,7 +105,7 @@ public class SupplyGapService {
 
     /** Days from today to the horizon where enough searches on one stretch found nothing. */
     public List<Gap> upcoming() {
-        LocalDate today = LocalDate.now(clock.withZone(CORRIDOR_ZONE));
+        LocalDate today = LocalDate.now(clock.withZone(INDIA_ZONE));
         return jdbc.query("""
                 WITH searched AS (
                     SELECT s.id, (s.payload->>'date')::date AS day,

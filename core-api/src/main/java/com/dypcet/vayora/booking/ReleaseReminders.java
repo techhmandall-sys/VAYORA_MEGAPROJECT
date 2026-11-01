@@ -53,7 +53,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class ReleaseReminders {
 
     private static final Logger log = LoggerFactory.getLogger(ReleaseReminders.class);
-    private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
 
     /**
      * Logged as the simulator logs a request.
@@ -165,7 +165,7 @@ public class ReleaseReminders {
         }
         Optional<List<Long>> plan = scheduler.plan(
                 risky.stream().map(d -> new Candidate(d.bookingId(), d.rideId(),
-                        d.boarding().atZone(CORRIDOR_ZONE).toLocalDate().toEpochDay(), d.seats(), d.survival(),
+                        d.boarding().atZone(INDIA_ZONE).toLocalDate().toEpochDay(), d.seats(), d.survival(),
                         Duration.between(now, d.boarding()).toMinutes() / 60.0)).toList(),
                 new Limits(targeting.contactsPerRound(), targeting.contactsPerRide(), targeting.seatsPerDepartureDay(),
                         targeting.refillHorizonHours(), targeting.solverTimeLimitSeconds()));

@@ -40,9 +40,9 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ReceiptService {
 
-    private static final ZoneId CORRIDOR_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
     private static final DateTimeFormatter WHEN =
-            DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm 'IST'", Locale.ENGLISH).withZone(CORRIDOR_ZONE);
+            DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm 'IST'", Locale.ENGLISH).withZone(INDIA_ZONE);
 
     /**
      * What a booking's receipt says, as the records say it.
