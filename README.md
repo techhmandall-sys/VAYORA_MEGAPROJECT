@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/shivampatil4972/VAYORA-/actions/workflows/ci.yml/badge.svg)](https://github.com/shivampatil4972/VAYORA-/actions/workflows/ci.yml)
 
-AI-powered intercity ride-sharing for the Kolhapur to Pune corridor (~230 km), built to
-test one idea about cancellations.
+AI-powered intercity ride-sharing in India, built to test one idea about cancellations on one
+corridor: Kolhapur to Pune (~230 km).
 
 Final-year B.Tech project, CSE (Data Science), DYPCET Kolhapur, team of four.
 
@@ -22,9 +22,10 @@ more bookings and still move fewer people.
 | | |
 |---|---|
 | Features | 87 of 95 verified, 7 partial, 1 not started: about 95% counting a partial feature as half ([feature matrix](docs/FEATURE_MATRIX.md)) |
-| Tests | 324 Java, 246 web, 210 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
+| Routes | Any route in India in the app, from 126 listed cities or a point on the map. Road distances between Kolhapur and Pune; elsewhere a labelled straight line until a bigger map is built ([how](docs/DEPLOYMENT.md#road-routes-across-india)) |
+| Tests | 343 Java, 266 web, 210 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
 | Languages | English, Hindi and Marathi, on every screen, notification and error message |
-| Research | A SimPy simulator of the corridor: 60 simulated days, 30 seeds per variant, train and validation on disjoint seeds |
+| Research | On Kolhapur to Pune alone. A SimPy simulator of the corridor: 60 simulated days, 30 seeds per variant, train and validation on disjoint seeds |
 | Data | All synthetic, plus one public dataset of real hotel cancellations used as a check |
 
 ## What the research found
@@ -296,7 +297,8 @@ are in [CLAUDE.md](CLAUDE.md).
 | `docs/` | Report material and figures |
 
 OSRM serves a clipped bounding box: `infra/osrm/prepare.sh` downloads Geofabrik's western
-India extract and clips it to the corridor (`OSRM_BBOX`, default `73.4,16.4,74.9,18.9`).
+India extract and clips it to the corridor (`OSRM_BBOX`, default `73.4,16.4,74.9,18.9`). A
+route outside that box shows as a straight line and says so.
 To rebuild from scratch: `docker compose down && docker volume rm vayora_osrmdata`.
 
 ## Data and credits

@@ -9,9 +9,9 @@ with the lint checks below: `npm run lint` in `web/` and `gateway/` (ESLint), an
 
 | Suite | Command, from the repository root | Tests |
 |---|---|---|
-| core-api | `docker compose --profile test run --rm core-api-tests` | 340 |
+| core-api | `docker compose --profile test run --rm core-api-tests` | 343 |
 | Python (events, simulator, model, scheduler, experiments, intel API) | `docker compose --profile research run --rm research` | 210 |
-| web | `cd web && npm ci && npm test` | 255 |
+| web | `cd web && npm ci && npm test` | 266 |
 | gateway | `cd gateway && npm ci && npm test` | 28 |
 
 The first two need only Docker. The Python suite also needs PostgreSQL running:
@@ -146,6 +146,7 @@ and again every number came out exactly as committed.
 
 ## Checked by hand against the running stack
 
+- **Any route in India** (2026-11-01, headless Edge against a throwaway stack with its own database, using the real OSRM and model): Chennai to Bengaluru previewed as a 290.2 km straight line, where before the snapping check OSRM's answer gave a false 69.7 km road, having moved the points 705 km and 508 km. Kolhapur to Pune stayed a 230 km road route and Pune to Kolhapur a 233.6 km one. Mumbai to Panaji through Ratnagiri was published through the form, labelled a 412 km straight line; it was found from Mumbai and from Ratnagiri and not in the opposite direction, and a seat was booked and confirmed. Chennai to Bengaluru and Pune to Kolhapur were published and found. The same place twice was refused. The publish form fits a 390-pixel phone; the front page reads in Hindi and Marathi. The stack and its volumes were then removed.
 - **The online setup** (2026-11-01, headless Edge, one machine with a local certificate, without the road services): only ports 80 and 443 published; refuses to start without its secrets; HTTPS with HSTS and no server name; each path reaching its owner; core-api's health and intel's model and scheduler not reachable from outside; a WebSocket to the gateway through the edge; signing up and searching with nothing over plain HTTP; `scripts/backup.sh`, then an account deleted and brought back by the documented restore, the app healthy afterwards. Never on a real server.
 - **Staff checks** (2026-11-01, headless Edge against a throwaway stack with real PostgreSQL, MongoDB and Redis): a driver declared a licence and insurance and asked; a passenger still saw "not checked"; an administrator refused the insurance with a reason and checked the licence; the driver saw both outcomes and both notifications and asked again; the passenger then saw the badge, the chip and the insurance line on a real search, and the filter kept the driver; changing the document took the badge away; both decisions were in the audit log. No page errors.
 - **Demo data, with its past** (2026-11-01): against a throwaway stack with the real model, 4 trips driven and rated, a no-show, two cancellations, a request waiting, documents checked and waiting, and 4 bookings scored; run again it added nothing; 15 screens walked in headless Edge as drivers, a passenger and an administrator, with no page errors and the booking counts adding up.

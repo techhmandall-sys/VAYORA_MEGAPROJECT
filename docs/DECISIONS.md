@@ -107,6 +107,10 @@ was decided while building within them.
 
 | Decision | Why | Cost |
 |---|---|---|
+| The app serves any route in India; the research stays on Kolhapur to Pune (team's decision, 2026-11-01) | The frozen parameters bind the simulator, the experiments and the report, not who may use the platform | Nothing in the report speaks for any other route, and the durability model has only seen this one |
+| Roads only where the map reaches for now; elsewhere a labelled straight line (team's decision, 2026-11-01) | A whole-India road graph needs far more memory and time to build than this project has needed, and is a setting away when wanted | Distances, times, suggested prices and an electric car's range check are rough outside the map |
+| A point OSRM moved more than 2 km to reach a road is off its map (`vayora.osrm.max-snap-metres`) | OSRM answers "Ok" for any point by moving it to its nearest road: Chennai to Bengaluru came back as 69.7 km, the points moved 705 km and 508 km. Corridor points move metres | A real stop more than 2 km from any mapped road shows a straight line |
+| The places are a list of 126 cities, not free text | A search needs coordinates, a name has to be translated, and the stack has no geocoding service | A town not listed is reached by a map point from the nearest city that is |
 | A rickshaw fare is given only where a published fare says both how far its minimum goes and the rate after | A fare worked out from half a rule would be a guess shown as a price | Kolhapur, where the corridor starts, gets a time but no fare |
 | A rickshaw's time is the car route's | It is the only road time the platform has; an auto-rickshaw's pace in traffic is unknown | Labelled an estimate, it may still read as too quick |
 | Search is by location; town names are presets for coordinates | Passengers rarely start at a stop | A straight-line access limit, not a walking distance |

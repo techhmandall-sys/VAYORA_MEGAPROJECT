@@ -75,6 +75,21 @@ mistake for more. Updated 2026-11-01.
 
 ## Platform
 
+- **Road routes stop at the edge of the map.** The app takes routes anywhere in India, but the road
+  graph as shipped covers a box around Kolhapur to Pune. Anywhere else, distance, driving time,
+  suggested prices, walks and pickups come from straight lines, and where a distance or a walk is
+  shown it says so. A road is longer than a straight line, so outside the map an electric car's range
+  check is lenient and a suggested price low. A whole-India graph has not been built or tried.
+- **The research says nothing about other routes.** Every number in the report comes from the
+  simulated Kolhapur to Pune corridor.
+- **The places are a list:** 126 cities in 34 states and union territories, with Andaman and Nicobar
+  and Lakshadweep left out for having no road link. Their coordinates are town centres entered by
+  hand and checked only to lie in India, not against a survey. A town not listed is reached by a map
+  point from the nearest city that is, and a driver's stop keeps that city's name.
+- A stop can be at most 48 hours after departure, so the very longest routes in India have to be
+  split into separate rides. The form says so when a time is too long.
+- Rickshaw fares exist only where a fare is published and entered (Kolhapur and Pune as shipped).
+  Elsewhere a rickshaw is shown with no fare.
 - **Signing up with a phone number proves nothing about the number.** It is unconfirmed
   until a code proves it, and the code goes only to the simulated outbox. Someone can sign
   up with a number that is not theirs, and the real owner then cannot use it until an
@@ -118,7 +133,7 @@ mistake for more. Updated 2026-11-01.
   who disputes a completed trip still owes it until an administrator acts, and the dispute
   page does not show what is owed. The simulator does not model paying later, so whether
   it changes when people cancel is not known.
-- Receipts are not tax invoices unless a GST registration is configured, and none has been, so tax invoices have never been used for real. They cover only what VAYORA itself charges, on real payments. The rate, the SAC code and leaving the fare out are the authors' reading, for a tax adviser to confirm, and there are no credit notes. The PDF is in English only; the receipt page is in the reader's language.
+- Receipts are not tax invoices unless a GST registration is configured, and none has been, so tax invoices have never been used for real. They cover only what VAYORA itself charges, on real payments. The rate, the SAC code and leaving the fare out are the authors' reading, for a tax adviser to confirm, and there are no credit notes. So is taking Maharashtra as where the service is supplied, which decides CGST and SGST or IGST whichever state the ride is in. The PDF is in English only; the receipt page is in the reader's language.
 - A payout is recorded the moment a trip completes. There is no settlement delay,
   dispute window or bank detail.
 - **A seat hold is a courtesy, not a guarantee.** It lives only in Redis. If Redis is
@@ -258,6 +273,9 @@ mistake for more. Updated 2026-11-01.
 
 ## Model in the platform
 
+- **The durability model has only seen the corridor.** Its features do not name a route, so it scores
+  a booking anywhere, but it was trained on a simulated Kolhapur to Pune and whether its scores mean
+  anything elsewhere is not known. As everywhere, they only decide whom the seat-release reminder asks.
 - **Train and serve differ on one feature.** The simulator has a preferred departure
   time, so `desired_gap_hours` varies in training. A platform search names a day only,
   so the platform always sends 0.

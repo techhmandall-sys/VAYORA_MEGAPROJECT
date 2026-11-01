@@ -30,7 +30,7 @@ FEATURE_MATRIX.md; for what it cannot, KNOWN_LIMITATIONS.md.
 | PostgreSQL 16 + PostGIS | | Users, vehicles, rides, routes, bookings, payments, ratings, moderation, the event log | Yes |
 | MongoDB 7 | | Chat messages, GPS points, in-app notifications | Yes |
 | Redis 7 | | Seat holds and the route cache | Yes, all of it disposable |
-| OSRM | | Road routes on the corridor | A prebuilt road graph |
+| OSRM | | Road routes, on the corridor as shipped; elsewhere the app shows a labelled straight line | A prebuilt road graph |
 
 ## The rule that settles where things go
 

@@ -1,6 +1,27 @@
 # Progress
 
-## 2026-11-01 (latest) — demo data with a past
+## 2026-11-01 (latest) — any route in India, the research unchanged
+
+- **The team decided the platform serves all of India and the research stays on Kolhapur to Pune.**
+  CLAUDE.md now says which is which. No simulator, experiment, config or reported number changed.
+- **Searching and publishing take any of 126 cities in 34 states and union territories**, in English,
+  Hindi and Marathi, in either direction. A driver chooses the start and the end and adds up to eight
+  stops on the way. Times are pre-filled roughly and prices are the driver's, as before.
+- **Road routes remain on the corridor for now, by the team's choice.** Elsewhere a route is a labelled
+  straight line; a bigger map is a setting away (DEPLOYMENT.md), not built or tried.
+- **A bug this exposed, fixed:** OSRM answers for any point by moving it to its nearest road, so
+  Chennai to Bengaluru came back as a confident 69.7 km. A point moved more than 2 km now counts as off
+  the map. The tests had never asked, for no point off the map could be chosen.
+- **Two more, fixed:** a search could only go towards Pune, so nobody could look for the way back; and
+  a worked-out route stayed on screen, with its prices ready to use, after the stops changed.
+- **A made-up figure removed:** the front page's tooltip gave "about N seats published here" from
+  numbers invented for the drawing. The drawing itself remains, as decoration.
+- Not done, recorded in KNOWN_LIMITATIONS.md: GST invoices still take Maharashtra as the place of supply,
+  for a tax adviser to confirm before they are switched on. The durability model has only seen the corridor.
+- core-api 343 and web 266 tests pass. Python and the gateway were not rerun: neither changed. Checked
+  in a browser against a throwaway stack with the real OSRM (TESTING.md).
+
+## 2026-11-01 (later again) — demo data with a past
 
 - **`scripts/demo-data.mjs` now gives the app a past**, through the same calls real use makes: trips
   driven, rated and paid out, a no-show, an early and a late cancellation, a request waiting,

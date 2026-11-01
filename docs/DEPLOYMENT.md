@@ -49,7 +49,7 @@ Every setting has a working default in `docker-compose.yml`. To change one, copy
 | `PG_VOLUME` | `vayora_pgdata` | The Docker volume holding the database. A database made before the project was renamed from JOURNEX is in `journex_pgdata`; set this to keep using it |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Where the browser app is served from, for core-api, the gateway and intel. Change it together with `WEB_PORT` |
 | `*_PORT` | see the table above | Change one if the port is taken |
-| `OSRM_PBF_URL`, `OSRM_BBOX` | western India, clipped to the corridor | |
+| `OSRM_PBF_URL`, `OSRM_BBOX` | western India, clipped to the corridor | [Road routes across India](#road-routes-across-india) |
 | `VAYORA_PUSH_PUBLIC_KEY`, `VAYORA_PUSH_PRIVATE_KEY` | empty | Push notifications are off unless both are set. `node scripts/vapid-keys.mjs` prints a new pair. Keep the private key secret; a new pair makes every browser subscribe again |
 | `GOOGLE_CLIENT_ID` | empty | "Sign in with Google" is off unless set: a Web application OAuth client ID from the Google Cloud console, with the web app's address as an authorised JavaScript origin. Add it to the core-api service's environment |
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | unset | An SMTP server for real email. Unset: nothing is emailed. Add them to the core-api service's environment |
@@ -122,9 +122,32 @@ platform, in the `events` table, kept apart by `run_id`.
 | A port is already allocated | Something else is using it; change the matching `*_PORT` in `.env` |
 | The app loads but every request fails | `CORS_ALLOWED_ORIGINS` does not match the address the app is opened at |
 | Sign-in works but chat does not connect | The gateway has a different `JWT_SECRET` from core-api |
-| Routes are straight lines | OSRM is not running, or still building its graph. Check `docker compose logs osrm-build` |
+| Routes are straight lines | Outside the map, which as shipped covers Kolhapur to Pune, that is expected. On the corridor: OSRM is not running, or still building its graph. Check `docker compose logs osrm-build` |
 | Walks say "in a straight line" | The walking graph (`osrm-foot`) is not running or still building. Check `docker compose logs osrm-build-foot` |
 | No administrator | `ADMIN_EMAIL` and `ADMIN_PASSWORD` were not set when core-api started. Set them and restart it |
+
+## Road routes across India
+
+As shipped, the road graph covers a box around Kolhapur to Pune. The app takes routes anywhere in
+India, and outside the box shows each as a straight line and says so. For roads everywhere, put this
+in `.env`:
+
+```
+OSRM_PBF_URL=https://download.geofabrik.de/asia/india-latest.osm.pbf
+OSRM_BBOX=68,6,98,38
+```
+
+then throw away the old graph and build the new one. `down` keeps the database:
+
+```
+docker compose down
+docker volume rm vayora_osrmdata
+docker compose up -d --wait
+```
+
+**This has not been tried here.** The file is several times the size of the western zone, and the
+graph takes far more memory, disk and time to build, so expect to need a larger machine. The research
+is not affected: the simulator and the experiments do not use OSRM.
 
 ## Switching on real services
 
