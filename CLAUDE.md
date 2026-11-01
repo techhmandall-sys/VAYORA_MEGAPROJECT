@@ -26,6 +26,10 @@ serves this or is cut.
 | Seeds            | 30 per variant                     |
 | Primary metric   | completed rides per 100 searches   |
 
+These bind the research: the simulator, the experiments and every number in the report. The
+platform itself serves routes anywhere in India, as the team decided on 2026-11-01; that changes
+nothing about the research, which stays on this corridor.
+
 ## Architecture rule — settles every placement question
 
 - **Spring Boot** (`core-api/`) owns transactions and truth.
