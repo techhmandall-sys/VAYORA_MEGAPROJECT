@@ -1,6 +1,14 @@
 # Progress
 
-## 2026-11-01 (latest) — an interface that keeps itself current
+## 2026-11-01 (latest) — the old volumes deleted
+
+- **`journex_pgdata`, `journex_mongodata`, `journex_osrmdata` and `journex_m2cache` are gone, at the
+  team's request:** about 22 GB. No container used them, and the running database held 51,599,844 events
+  before and after. Their contents were checked against the `vayora_*` copies when the data moved.
+- **`vayora_pgdata` is now the only copy of the research events on this machine.** `scripts/reproduce.sh`
+  deletes and rebuilds runs, so back it up before Gate E. No backup has been taken.
+
+## 2026-11-01 (just before) — an interface that keeps itself current
 
 - **A side bar in place of the row of pills:** icons alone on a tablet, names on a wider screen,
   administrators' pages grouped, a marker sliding between pages. On a phone, tabs along the bottom

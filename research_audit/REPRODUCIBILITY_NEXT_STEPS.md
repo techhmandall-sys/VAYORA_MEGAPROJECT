@@ -506,18 +506,18 @@ C: had about 102 GB free on 2026-11-01, so the copy §7 ruled out became possibl
 - Postgres was started on `journex_pgdata`, where it recovered from an unclean shutdown, then stopped cleanly and copied.
 - Before and after the copy, every `events` row was fingerprinted per run: count, lowest and highest id, and a sum of hashes over id, variant, seed, time, type and payload. Users, rides, bookings and migrations were counted too. **The two outputs are identical**: 51,599,844 events, 16 runs plus 125 platform events.
 - Mongo is unchanged: 3 chat messages, 25 notifications.
-- `.env` in both folders no longer sets `PG_VOLUME`, so the default applies. `journex_pgdata` is **kept, not deleted**.
+- `.env` in both folders no longer sets `PG_VOLUME`, so the default applies. `journex_pgdata` is **kept, not deleted**. (Deleted later the same day, at the team's request: see "Still open".)
 
 ### What this changes
 
 - **Both folders now drive the same `vayora-*` containers and the same database.** The stack is currently running from `JOURNEX`. Run it, and any experiment, from one folder only (§2.4).
 - §7's warnings about `JOURNEX` no longer apply: it reaches the database, and its `.env` is in place.
-- Gate E: `scripts/reproduce.sh` deletes and rebuilds its own runs in `vayora_pgdata`. `journex_pgdata` still holds the earlier copy of those events.
+- Gate E: `scripts/reproduce.sh` deletes and rebuilds its own runs in `vayora_pgdata`. `journex_pgdata` held the earlier copy of those events and has since been deleted, so **`vayora_pgdata` is the only copy on this machine: back it up before Gate E**.
 
 ### Still open
 
 1. **Gate D, starting with the merge. The team's decision, and it creates a commit.** The history §2.1 needs is a merge commit with parents `0cbeafb` and `176dc9c`, which needs `MERGE_HEAD` to name `176dc9c` first. [NOT TESTED] Committing with `MERGE_HEAD` empty would probably record only one parent, leaving GitHub's `main` out of the history. Do not run `git commit` until this is decided.
 2. **Gate E**, with the question in §6 about adding runs `…-006` to `…-010` and `5eeb…-009` to the script.
-3. **Removing the old volumes** (`journex_pgdata`, `journex_mongodata`, `journex_osrmdata`, `journex_m2cache`, about 22 GB) once the team no longer wants them as a fallback.
+3. ~~Removing the old volumes~~ **Done 2026-11-01, at the team's request:** `journex_pgdata`, `journex_mongodata`, `journex_osrmdata` and `journex_m2cache`, about 22 GB. Checked first: no container used them, and the running database held 51,599,844 events, before and after. They can no longer serve as a fallback.
 4. **Whether the `JOURNEX` folder itself is renamed.** The audit's paths and `verified_results.csv` name it.
 5. **Gate G**, push.
