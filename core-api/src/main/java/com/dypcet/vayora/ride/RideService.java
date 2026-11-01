@@ -1090,6 +1090,43 @@ public class RideService {
         return candidate.withSeatsAvailable(Math.max(0, Collections.min(free)));
     }
 
+    /** A stretch of a ride, between two of its stops. */
+    public record Stretch(long rideId, int fromSeq, int toSeq) {
+    }
+
+    /** How a stretch stands now. {@code seatsAvailable} is counted as a search counts it. */
+    public record Availability(long rideId, int fromSeq, int toSeq, String status, int seatsAvailable) {
+    }
+
+    /**
+     * How stretches stand now, for a screen keeping its results current. A search's count, with
+     * the seats others are holding taken off, and deliberately not a search: it writes nothing
+     * to the event log, whose searches are what people asked for. A screen refreshing itself is
+     * not asking, and counting it would bend completed rides per 100 searches. A stretch that
+     * does not exist is left out.
+     */
+    public List<Availability> availability(long passengerId, List<Stretch> stretches) {
+        List<Availability> found = new ArrayList<>();
+        for (Stretch stretch : stretches) {
+            Map<Integer, Integer> held = holds.heldByOthers(stretch.rideId(), passengerId);
+            String[] status = new String[1];
+            int[] least = {Integer.MAX_VALUE};
+            jdbc.query("""
+                    SELECT r.status, s.seq, s.seats_available
+                    FROM rides r JOIN ride_segments s ON s.ride_id = r.id
+                    WHERE r.id = ? AND s.seq >= ? AND s.seq < ?""",
+                    rs -> {
+                        status[0] = rs.getString("status");
+                        least[0] = Math.min(least[0], rs.getInt("seats_available") - held.getOrDefault(rs.getInt("seq"), 0));
+                    },
+                    stretch.rideId(), stretch.fromSeq(), stretch.toSeq());
+            if (status[0] != null) {
+                found.add(new Availability(stretch.rideId(), stretch.fromSeq(), stretch.toSeq(), status[0], Math.max(0, least[0])));
+            }
+        }
+        return found;
+    }
+
     private static List<Point> points(List<StopInput> stops) {
         return stops.stream().map(stop -> new Point(stop.lat(), stop.lon())).toList();
     }

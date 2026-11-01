@@ -1,6 +1,7 @@
 package com.dypcet.vayora.ride;
 
 import com.dypcet.vayora.identity.CurrentUser;
+import com.dypcet.vayora.ride.RideService.Availability;
 import com.dypcet.vayora.ride.RideService.Candidate;
 import com.dypcet.vayora.ride.RideService.Filters;
 import com.dypcet.vayora.vehicle.VehicleService.Comfort;
@@ -11,6 +12,7 @@ import com.dypcet.vayora.ride.RideService.Ride;
 import com.dypcet.vayora.ride.RideService.RoutePreview;
 import com.dypcet.vayora.ride.RideService.Sort;
 import com.dypcet.vayora.ride.RideService.StopInput;
+import com.dypcet.vayora.ride.RideService.Stretch;
 import com.dypcet.vayora.routing.RouteService.Point;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
@@ -141,6 +143,19 @@ public class RideController {
                 new Filters(earliestHour, latestHour, maxPrice, instantOnly, confirmedDriver,
                         smokeFree, petsWelcome, maxTwoInBack, womenOnly, minPrice, musicWelcome,
                         quietRide, comfortAtLeast, luggageAtLeast, idCheckedDriver));
+    }
+
+    /**
+     * Seats left now on stretches of rides, for a screen keeping its results current, each given
+     * as {@code rideId:fromSeq:toSeq}. Records nothing, unlike a search.
+     */
+    @GetMapping("/availability")
+    public List<Availability> availability(@AuthenticationPrincipal Jwt jwt,
+            @RequestParam @Size(min = 1, max = 30) List<@Pattern(regexp = "\\d{1,18}:\\d{1,4}:\\d{1,4}") String> stretch) {
+        return rides.availability(CurrentUser.id(jwt), stretch.stream().map(given -> {
+            String[] parts = given.split(":");
+            return new Stretch(Long.parseLong(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+        }).toList());
     }
 
     @GetMapping("/mine")
