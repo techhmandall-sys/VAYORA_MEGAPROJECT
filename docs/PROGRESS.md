@@ -1,5 +1,19 @@
 # Progress
 
+## 2026-11-01 (latest) — demo data with a past
+
+- **`scripts/demo-data.mjs` now gives the app a past**, through the same calls real use makes: trips
+  driven, rated and paid out, a no-show, an early and a late cancellation, a request waiting,
+  documents checked and waiting, unmet demand, and with an administrator given, the real durability
+  model over the bookings. Every account, review and ride note says it is made up.
+- **It does not finish features 77 or 89, and they stay as they were.** Asked for dummy data in place
+  of real data: 77 already rests on simulated data, which is why it is partial, and calibrating
+  against made-up figures would only compare the simulator with itself. Recorded in DECISIONS.md.
+- A sweep of `searches_per_day` has not been run. The supply sweep (6, 12 and 20 rides a day) varies
+  how scarce seats are, not demand itself. It would be the honest stand-in for 89, and is for the
+  team to decide.
+- No test suite was rerun: only the script changed. Walked in a browser against a throwaway stack.
+
 ## 2026-11-01 (later still) — ready to go online, given a server
 
 - **`docker-compose.prod.yml` and `scripts/deploy.sh`:** one command on a server with a domain

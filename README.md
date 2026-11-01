@@ -168,10 +168,14 @@ its fields, tried from the page once **Authorize** has the token sign-in returns
 DEMO_PASSWORD=<8 or more characters> node scripts/demo-data.mjs
 ```
 
-Four drivers, six days of corridor rides each way, and two passengers with seats booked,
-all signing in with that password. Every demo account says in its profile that it is made
-up, and nothing it does reaches the research figures, which are computed per simulation
-run. It refuses any API but this machine's.
+Four drivers, six days of corridor rides each way, and two passengers with seats booked, all
+signing in with that password, then a past to look at: trips completed and rated, earnings, a
+no-show, cancellations, a request waiting and documents waiting for staff. Set
+`DEMO_ADMIN_EMAIL` and `DEMO_ADMIN_PASSWORD` too and it marks some document checks, noted as demo,
+and runs the real durability model over the bookings. Every account, review and ride note says it
+is made up, and nothing it does reaches the research figures, which are computed per simulation
+run. It makes the app look used; it is not evidence of anything. It refuses any API but this
+machine's.
 
 **A port already in use?** Every host port is a `*_PORT` setting in `.env`;
 `check-health.sh` reads the same variables:
