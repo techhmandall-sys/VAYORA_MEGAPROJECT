@@ -1,6 +1,21 @@
 # Progress
 
-## 2026-11-01 (latest) — what code could still do for the unfinished features
+## 2026-11-02 — ready for real data, and India's other scripts on the PDF
+
+- **`experiments/real_data.py` says how far real activity is from being enough**, for demand (89) and the
+  model (77), leaving out demo and test accounts. Once demand is enough it writes a world at that demand.
+  On the real log today: 15 searches by 2 people over 6 days, and no accepted booking that has departed.
+- **`experiments/hazard/train_real.py` trains on real bookings once there are enough**, and refuses until
+  then. What it makes is not served. Only made-up history has been through it, which found a bug: a
+  feature that never varies, as `desired_gap_hours` never does on the platform, stopped the Cox fit.
+  Fixed, and the simulator's model retrained byte for byte the same, so no research result moved.
+- **PDF receipts draw names in nine Indian scripts**, not Devanagari alone: Bengali, Gurmukhi, Gujarati,
+  Odia, Tamil, Telugu, Kannada and Malayalam too. Other scripts, Urdu's among them, still print as "?".
+- Features unchanged: 87 verified, 8 partial, about 96%. These make 77 and 89 ready for real data, the way
+  2, 46 and 64 are ready for accounts. They do not finish them.
+- core-api 349, web 296 and Python 224 tests pass. The gateway was not rerun: it did not change.
+
+## 2026-11-01 (latest that day) — what code could still do for the unfinished features
 
 - **Demand (89) moves from not started to partial, and is still not calibrated.** No real figures exist.
   A 30-seed sweep halved and doubled the assumed demand instead: asking adds nothing at any level, and

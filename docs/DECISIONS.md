@@ -12,6 +12,8 @@ was decided while building within them.
 
 | Decision | Why | Cost |
 |---|---|---|
+| Real data is used only past a stated amount, and without demo and test accounts (`real_data.yaml`, 2026-11-02) | So a calibration or a model cannot quietly come from a handful of bookings or from data somebody made up | The amounts are the authors' judgement. Real features 77 and 89 wait until they are reached |
+| A model trained on real bookings is not served automatically; earlier outcomes train and later ones validate (2026-11-02) | Replacing the model in use is a decision to take on evidence. There are no seeds to keep apart in real data, and time is how a model would meet bookings it has not seen | Someone has to read the report and decide |
 | The primary metric is completed rides per 100 searches, every other number secondary | CLAUDE.md fixes it; bookings can rise while rides do not | A variant that only moves cancellations earlier scores nothing, which is what happened |
 | Cox proportional hazards is the served model | Best departure Brier score and concordance of the three fitted | Its proportional-hazards assumption is violated for lead time |
 | The gradient-boosted survival model trains on a 5,000-row sample | Its loss is quadratic in rows; the full set ran for over ten minutes | It is compared on less data than Cox |
@@ -145,7 +147,7 @@ was decided while building within them.
 | Money and times use the same digits in every language | Passenger and driver read the same fare | |
 | A chat message is shown when the gateway relays it, not when it is typed | What a sender sees is what everyone received | |
 | Irreversible actions need a second, explicit press | Cancelling, completing and marking a no-show cannot be undone | One more click |
-| The PDF receipt is in English, with names in Latin or Devanagari (2026-11-01) | Java's own text layout shapes Devanagari, and the outlines are drawn into the PDF, because PDFBox's shaping printed "कार्तिक" as "कातर्कि": a wrong name on a receipt is worse than none | Such a name cannot be selected in the PDF, and other scripts print as "?". The receipt page has neither limit |
+| The PDF receipt is in English, with names in Latin or India's nine main scripts (2026-11-02) | The platform serves all of India. Java's own text layout shapes them, and the outlines are drawn into the PDF, because PDFBox's shaping printed "कार्तिक" as "कातर्कि": a wrong name on a receipt is worse than none | Such a name cannot be selected in the PDF, and other scripts print as "?". The receipt page has neither limit |
 | A receipt in Hindi or Marathi is a page in the app that the browser prints or saves as PDF (from 2026-10-21) | The browser already has fonts that shape Devanagari; PDFBox does not shape it, and embedding fonts would add files and licences | Two forms of one receipt. Both come from one query, so they cannot disagree on the facts |
 | Flexibility tiers are a time window, chosen by the passenger | The team's choice: the passenger agrees in advance to be moved, and the price never changes, so nothing is priced or decided on a prediction about them. "Hazard-informed" means only that Flexible is suggested on a driver whose own record shows withdrawals | A rebooked passenger may land on a ride the driver approves, so they hold a request, not a seat |
 | A rebooking runs after the withdrawal commits, in its own transaction | So a rebooking that fails cannot undo the withdrawal or anyone's refund. Found in testing: a notification sent from an after-commit step must have its own transaction too, or it waits for a commit that has already happened and is never written | |
@@ -173,7 +175,7 @@ Each was justified in one sentence when it was added, as CLAUDE.md requires.
 
 | Dependency | Where | Why |
 |---|---|---|
-| Noto Sans Devanagari, one font file | core-api | So a name in Devanagari reads correctly on a PDF receipt |
+| Noto Sans, one font file for each of nine Indian scripts, 1.4 MB | core-api | So a name in any of them reads correctly on a PDF receipt |
 | OR-Tools | intel, research | CP-SAT for the contact scheduler |
 | Apache PDFBox | core-api | Writes receipts; tests read them back |
 | lifelines, scikit-survival | research only | Fitting the survival models; serving needs neither |

@@ -113,6 +113,13 @@ cd gateway && npm ci && npm test
 See EXPERIMENT_PROTOCOL.md section 4. Runs write to the same PostgreSQL as the
 platform, in the `events` table, kept apart by `run_id`.
 
+To see how far the platform's real activity is from being enough to calibrate demand and retrain the
+model, which only reads the event log:
+
+```
+docker compose --profile research run --rm research python -m experiments.real_data
+```
+
 ## When something does not start
 
 | Symptom | Likely cause |

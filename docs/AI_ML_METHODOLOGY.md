@@ -242,6 +242,11 @@ scheduler does not beat chance.
 
 ## 8. Known limitations
 
+There is no real ride data to train on. `python -m experiments.hazard.train_real` will train on the
+platform's own bookings once `experiments/configs/real_data.yaml` says there are enough, on earlier
+outcomes with later ones held out, and reports without serving anything. It has only run on a made-up
+history.
+
 - Synthetic data only. Nothing here is evidence about real cancellation behaviour.
 - **The features add nothing measurable to the primary metric.** Ranking with the
   Kaplan-Meier curve, which uses no booking feature and depends only on time to

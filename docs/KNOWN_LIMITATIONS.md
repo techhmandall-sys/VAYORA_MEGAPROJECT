@@ -24,7 +24,8 @@ mistake for more. Updated 2026-11-01.
   finished. Halving and doubling the assumption left the central result as it was, but moved absolute
   completed rides per 100 searches from 38 to 19 (EXPERIMENT_PROTOCOL.md section 24): an absolute
   figure in the report means "at 60 searches a day", not a forecast. Real demand could lie outside
-  the range tried.
+  the range tried. `experiments/real_data.py` will measure it once enough real searches exist; it has
+  only ever run on made-up searches and on a log too small to use.
 - The central hypothesis is not supported on the primary metric. The intervention moves
   cancellations earlier but adds nothing measurable at the assumed responses (+0.03,
   −0.02 to +0.07), and at most +0.10 completed rides per 100 searches even when every
@@ -253,9 +254,9 @@ mistake for more. Updated 2026-11-01.
   the platform owns. Pass prices are assumptions. A pass cannot be cancelled or
   refunded, and a pass purchase is not in the money ledger, which records booking
   payments only.
-- **The PDF receipt is in English, with names in Latin or Devanagari only.** Devanagari is drawn as
-  shapes, so it reads correctly but cannot be selected or searched in the PDF. Any other script,
-  such as Tamil or Bengali, prints as "?". The receipt page shows
+- **The PDF receipt is in English, with names in Latin or India's nine main scripts only.** Those are
+  drawn as shapes, so they read correctly but cannot be selected or searched in the PDF, and no native
+  reader has checked them. Any other script, Urdu's among them, prints as "?". The receipt page shows
   the same receipt in the reader's language with names as written, and the browser prints
   it or saves it as PDF. That was printed to PDF by headless Microsoft Edge, never on
   paper or through a person's own print dialog, and its Hindi and Marathi have had no
@@ -279,6 +280,10 @@ mistake for more. Updated 2026-11-01.
 
 ## Model in the platform
 
+- `experiments/hazard/train_real.py` can train on real bookings once there are 500 of them with 110
+  cancellations, numbers the authors judged, not ones measured. It has only run on a made-up history.
+  People testing with ordinary email addresses cannot be told apart from real passengers. A model it
+  makes is not served: replacing the one in use is a decision for the team, on its report.
 - **The durability model has only seen the corridor.** Its features do not name a route, so it scores
   a booking anywhere, but it was trained on a simulated Kolhapur to Pune and whether its scores mean
   anything elsewhere is not known. As everywhere, they only decide whom the seat-release reminder asks.

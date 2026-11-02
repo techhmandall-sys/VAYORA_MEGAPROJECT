@@ -1065,4 +1065,5 @@ every level, and more seats were refilled on all 30.
   used outside the world it learnt from, as in the supply sweep.
 
 When a real figure is known, the result can be read off this table, or the sweep widened to reach it.
-Only that would finish feature 89.
+`python -m experiments.real_data` says how far the platform's own searches are from giving one, and
+with `--write-world` makes a world at that demand once they are enough. Only that would finish feature 89.
