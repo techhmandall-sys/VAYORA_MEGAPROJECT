@@ -22,6 +22,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -41,8 +45,9 @@ import org.springframework.web.server.ResponseStatusException;
  * mock, every receipt says plainly that no money moved. None is a tax invoice unless a GST
  * registration is configured and the money was real (TaxInvoices).
  *
- * <p>The PDF is in English. A name or stop in Devanagari is drawn as shapes, so it reads correctly
- * but cannot be selected; any other script is shown as "?". The app's receipt has no such limit.
+ * <p>The PDF is in English. A name or stop in one of India's main scripts is drawn as shapes, so it
+ * reads correctly but cannot be selected; any other script, Urdu's among them, is shown as "?". The
+ * app's receipt has no such limit.
  */
 @Service
 public class ReceiptService {
@@ -280,8 +285,8 @@ public class ReceiptService {
                     float size = i == 0 ? 16 : 11;
                     float x = 56;
                     for (Run run : runs(lines.get(i))) {
-                        x += run.devanagari() && canShape(run.text())
-                                ? drawShaped(content, run.text(), size, x, y)
+                        x += canShape(run)
+                                ? drawShaped(content, run, size, x, y)
                                 : write(content, latin, size, latin(run.text()), x, y);
                     }
                     y -= 18;
@@ -305,39 +310,40 @@ public class ReceiptService {
         return font.getStringWidth(text) / 1000 * size;
     }
 
+    /** Each script's font, loaded when a receipt first needs it. Empty if this machine cannot load it. */
+    private static final Map<String, Optional<Font>> FONTS = new ConcurrentHashMap<>();
+
     /**
-     * The Devanagari font, loaded when a receipt first needs one; null if this machine cannot,
-     * and then such a name prints as "?" rather than the receipt failing. Shaped by Java's own
-     * text layout, not PDFBox's, which misplaces a vowel sign beside a repha and would print
-     * "कार्तिक" as "कातर्कि": a wrong name on a receipt is worse than none.
+     * A script's font; if there is none, a name in it prints as "?" rather than the receipt failing.
+     * Shaped by Java's own text layout, not PDFBox's, which misplaces a vowel sign beside a repha
+     * and would print "कार्तिक" as "कातर्कि": a wrong name on a receipt is worse than none.
      */
-    private static final class Devanagari {
-        static final Font FONT = load();
-
-        private static Font load() {
-            try (InputStream font = ReceiptService.class.getResourceAsStream("/fonts/NotoSansDevanagari-Regular.ttf")) {
-                return Font.createFont(Font.TRUETYPE_FONT, font);
+    private static Optional<Font> fontFor(String script) {
+        return FONTS.computeIfAbsent(script, name -> {
+            try (InputStream font = ReceiptService.class.getResourceAsStream("/fonts/NotoSans" + name + "-Regular.ttf")) {
+                return Optional.of(Font.createFont(Font.TRUETYPE_FONT, font));
             } catch (IOException | FontFormatException | LinkageError e) {
-                return null;
+                return Optional.empty();
             }
-        }
+        });
     }
 
-    private static boolean canShape(String text) {
-        return Devanagari.FONT != null && Devanagari.FONT.canDisplayUpTo(text) == -1;
+    private static boolean canShape(Run run) {
+        return run.script() != null
+                && fontFor(run.script()).filter(font -> font.canDisplayUpTo(run.text()) == -1).isPresent();
     }
 
-    /** The letters of some Devanagari, joined and reordered as the script requires. */
-    static GlyphVector shaped(String text, float size) {
+    /** The letters of some text in a script, joined and reordered as the script requires. */
+    static GlyphVector shaped(String script, String text, float size) {
         char[] chars = text.toCharArray();
-        return Devanagari.FONT.deriveFont(size).layoutGlyphVector(new FontRenderContext(null, true, true), chars, 0,
-                chars.length, Font.LAYOUT_LEFT_TO_RIGHT);
+        return fontFor(script).orElseThrow().deriveFont(size).layoutGlyphVector(new FontRenderContext(null, true, true),
+                chars, 0, chars.length, Font.LAYOUT_LEFT_TO_RIGHT);
     }
 
     /** Fills the outline of the shaped letters, turned the way a PDF's page runs. Gives the width taken. */
-    private static float drawShaped(PDPageContentStream content, String text, float size, float x, float y)
+    private static float drawShaped(PDPageContentStream content, Run run, float size, float x, float y)
             throws IOException {
-        GlyphVector glyphs = shaped(text, size);
+        GlyphVector glyphs = shaped(run.script(), run.text(), size);
         float[] at = new float[6];
         float lastX = 0;
         float lastY = 0;
@@ -374,34 +380,42 @@ public class ReceiptService {
         return (float) glyphs.getLogicalBounds().getWidth();
     }
 
-    /** A stretch of a line drawn one way. */
-    record Run(String text, boolean devanagari) {
+    /** A stretch of a line drawn one way: in the built-in fonts when {@code script} is null. */
+    record Run(String text, String script) {
     }
 
-    /** A line split by how each part is drawn. A space stays with the stretch it falls in. */
+    /**
+     * A line split by how each part is drawn. A space, or a joiner that decides how letters
+     * combine, stays with the stretch it falls in.
+     */
     static List<Run> runs(String line) {
         List<Run> runs = new ArrayList<>();
         StringBuilder current = new StringBuilder();
-        boolean inDevanagari = false;
+        String inScript = null;
         for (int c : line.codePoints().toArray()) {
-            if (c != ' ' && isDevanagari(c) != inDevanagari) {
+            String script = c == ' ' || c == 0x200C || c == 0x200D ? inScript : scriptOf(c);
+            if (!Objects.equals(script, inScript)) {
                 if (current.length() > 0) {
-                    runs.add(new Run(current.toString(), inDevanagari));
+                    runs.add(new Run(current.toString(), inScript));
                     current.setLength(0);
                 }
-                inDevanagari = isDevanagari(c);
+                inScript = script;
             }
             current.appendCodePoint(c);
         }
         if (current.length() > 0) {
-            runs.add(new Run(current.toString(), inDevanagari));
+            runs.add(new Run(current.toString(), inScript));
         }
         return runs;
     }
 
-    /** The Devanagari block, and the two joiners that decide how its letters combine. */
-    private static boolean isDevanagari(int c) {
-        return (c >= 0x0900 && c <= 0x097F) || c == 0x200C || c == 0x200D;
+    /** Which of India's main scripts a character is in, by its Unicode block; null for any other. */
+    private static String scriptOf(int c) {
+        if (c < 0x0900 || c > 0x0D7F) {
+            return null;
+        }
+        String[] blocks = {"Devanagari", "Bengali", "Gurmukhi", "Gujarati", "Oriya", "Tamil", "Telugu", "Kannada", "Malayalam"};
+        return blocks[(c - 0x0900) / 0x80];
     }
 
     /** What the built-in fonts can draw: printable ASCII. Anything else becomes "?". */

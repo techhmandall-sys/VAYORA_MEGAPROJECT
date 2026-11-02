@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -138,15 +139,27 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
     void textTheFontsCannotDrawIsReplacedNotDropped() throws IOException {
         assertThat(ReceiptService.latin("आशा Patil ₹")).isEqualTo("??? Patil ?");
         assertThat(ReceiptService.runs("Passenger: आशा पाटील, Pune")).containsExactly(
-                new ReceiptService.Run("Passenger: ", false),
-                new ReceiptService.Run("आशा पाटील", true),
-                new ReceiptService.Run(", Pune", false));
+                new ReceiptService.Run("Passenger: ", null),
+                new ReceiptService.Run("आशा पाटील", "Devanagari"),
+                new ReceiptService.Run(", Pune", null));
         // Really drawn: the same line has more on the page with a name in it than without.
         assertThat(ink(ReceiptService.pdf(List.of("Receipt", "Passenger: आशा पाटील"))))
                 .isGreaterThan(ink(ReceiptService.pdf(List.of("Receipt", "Passenger: "))));
         // Really shaped: a repha joins the letter after it, and is not a letter of its own, as
         // three characters drawn one by one would be.
-        assertThat(ReceiptService.shaped("र्क", 11).getNumGlyphs()).isEqualTo(2);
+        assertThat(ReceiptService.shaped("Devanagari", "र्क", 11).getNumGlyphs()).isEqualTo(2);
+        // Every main script of India has a font, found by the block its letters are in.
+        Map.of("Devanagari", "आशा", "Bengali", "আশা", "Gurmukhi", "ਆਸ਼ਾ", "Gujarati", "આશા", "Oriya", "ଆଶା",
+                "Tamil", "ஆஷா", "Telugu", "ఆశా", "Kannada", "ಆಶಾ", "Malayalam", "ആശ").forEach((script, name) -> {
+            assertThat(ReceiptService.runs(name)).containsExactly(new ReceiptService.Run(name, script));
+            assertThat(ReceiptService.shaped(script, name, 11).getNumGlyphs()).isPositive();
+            try {
+                assertThat(ink(ReceiptService.pdf(List.of("Receipt", "Passenger: " + name))))
+                        .as(script).isGreaterThan(ink(ReceiptService.pdf(List.of("Receipt", "Passenger: "))));
+            } catch (IOException e) {
+                throw new java.io.UncheckedIOException(e);
+            }
+        });
     }
 
     @Test
@@ -191,9 +204,9 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
         // Drawn as shapes, so not "???", and not text either.
         assertThat(text(receipts.forBooking(devanagari, bookingId))).contains("Passenger:").doesNotContain("???");
         // A script with no font here still prints, as "?", and does not fail.
-        long tamil = user(UserRole.PASSENGER, "ஆஷா Patil");
-        long tamilBooking = bookings.request(tamil, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
-        assertThat(text(receipts.forBooking(tamil, tamilBooking))).contains("Passenger: ??? Patil");
+        long urdu = user(UserRole.PASSENGER, "آشا Patil");
+        long urduBooking = bookings.request(urdu, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        assertThat(text(receipts.forBooking(urdu, urduBooking))).contains("Passenger: ??? Patil");
 
         mvc.perform(get("/api/v1/bookings/" + bookingId + "/receipt-data")
                         .header("Authorization", "Bearer " + tokens.issue(passenger, UserRole.PASSENGER)))

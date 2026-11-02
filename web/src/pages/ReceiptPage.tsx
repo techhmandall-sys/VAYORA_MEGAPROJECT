@@ -13,7 +13,7 @@ import type { BookingReceipt, CreditNote, PassReceipt, TaxInvoice } from '../lib
 /**
  * Receipts in the reader's language (feature 50): the same facts as the PDF, with names and
  * stops as written, in any script. The browser prints it, or saves it as a PDF, with its
- * own fonts; the server's PDF has Latin and Devanagari only.
+ * own fonts; the server's PDF has India's main scripts only, drawn so they cannot be selected.
  */
 export function BookingReceiptPage() {
   const t = useT();
