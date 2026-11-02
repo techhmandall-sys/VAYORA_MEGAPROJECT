@@ -15,7 +15,7 @@ was decided while building within them.
 | The primary metric is completed rides per 100 searches, every other number secondary | CLAUDE.md fixes it; bookings can rise while rides do not | A variant that only moves cancellations earlier scores nothing, which is what happened |
 | Cox proportional hazards is the served model | Best departure Brier score and concordance of the three fitted | Its proportional-hazards assumption is violated for lead time |
 | The gradient-boosted survival model trains on a 5,000-row sample | Its loss is quadratic in rows; the full set ran for over ten minutes | It is compared on less data than Cox |
-| Corridor demand is not calibrated (feature 89 left not started, 2026-10-21) | No real demand figures for the corridor exist; a proxy from public bus and train timetables was offered and declined, since it would not be calibration | Every result rests on demand the authors assumed |
+| Corridor demand is not calibrated (feature 89, 2026-10-21). How much the results depend on it is measured instead (2026-11-01) | No real demand figures for the corridor exist; a proxy from public bus and train timetables was offered and declined, since it would not be calibration. A sweep is not one either, and says so, but it shows whether the conclusions lean on the figure assumed | Every result still rests on demand the authors assumed, within a range the sweep has only tried from half to double |
 | Variants B1 and B2 are not built | The simulated corridor has one origin and one destination: there is no geography to filter or rank two-sidedly | Two rungs of the ladder are missing |
 | B5 keeps B4's threshold and adds only a budget | So the two differ in one thing | |
 | The share of passengers with a flexible booking is swept, never assumed | Nothing in a simulation says how many would choose it | The result is a range, not one number |
@@ -145,7 +145,7 @@ was decided while building within them.
 | Money and times use the same digits in every language | Passenger and driver read the same fare | |
 | A chat message is shown when the gateway relays it, not when it is typed | What a sender sees is what everyone received | |
 | Irreversible actions need a second, explicit press | Cancelling, completing and marking a no-show cannot be undone | One more click |
-| The PDF receipt is in English | The PDF's built-in fonts cover Latin script only | Devanagari names print as "?" in it |
+| The PDF receipt is in English, with names in Latin or Devanagari (2026-11-01) | Java's own text layout shapes Devanagari, and the outlines are drawn into the PDF, because PDFBox's shaping printed "कार्तिक" as "कातर्कि": a wrong name on a receipt is worse than none | Such a name cannot be selected in the PDF, and other scripts print as "?". The receipt page has neither limit |
 | A receipt in Hindi or Marathi is a page in the app that the browser prints or saves as PDF (from 2026-10-21) | The browser already has fonts that shape Devanagari; PDFBox does not shape it, and embedding fonts would add files and licences | Two forms of one receipt. Both come from one query, so they cannot disagree on the facts |
 | Flexibility tiers are a time window, chosen by the passenger | The team's choice: the passenger agrees in advance to be moved, and the price never changes, so nothing is priced or decided on a prediction about them. "Hazard-informed" means only that Flexible is suggested on a driver whose own record shows withdrawals | A rebooked passenger may land on a ride the driver approves, so they hold a request, not a seat |
 | A rebooking runs after the withdrawal commits, in its own transaction | So a rebooking that fails cannot undo the withdrawal or anyone's refund. Found in testing: a notification sent from an after-commit step must have its own transaction too, or it waits for a commit that has already happened and is never written | |
@@ -173,6 +173,7 @@ Each was justified in one sentence when it was added, as CLAUDE.md requires.
 
 | Dependency | Where | Why |
 |---|---|---|
+| Noto Sans Devanagari, one font file | core-api | So a name in Devanagari reads correctly on a PDF receipt |
 | OR-Tools | intel, research | CP-SAT for the contact scheduler |
 | Apache PDFBox | core-api | Writes receipts; tests read them back |
 | lifelines, scikit-survival | research only | Fitting the survival models; serving needs neither |

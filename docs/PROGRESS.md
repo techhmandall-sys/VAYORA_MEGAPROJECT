@@ -1,6 +1,25 @@
 # Progress
 
-## 2026-11-01 (latest) — the old volumes deleted
+## 2026-11-01 (latest) — what code could still do for the unfinished features
+
+- **Demand (89) moves from not started to partial, and is still not calibrated.** No real figures exist.
+  A 30-seed sweep halved and doubled the assumed demand instead: asking adds nothing at any level, and
+  cancellations come earlier at all of them, but absolute completed rides per 100 searches run from 38
+  to 19 (EXPERIMENT_PROTOCOL.md section 24). 4.5 million events added under a run of their own.
+- **Invoices (50): credit notes.** A fee returned after it was invoiced is reversed by a note with its
+  own numbers, made in the refund's transaction. A fee kept when only the fare comes back is now
+  invoiced, where before any refund stopped the invoice.
+- **The PDF receipt draws names in Devanagari**, where it printed "???". PDFBox's own shaping was tried
+  first and printed "कार्तिक" as "कातर्कि", so Java's text layout shapes them and the outlines are drawn.
+  Other scripts still print as "?". Looked at, and checked to work in the image that actually runs.
+- **The database now has a backup**, in `backups/`, which is not committed: 1.2 GB, and all 51,599,844
+  events were read back out of it. It predates the sweep, whose run can be rebuilt from its config.
+- **Left as they were, because code cannot finish them.** Google (2), Razorpay (46), Twilio (61, 64) need
+  the team's accounts. Hindi and Marathi (71) need a native speaker. The model (77) needs real ride data.
+- Features: 87 verified, 8 partial, none not started: about 96% counting a partial as half.
+- core-api 349, web 296 and Python 210 tests pass. The gateway was not rerun: it did not change.
+
+## 2026-11-01 (just before) — the old volumes deleted
 
 - **`journex_pgdata`, `journex_mongodata`, `journex_osrmdata` and `journex_m2cache` are gone, at the
   team's request:** about 22 GB. No container used them, and the running database held 51,599,844 events

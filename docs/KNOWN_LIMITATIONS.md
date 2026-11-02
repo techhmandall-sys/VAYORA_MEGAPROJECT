@@ -20,6 +20,11 @@ mistake for more. Updated 2026-11-01.
 
 ## The research result so far
 
+- **Demand is assumed, not measured.** No real figures for the corridor exist, so feature 89 cannot be
+  finished. Halving and doubling the assumption left the central result as it was, but moved absolute
+  completed rides per 100 searches from 38 to 19 (EXPERIMENT_PROTOCOL.md section 24): an absolute
+  figure in the report means "at 60 searches a day", not a forecast. Real demand could lie outside
+  the range tried.
 - The central hypothesis is not supported on the primary metric. The intervention moves
   cancellations earlier but adds nothing measurable at the assumed responses (+0.03,
   −0.02 to +0.07), and at most +0.10 completed rides per 100 searches even when every
@@ -133,7 +138,7 @@ mistake for more. Updated 2026-11-01.
   who disputes a completed trip still owes it until an administrator acts, and the dispute
   page does not show what is owed. The simulator does not model paying later, so whether
   it changes when people cancel is not known.
-- Receipts are not tax invoices unless a GST registration is configured, and none has been, so tax invoices have never been used for real. They cover only what VAYORA itself charges, on real payments. The rate, the SAC code and leaving the fare out are the authors' reading, for a tax adviser to confirm, and there are no credit notes. So is taking Maharashtra as where the service is supplied, which decides CGST and SGST or IGST whichever state the ride is in. The PDF is in English only; the receipt page is in the reader's language.
+- Receipts are not tax invoices unless a GST registration is configured, and none has been, so tax invoices have never been used for real. They cover only what VAYORA itself charges, on real payments. The rate, the SAC code and leaving the fare out are the authors' reading, for a tax adviser to confirm. So are credit notes, which reverse a fee returned after it was invoiced, and taking Maharashtra as where the service is supplied, which decides CGST and SGST or IGST whichever state the ride is in. The PDF is in English only; the receipt page is in the reader's language.
 - A payout is recorded the moment a trip completes. There is no settlement delay,
   dispute window or bank detail.
 - **A seat hold is a courtesy, not a guarantee.** It lives only in Redis. If Redis is
@@ -248,8 +253,9 @@ mistake for more. Updated 2026-11-01.
   the platform owns. Pass prices are assumptions. A pass cannot be cancelled or
   refunded, and a pass purchase is not in the money ledger, which records booking
   payments only.
-- **The PDF receipt is in English and Latin script only.** Its built-in fonts cannot draw
-  Devanagari, so such a character in a name or stop prints as "?". The receipt page shows
+- **The PDF receipt is in English, with names in Latin or Devanagari only.** Devanagari is drawn as
+  shapes, so it reads correctly but cannot be selected or searched in the PDF. Any other script,
+  such as Tamil or Bengali, prints as "?". The receipt page shows
   the same receipt in the reader's language with names as written, and the browser prints
   it or saves it as PDF. That was printed to PDF by headless Microsoft Edge, never on
   paper or through a person's own print dialog, and its Hindi and Marathi have had no

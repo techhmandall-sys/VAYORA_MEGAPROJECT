@@ -21,10 +21,10 @@ more bookings and still move fewer people.
 
 | | |
 |---|---|
-| Features | 87 of 95 verified, 7 partial, 1 not started: about 95% counting a partial feature as half ([feature matrix](docs/FEATURE_MATRIX.md)) |
+| Features | 87 of 95 verified, 8 partial: about 96% counting a partial feature as half. The eight need accounts, a native speaker or real data, not more code ([feature matrix](docs/FEATURE_MATRIX.md)) |
 | Routes | Any route in India in the app, from 126 listed cities or a point on the map. Road distances between Kolhapur and Pune; elsewhere a labelled straight line until a bigger map is built ([how](docs/DEPLOYMENT.md#road-routes-across-india)) |
 | Interface | A side bar, or tabs on a phone, in light and dark, each role with its own tint. Screens keep themselves current without a reload |
-| Tests | 347 Java, 295 web, 210 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
+| Tests | 349 Java, 296 web, 210 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
 | Languages | English, Hindi and Marathi, on every screen, notification and error message |
 | Research | On Kolhapur to Pune alone. A SimPy simulator of the corridor: 60 simulated days, 30 seeds per variant, train and validation on disjoint seeds |
 | Data | All synthetic, plus one public dataset of real hotel cancellations used as a check |
@@ -306,6 +306,8 @@ To rebuild from scratch: `docker compose down && docker volume rm vayora_osrmdat
 
 - Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL),
   routed with OSRM.
+- Noto Sans Devanagari, for names on PDF receipts: © The Noto Project Authors, SIL Open Font License
+  1.1 (`core-api/src/main/resources/fonts/OFL.txt`).
 - Hotel bookings: Nuno Antonio, Ana de Almeida and Luis Nunes (2019), *Hotel booking demand
   datasets*, Data in Brief 22, 41–49, [doi:10.1016/j.dib.2018.11.126](https://doi.org/10.1016/j.dib.2018.11.126),
   CC BY 4.0.
