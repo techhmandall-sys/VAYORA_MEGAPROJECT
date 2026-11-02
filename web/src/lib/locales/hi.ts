@@ -43,7 +43,6 @@ export const hi: Record<string, string> = {
     'डिवाइस जैसा',
   'Theme: {name}':
     'थीम: {name}',
-  // Tax invoices
   // Staff checks of identity documents and insurance
   'Declare an identity document first':
     'पहले कोई पहचान पत्र घोषित करें',
@@ -146,7 +145,7 @@ export const hi: Record<string, string> = {
   'Something went wrong on this screen.':
     'इस स्क्रीन पर कुछ गड़बड़ हो गई।',
 
-  // Payments and refunds
+  // Payments and cancelling
   'If you cancel': 'यदि आप रद्द करते हैं',
   '{hours} hours or more before boarding': 'सवार होने से {hours} घंटे या उससे अधिक पहले',
   '{from} to {to} hours before boarding': 'सवार होने से {from} से {to} घंटे पहले',
@@ -584,7 +583,7 @@ export const hi: Record<string, string> = {
     'दूसरे सदस्यों को केवल आपकी अनुमानित उम्र दिखती है।',
   'Gender':
     'लिंग',
-    'Woman':
+  'Woman':
     'महिला',
   'Man':
     'पुरुष',
@@ -778,7 +777,6 @@ export const hi: Record<string, string> = {
     'सोचने तक रोककर रखें',
   'Held for you until {time}. This is not a booking: book before then or the seats go back.':
     '{time} तक आपके लिए रोकी गई हैं। यह बुकिंग नहीं है: उससे पहले बुक करें, नहीं तो सीटें वापस चली जाएँगी।',
-  // Request expiry
   // Passenger payments
   'Payments':
     'भुगतान',
@@ -2010,7 +2008,6 @@ export const hi: Record<string, string> = {
     'पिछले 7 दिनों में',
   'Example':
     'उदाहरण',
-  // Credit notes
   // Paying the driver directly, in cash or by UPI
   'Paid to you each week (₹)':
     'हर सप्ताह आपको मिला भुगतान (₹)',
