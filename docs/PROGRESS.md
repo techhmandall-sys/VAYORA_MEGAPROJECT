@@ -1,5 +1,15 @@
 # Progress
 
+## 2026-11-02 (later) — Google sign-in works with Google itself
+
+- **Feature 2 is verified.** With a real client ID in `.env`, a real Gmail account signed in and was
+  linked to its existing account: the first time anything here has met the real Google.
+- **A fault found before it could bite:** Google asks for `Referrer-Policy: no-referrer-when-downgrade`
+  when testing over http on localhost, and the web server sent a stricter one. `localhost` now gets
+  that policy, and every other address the strict one Google recommends.
+- Features: 88 verified, 7 partial, about 96% counting a partial as half.
+- No test suite was rerun: only the web server's headers and these docs changed, checked with curl.
+
 ## 2026-11-02 — ready for real data, and India's other scripts on the PDF
 
 - **`experiments/real_data.py` says how far real activity is from being enough**, for demand (89) and the

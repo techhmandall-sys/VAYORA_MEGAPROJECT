@@ -21,7 +21,7 @@ more bookings and still move fewer people.
 
 | | |
 |---|---|
-| Features | 87 of 95 verified, 8 partial: about 96% counting a partial feature as half. The eight need accounts, a native speaker or real data, not more code ([feature matrix](docs/FEATURE_MATRIX.md)) |
+| Features | 88 of 95 verified, 7 partial: about 96% counting a partial feature as half. The seven need accounts, a native speaker or real data, not more code ([feature matrix](docs/FEATURE_MATRIX.md)) |
 | Routes | Any route in India in the app, from 126 listed cities or a point on the map. Road distances between Kolhapur and Pune; elsewhere a labelled straight line until a bigger map is built ([how](docs/DEPLOYMENT.md#road-routes-across-india)) |
 | Interface | A side bar, or tabs on a phone, in light and dark, each role with its own tint. Screens keep themselves current without a reload |
 | Tests | 349 Java, 296 web, 224 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |

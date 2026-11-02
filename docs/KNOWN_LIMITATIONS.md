@@ -116,9 +116,11 @@ mistake for more. Updated 2026-11-01.
 - A flexible rebooking is a new booking with its own payment hold, made without the
   passenger present. On a ride the driver approves it is a request the driver may decline.
   With Razorpay no booking can be flexible: only the passenger can pay, at the checkout.
-- **Google sign-in has never been tried with Google.** It is tested against a stand-in
-  that signs tokens the way Google does. A Google-only account has no password; it cannot
-  sign in any other way, and there is no "set a password" yet.
+- **Google sign-in has been tried with Google once**, on 2026-11-02, by a real Gmail account linking
+  to its existing VAYORA account. Creating a new account through Google has only met a stand-in that
+  signs tokens the way Google does. While the Google project is in testing, only its listed test users
+  can sign in. A Google-only account has no password; it cannot sign in any other way, and there is
+  no "set a password" yet.
 - Supply gaps know a search's day but not the hour wanted: searches carry a date only. A
   nudge cannot be dismissed, and a search's ends are named by the nearest ride stop within
   5 km, so a stretch nobody has ever driven is never a gap.
