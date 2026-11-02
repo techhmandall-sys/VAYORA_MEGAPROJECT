@@ -165,15 +165,18 @@ the real service. Each needs an account of your own, and turns on when its setti
 
 **Google sign-in (feature 2), free**
 
-1. At console.cloud.google.com, create a project.
-2. Set up the OAuth consent screen: external, named VAYORA, with your own Google address as a
-   test user. While it is in testing, only test users can sign in.
-3. Under Credentials, create an OAuth client ID of type "Web application". Add
-   `http://localhost:5173` as an authorised JavaScript origin, and `https://<your address>` too
-   once VAYORA is online.
+1. At console.cloud.google.com, create a project. No card is needed.
+2. Under Google Auth Platform, get started: external, named VAYORA, with your own Google address as
+   a test user under Audience. While it is in testing, only test users can sign in.
+3. Under Clients, create a client of type "Web application". Add both `http://localhost` and
+   `http://localhost:5173` as authorised JavaScript origins, as Google asks for local testing, and
+   `https://<your address>` too once VAYORA is online. No redirect URI is needed.
 4. Put it in `.env` as `GOOGLE_CLIENT_ID=...`. No secret is needed.
 5. http://localhost:8080/api/v1/auth/google should now show it, and the sign-in page a Google
    button. Sign in once with a real account: that is the test no stand-in can do.
+
+The web server sends `Referrer-Policy: no-referrer-when-downgrade` on `localhost` only, which Google
+asks for when testing over http, and the stricter policy it recommends everywhere else.
 
 **Payments (feature 46), free in test mode, where no real money moves**
 
