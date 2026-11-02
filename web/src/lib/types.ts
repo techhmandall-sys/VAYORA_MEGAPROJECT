@@ -591,8 +591,20 @@ export interface TaxInvoice {
   igst: number;
 }
 
+/** The service fee returned after it was invoiced: what the invoice stated, reversed. */
+export interface CreditNote {
+  number: string;
+  issuedAt: string;
+  invoiceNumber: string;
+  taxableValue: number;
+  cgst: number;
+  sgst: number;
+  igst: number;
+}
+
 export interface BookingReceipt {
   taxInvoice?: TaxInvoice | null;
+  creditNote?: CreditNote | null;
   bookingId: number;
   passenger: string;
   driver: string;

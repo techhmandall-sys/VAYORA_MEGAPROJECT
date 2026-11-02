@@ -1,6 +1,7 @@
 package com.dypcet.vayora.payment;
 
 import com.dypcet.vayora.pass.PassService;
+import com.dypcet.vayora.receipt.TaxInvoices;
 import com.dypcet.vayora.refund.RefundPolicy;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -88,11 +89,13 @@ public class PaymentService {
     private final Clock clock;
     private final RefundPolicy refundPolicy;
     private final KeptRides keptRides;
+    private final TaxInvoices invoices;
 
     public PaymentService(JdbcTemplate jdbc, PaymentProvider provider, ServiceFee serviceFee,
             RefundPolicy refundPolicy,
-            PassService passes, Clock clock, KeptRides keptRides) {
+            PassService passes, Clock clock, KeptRides keptRides, TaxInvoices invoices) {
         this.keptRides = keptRides;
+        this.invoices = invoices;
         this.passes = passes;
         this.clock = clock;
         this.jdbc = jdbc;
@@ -352,6 +355,10 @@ public class PaymentService {
                     INSERT INTO refunds (booking_id, intent_id, amount, reason)
                     VALUES (?, ?, ?, ?)""",
                     bookingId, intent.id(), refund, refundReason.name());
+            // More than the fare came back, so the service fee did too: it was not earned.
+            if (refund.compareTo(intent.fare()) > 0) {
+                invoices.creditBooking(bookingId);
+            }
         }
         if (captured.signum() > 0) {
             provider.capture(intent.providerRef(), captured);

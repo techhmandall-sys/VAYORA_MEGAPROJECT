@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.dypcet.vayora.PostgresIntegrationTest;
 import com.dypcet.vayora.booking.BookingService;
+import com.dypcet.vayora.booking.TripService;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.UserRole;
 import com.dypcet.vayora.payment.PaymentChoice;
@@ -61,6 +62,9 @@ class TaxInvoiceIntegrationTest extends PostgresIntegrationTest {
     private BookingService bookings;
 
     @Autowired
+    private TripService trips;
+
+    @Autowired
     private PassService passes;
 
     @Autowired
@@ -78,12 +82,13 @@ class TaxInvoiceIntegrationTest extends PostgresIntegrationTest {
     @Autowired
     private Clock clock;
 
+    private long driver;
     private long passenger;
     private long rideId;
 
     @BeforeEach
     void setUp() {
-        long driver = user(UserRole.DRIVER);
+        driver = user(UserRole.DRIVER);
         passenger = user(UserRole.PASSENGER);
         long vehicle = vehicles.create(driver, "Maruti", "Ertiga", 2022, "Silver", 7).id();
         rideId = rides.publish(driver, new PublishRide(vehicle, Instant.now().plus(Duration.ofDays(3)), 3, true,
@@ -144,7 +149,7 @@ class TaxInvoiceIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
-    void noInvoiceWithoutRealMoneyOrAfterARefund() throws IOException {
+    void noInvoiceWithoutRealMoneyOrOnceTheFeeHasGoneBack() throws IOException {
         // Simulated: no money moved, so nothing was supplied for a price.
         long simulated = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
         assertThat(receipts.booking(passenger, simulated).taxInvoice()).isNull();
@@ -154,12 +159,61 @@ class TaxInvoiceIntegrationTest extends PostgresIntegrationTest {
         jdbc.update("UPDATE payment_intents SET provider = 'RAZORPAY_TEST' WHERE booking_id = ?", simulated);
         assertThat(receipts.booking(passenger, simulated).taxInvoice()).isNull();
 
-        // Refunded before anyone asked: that would need a credit note, which is not issued.
+        // Everything came back before anyone asked: the fee was not earned, so nothing to invoice.
         long other = user(UserRole.PASSENGER);
         long refunded = bookings.request(other, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
-        bookings.cancel(other, refunded);
+        trips.cancel(driver, rideId);
         jdbc.update("UPDATE payment_intents SET provider = 'RAZORPAY' WHERE booking_id = ?", refunded);
-        assertThat(receipts.booking(other, refunded).taxInvoice()).isNull();
+        BookingReceipt receipt = receipts.booking(other, refunded);
+        assertThat(receipt.taxInvoice()).isNull();
+        assertThat(receipt.creditNote()).isNull();
+    }
+
+    @Test
+    void aFeeKeptWhenOnlyTheFareCameBackIsStillInvoicedAndNeedsNoCreditNote() {
+        long booking = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        bookings.cancel(passenger, booking);
+        jdbc.update("UPDATE payment_intents SET provider = 'RAZORPAY' WHERE booking_id = ?", booking);
+
+        BookingReceipt receipt = receipts.booking(passenger, booking);
+
+        assertThat(receipt.refunded()).isEqualByComparingTo("450.00");
+        assertThat(receipt.taxInvoice()).isNotNull();
+        assertThat(receipt.creditNote()).isNull();
+    }
+
+    @Test
+    void aFeeReturnedAfterItWasInvoicedIsReversedByACreditNoteWithItsOwnNumbers() throws IOException {
+        long booking = paidBooking(1);
+        TaxInvoice invoice = receipts.booking(passenger, booking).taxInvoice();
+        long other = user(UserRole.PASSENGER);
+        long second = paidBooking(1, other);
+        receipts.booking(other, second);
+        int notesBefore = lastNote();
+        // Simulated for the refund, so it goes nowhere near Razorpay.
+        jdbc.update("UPDATE payment_intents SET provider = 'MOCK' WHERE booking_id IN (?, ?)", booking, second);
+
+        trips.cancel(driver, rideId); // the driver withdraws: everything comes back, the fee too
+
+        BookingReceipt receipt = receipts.booking(passenger, booking);
+        assertThat(receipt.taxInvoice().number()).isEqualTo(invoice.number()); // it stands, reversed
+        TaxInvoices.CreditNote note = receipt.creditNote();
+        assertThat(note.invoiceNumber()).isEqualTo(invoice.number());
+        assertThat(note.number()).startsWith("VAY-CN/");
+        assertThat(note.taxableValue()).isEqualByComparingTo(invoice.taxableValue());
+        assertThat(note.cgst()).isEqualByComparingTo(invoice.cgst());
+        assertThat(note.sgst()).isEqualByComparingTo(invoice.sgst());
+        assertThat(note.igst()).isEqualByComparingTo(invoice.igst());
+        // Without a gap: the two notes took the next two numbers, whichever went first.
+        assertThat(lastNote()).isEqualTo(notesBefore + 2);
+        assertThat(receipts.booking(other, second).creditNote().number()).isNotEqualTo(note.number());
+        assertThat(pdf(receipts.forBooking(passenger, booking)))
+                .contains("Credit note " + note.number()).contains("Against tax invoice " + invoice.number());
+
+        assertThatThrownBy(() -> jdbc.update("UPDATE tax_credit_notes SET cgst = 0 WHERE number = ?", note.number()))
+                .hasMessageContaining("cannot be changed once issued");
+        assertThatThrownBy(() -> jdbc.update("DELETE FROM tax_credit_notes WHERE number = ?", note.number()))
+                .hasMessageContaining("cannot be changed once issued");
     }
 
     @Test
@@ -236,6 +290,12 @@ class TaxInvoiceIntegrationTest extends PostgresIntegrationTest {
         long booking = bookings.request(who, rideId, 0, 1, seats, PaymentChoice.card(), null).id();
         jdbc.update("UPDATE payment_intents SET provider = 'RAZORPAY' WHERE booking_id = ?", booking);
         return booking;
+    }
+
+    private int lastNote() {
+        String year = TaxInvoices.financialYear(java.time.LocalDate.now(clock.withZone(java.time.ZoneId.of("Asia/Kolkata"))));
+        return jdbc.query("SELECT last_serial FROM tax_credit_note_series WHERE financial_year = ?",
+                (rs, n) -> rs.getInt(1), year).stream().findFirst().orElse(0);
     }
 
     private int lastSerial() {

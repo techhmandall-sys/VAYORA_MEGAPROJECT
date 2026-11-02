@@ -2264,4 +2264,17 @@ export const hi: Record<string, string> = {
     'भुगतान',
   'Example':
     'उदाहरण',
+  // Credit notes
+  'Credit note {number}':
+    'क्रेडिट नोट {number}',
+  'Issued on {date} against tax invoice {invoice}: the service fee was returned.':
+    '{date} को कर बीजक {invoice} के विरुद्ध जारी: सेवा शुल्क वापस किया गया।',
+  'Value before tax returned':
+    'लौटाया गया कर-पूर्व मूल्य',
+  'CGST returned':
+    'लौटाया गया CGST',
+  'SGST returned':
+    'लौटाया गया SGST',
+  'IGST returned':
+    'लौटाया गया IGST',
 };

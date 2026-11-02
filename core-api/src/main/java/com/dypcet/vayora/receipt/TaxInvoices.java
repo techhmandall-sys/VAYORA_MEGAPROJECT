@@ -26,7 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>An invoice is issued the first time it is asked for and stays as issued. Numbers run on
  * without a gap within an Indian financial year. The rate, the SAC code and treating the fare as
- * outside the invoice are the authors' reading, for a tax adviser to confirm before real use.
+ * outside the invoice are the authors' reading, for a tax adviser to confirm before real use. A
+ * fee returned after it was invoiced is reversed by a credit note, with numbers of its own.
  */
 @Component
 public class TaxInvoices {
@@ -45,6 +46,11 @@ public class TaxInvoices {
     public record TaxInvoice(String number, Instant issuedAt, String gstin, String legalName, String address,
             String sacCode, BigDecimal ratePercent, BigDecimal taxableValue, BigDecimal cgst, BigDecimal sgst,
             BigDecimal igst) {
+    }
+
+    /** The service fee returned after it was invoiced: what the invoice stated, reversed. */
+    public record CreditNote(String number, Instant issuedAt, String invoiceNumber, BigDecimal taxableValue,
+            BigDecimal cgst, BigDecimal sgst, BigDecimal igst) {
     }
 
     private final JdbcTemplate jdbc;
@@ -132,6 +138,43 @@ public class TaxInvoices {
                 "VAY/%s/%06d".formatted(year, serial), year, serial, id,
                 clock.instant().atOffset(ZoneOffset.UTC), gstin, legalName, address, sacCode, rate, taxable, cgst, sgst, igst);
         return find(column, id);
+    }
+
+    /**
+     * The service fee on a booking has gone back, all of it, so its tax invoice is reversed. Done
+     * as the refund is made and in its transaction, so a number is taken only for a refund that
+     * happened. A fee never invoiced was never declared, and has nothing to reverse.
+     */
+    @Transactional
+    public void creditBooking(long bookingId) {
+        List<Long> invoice = jdbc.query("SELECT id FROM tax_invoices WHERE booking_id = ?",
+                (rs, n) -> rs.getLong("id"), bookingId);
+        if (invoice.isEmpty()) {
+            return;
+        }
+        String year = financialYear(LocalDate.now(clock.withZone(INDIA_ZONE)));
+        jdbc.update("INSERT INTO tax_credit_note_series (financial_year, last_serial) VALUES (?, 0) ON CONFLICT DO NOTHING", year);
+        int serial = jdbc.queryForObject("SELECT last_serial FROM tax_credit_note_series WHERE financial_year = ? FOR UPDATE",
+                Integer.class, year) + 1;
+        jdbc.update("UPDATE tax_credit_note_series SET last_serial = ? WHERE financial_year = ?", serial, year);
+        jdbc.update("""
+                INSERT INTO tax_credit_notes (number, financial_year, serial, invoice_id, issued_at,
+                                              taxable_value, cgst, sgst, igst)
+                SELECT ?, ?, ?, id, ?, taxable_value, cgst, sgst, igst FROM tax_invoices WHERE id = ?""",
+                "VAY-CN/%s/%06d".formatted(year, serial), year, serial,
+                clock.instant().atOffset(ZoneOffset.UTC), invoice.get(0));
+    }
+
+    /** The credit note reversing a booking's tax invoice, if its fee has gone back. */
+    public Optional<CreditNote> creditNote(long bookingId) {
+        return jdbc.query("""
+                SELECT c.number, c.issued_at, i.number AS invoice_number, c.taxable_value, c.cgst, c.sgst, c.igst
+                FROM tax_credit_notes c JOIN tax_invoices i ON i.id = c.invoice_id
+                WHERE i.booking_id = ?""",
+                (rs, n) -> new CreditNote(rs.getString("number"), rs.getObject("issued_at", OffsetDateTime.class).toInstant(),
+                        rs.getString("invoice_number"), rs.getBigDecimal("taxable_value"), rs.getBigDecimal("cgst"),
+                        rs.getBigDecimal("sgst"), rs.getBigDecimal("igst")),
+                bookingId).stream().findFirst();
     }
 
     private Optional<TaxInvoice> find(String column, long id) {

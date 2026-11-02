@@ -8,12 +8,12 @@ import { formatExactRupees, formatFullDateTime } from '../lib/format';
 import { useT, type Translate } from '../lib/i18n';
 import { passKindLabels } from '../lib/passes';
 import { methodLabels, refundReasons } from '../lib/payments';
-import type { BookingReceipt, PassReceipt, TaxInvoice } from '../lib/types';
+import type { BookingReceipt, CreditNote, PassReceipt, TaxInvoice } from '../lib/types';
 
 /**
  * Receipts in the reader's language (feature 50): the same facts as the PDF, with names and
  * stops as written, in any script. The browser prints it, or saves it as a PDF, with its
- * own fonts, which the server's PDF cannot do.
+ * own fonts; the server's PDF has Latin and Devanagari only.
  */
 export function BookingReceiptPage() {
   const t = useT();
@@ -24,7 +24,7 @@ export function BookingReceiptPage() {
     <Page title={t('Receipt for booking {id}', { id })}>
       <QueryState isPending={receipt.isPending} error={receipt.error} isEmpty={false} empty="" onRetry={() => void receipt.refetch()} />
       {r && (
-        <Receipt provider={r.provider} invoice={r.taxInvoice} invoiceFor={r.taxInvoice && t('For: VAYORA service fee (SAC {code})', { code: r.taxInvoice.sacCode })} farePaid>
+        <Receipt provider={r.provider} invoice={r.taxInvoice} creditNote={r.creditNote} invoiceFor={r.taxInvoice && t('For: VAYORA service fee (SAC {code})', { code: r.taxInvoice.sacCode })} farePaid>
           <Line label={t('Passenger')} value={r.passenger} />
           <Line label={t('Driver')} value={r.driver} />
           <Line
@@ -108,10 +108,35 @@ function InvoiceLines({ invoice, invoiceFor, farePaid }: { invoice: TaxInvoice; 
   );
 }
 
-function Receipt({ provider, notes = [], invoice, invoiceFor, farePaid = false, children }: {
+/** The service fee returned after it was invoiced: the invoice stands, and this reverses it. */
+function CreditNoteLines({ note }: { note: CreditNote }) {
+  const t = useT();
+  return (
+    <div className="mt-4 border-t border-slate-200 pt-3 text-sm">
+      <p className="font-semibold text-slate-900">{t('Credit note {number}', { number: note.number })}</p>
+      <p className="mt-1 text-slate-600">
+        {t('Issued on {date} against tax invoice {invoice}: the service fee was returned.', { date: formatFullDateTime(note.issuedAt), invoice: note.invoiceNumber })}
+      </p>
+      <dl className="mt-2">
+        <Line label={t('Value before tax returned')} value={formatExactRupees(note.taxableValue)} />
+        {note.igst > 0 ? (
+          <Line label={t('IGST returned')} value={formatExactRupees(note.igst)} />
+        ) : (
+          <>
+            <Line label={t('CGST returned')} value={formatExactRupees(note.cgst)} />
+            <Line label={t('SGST returned')} value={formatExactRupees(note.sgst)} />
+          </>
+        )}
+      </dl>
+    </div>
+  );
+}
+
+function Receipt({ provider, notes = [], invoice, creditNote, invoiceFor, farePaid = false, children }: {
   provider: string | null;
   notes?: string[];
   invoice?: TaxInvoice | null;
+  creditNote?: CreditNote | null;
   invoiceFor?: string | null;
   farePaid?: boolean;
   children: ReactNode;
@@ -127,6 +152,7 @@ function Receipt({ provider, notes = [], invoice, invoiceFor, farePaid = false, 
           </p>
         ))}
         {invoice && <InvoiceLines invoice={invoice} invoiceFor={invoiceFor} farePaid={farePaid} />}
+        {creditNote && <CreditNoteLines note={creditNote} />}
         <div className="mt-4 space-y-1 border-t border-slate-200 pt-3 text-sm text-slate-600">
           {provider && <p className="font-medium text-slate-900">{providerStatement(provider, t)}</p>}
           {!invoice && <p>{t('This is not a tax invoice.')}</p>}

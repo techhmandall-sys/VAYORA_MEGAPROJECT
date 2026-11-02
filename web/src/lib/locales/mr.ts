@@ -2264,4 +2264,17 @@ export const mr: Record<string, string> = {
     'देयके',
   'Example':
     'उदाहरण',
+  // Credit notes
+  'Credit note {number}':
+    'क्रेडिट नोट {number}',
+  'Issued on {date} against tax invoice {invoice}: the service fee was returned.':
+    '{date} रोजी कर बीजक {invoice} विरुद्ध जारी: सेवा शुल्क परत केले.',
+  'Value before tax returned':
+    'परत केलेले करापूर्वीचे मूल्य',
+  'CGST returned':
+    'परत केलेला CGST',
+  'SGST returned':
+    'परत केलेला SGST',
+  'IGST returned':
+    'परत केलेला IGST',
 };

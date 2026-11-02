@@ -6,7 +6,7 @@ import { useT } from '../lib/i18n';
 
 /**
  * A booking's or a pass's receipt: to view in the reader's language and print or save from
- * the browser, or as a PDF in English, whose fonts cover Latin script only.
+ * the browser, or as a PDF in English, with names in Latin or Devanagari script only.
  */
 export function ReceiptLinks({ of, id }: { of: 'booking' | 'pass'; id: number }) {
   const t = useT();

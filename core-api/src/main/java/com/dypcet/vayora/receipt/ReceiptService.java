@@ -1,11 +1,18 @@
 package com.dypcet.vayora.receipt;
 
 import com.dypcet.vayora.payment.MockPaymentProvider;
+import com.dypcet.vayora.receipt.TaxInvoices.CreditNote;
 import com.dypcet.vayora.receipt.TaxInvoices.TaxInvoice;
 import com.dypcet.vayora.payment.PaymentService;
 import com.dypcet.vayora.payment.RazorpayPaymentProvider;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.font.FontRenderContext;
+import java.awt.font.GlyphVector;
+import java.awt.geom.PathIterator;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -34,8 +41,8 @@ import org.springframework.web.server.ResponseStatusException;
  * mock, every receipt says plainly that no money moved. None is a tax invoice unless a GST
  * registration is configured and the money was real (TaxInvoices).
  *
- * <p>The built-in PDF fonts cover Latin script only, so the PDF is in English and any
- * other character in a name or stop is shown as "?". The app's receipt has no such limit.
+ * <p>The PDF is in English. A name or stop in Devanagari is drawn as shapes, so it reads correctly
+ * but cannot be selected; any other script is shown as "?". The app's receipt has no such limit.
  */
 @Service
 public class ReceiptService {
@@ -51,11 +58,12 @@ public class ReceiptService {
      * @param refundReason null when nothing came back
      * @param provider     MOCK means no money moved
      * @param taxInvoice   for the service fee; null when none is due
+     * @param creditNote   reversing that invoice, once the fee has gone back; null otherwise
      */
     public record BookingReceipt(long bookingId, String passenger, String driver, String fromStop, String toStop,
             int seats, Instant boarding, String status, Instant paidAt, String method, BigDecimal fare,
             BigDecimal serviceFee, BigDecimal total, BigDecimal refunded, String refundReason, String provider,
-            TaxInvoice taxInvoice) {
+            TaxInvoice taxInvoice, CreditNote creditNote) {
     }
 
     /**
@@ -116,16 +124,18 @@ public class ReceiptService {
                         rs.getObject("boarding", OffsetDateTime.class).toInstant(), rs.getString("status"),
                         rs.getObject("created_at", OffsetDateTime.class).toInstant(), rs.getString("method"),
                         rs.getBigDecimal("fare"), rs.getBigDecimal("service_fee"), rs.getBigDecimal("amount"),
-                        rs.getBigDecimal("refunded"), rs.getString("refund_reason"), rs.getString("provider"), null),
+                        rs.getBigDecimal("refunded"), rs.getString("refund_reason"), rs.getString("provider"), null, null),
                 bookingId, passengerId);
         // A booking with no payment, or someone else's, looks the same as none at all.
         BookingReceipt r = found.stream().findFirst().orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "No receipt for that booking"));
-        // Refunded before anyone asked: that would need a credit note, which is not issued.
-        boolean due = RazorpayPaymentProvider.NAME.equals(r.provider()) && r.refunded().signum() == 0;
+        // A fee that went back before anyone asked was never earned, so there is nothing to invoice.
+        // One kept when only the fare came back was earned, and is.
+        boolean due = RazorpayPaymentProvider.NAME.equals(r.provider()) && r.refunded().compareTo(r.fare()) <= 0;
         return new BookingReceipt(r.bookingId(), r.passenger(), r.driver(), r.fromStop(), r.toStop(), r.seats(),
                 r.boarding(), r.status(), r.paidAt(), r.method(), r.fare(), r.serviceFee(), r.total(), r.refunded(),
-                r.refundReason(), r.provider(), invoices.forBooking(bookingId, r.serviceFee(), due).orElse(null));
+                r.refundReason(), r.provider(), invoices.forBooking(bookingId, r.serviceFee(), due).orElse(null),
+                invoices.creditNote(bookingId).orElse(null));
     }
 
     /** What the receipt for one of the passenger's passes says. */
@@ -170,6 +180,9 @@ public class ReceiptService {
         if (receipt.taxInvoice() != null) {
             lines.addAll(invoiceLines(receipt.taxInvoice(), "VAYORA service fee"));
             lines.add("The fare is collected for the driver and is not part of this tax invoice.");
+        }
+        if (receipt.creditNote() != null) {
+            lines.addAll(creditNoteLines(receipt.creditNote()));
         }
         lines.addAll(footer(receipt.provider(), receipt.taxInvoice() != null));
         return lines;
@@ -222,6 +235,22 @@ public class ReceiptService {
         return lines;
     }
 
+    private static List<String> creditNoteLines(CreditNote note) {
+        List<String> lines = new ArrayList<>(List.of(
+                "",
+                "Credit note " + note.number(),
+                "Issued " + when(note.issuedAt()),
+                "Against tax invoice " + note.invoiceNumber() + ": the service fee was returned.",
+                "Value before tax returned: " + rupees(note.taxableValue())));
+        if (note.igst().signum() > 0) {
+            lines.add("IGST returned: " + rupees(note.igst()));
+        } else {
+            lines.add("CGST returned: " + rupees(note.cgst()));
+            lines.add("SGST returned: " + rupees(note.sgst()));
+        }
+        return lines;
+    }
+
     private static List<String> footer(String provider, boolean invoiced) {
         List<String> lines = new ArrayList<>(List.of("", "Payment provider: " + provider));
         if (MockPaymentProvider.NAME.equals(provider)) {
@@ -238,22 +267,25 @@ public class ReceiptService {
         return lines;
     }
 
-    private static byte[] pdf(List<String> lines) {
+    static byte[] pdf(List<String> lines) {
         try (PDDocument document = new PDDocument(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
             PDType1Font regular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
             PDType1Font bold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
-            try (PDPageContentStream text = new PDPageContentStream(document, page)) {
-                text.beginText();
-                text.newLineAtOffset(56, PDRectangle.A4.getHeight() - 72);
-                text.setLeading(18);
+            try (PDPageContentStream content = new PDPageContentStream(document, page)) {
+                float y = PDRectangle.A4.getHeight() - 72;
                 for (int i = 0; i < lines.size(); i++) {
-                    text.setFont(i == 0 ? bold : regular, i == 0 ? 16 : 11);
-                    text.showText(latin(lines.get(i)));
-                    text.newLine();
+                    PDType1Font latin = i == 0 ? bold : regular;
+                    float size = i == 0 ? 16 : 11;
+                    float x = 56;
+                    for (Run run : runs(lines.get(i))) {
+                        x += run.devanagari() && canShape(run.text())
+                                ? drawShaped(content, run.text(), size, x, y)
+                                : write(content, latin, size, latin(run.text()), x, y);
+                    }
+                    y -= 18;
                 }
-                text.endText();
             }
             document.getDocumentInformation().setTitle(latin(lines.get(0)));
             document.save(out);
@@ -261,6 +293,115 @@ public class ReceiptService {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private static float write(PDPageContentStream content, PDType1Font font, float size, String text, float x, float y)
+            throws IOException {
+        content.beginText();
+        content.setFont(font, size);
+        content.newLineAtOffset(x, y);
+        content.showText(text);
+        content.endText();
+        return font.getStringWidth(text) / 1000 * size;
+    }
+
+    /**
+     * The Devanagari font, loaded when a receipt first needs one; null if this machine cannot,
+     * and then such a name prints as "?" rather than the receipt failing. Shaped by Java's own
+     * text layout, not PDFBox's, which misplaces a vowel sign beside a repha and would print
+     * "कार्तिक" as "कातर्कि": a wrong name on a receipt is worse than none.
+     */
+    private static final class Devanagari {
+        static final Font FONT = load();
+
+        private static Font load() {
+            try (InputStream font = ReceiptService.class.getResourceAsStream("/fonts/NotoSansDevanagari-Regular.ttf")) {
+                return Font.createFont(Font.TRUETYPE_FONT, font);
+            } catch (IOException | FontFormatException | LinkageError e) {
+                return null;
+            }
+        }
+    }
+
+    private static boolean canShape(String text) {
+        return Devanagari.FONT != null && Devanagari.FONT.canDisplayUpTo(text) == -1;
+    }
+
+    /** The letters of some Devanagari, joined and reordered as the script requires. */
+    static GlyphVector shaped(String text, float size) {
+        char[] chars = text.toCharArray();
+        return Devanagari.FONT.deriveFont(size).layoutGlyphVector(new FontRenderContext(null, true, true), chars, 0,
+                chars.length, Font.LAYOUT_LEFT_TO_RIGHT);
+    }
+
+    /** Fills the outline of the shaped letters, turned the way a PDF's page runs. Gives the width taken. */
+    private static float drawShaped(PDPageContentStream content, String text, float size, float x, float y)
+            throws IOException {
+        GlyphVector glyphs = shaped(text, size);
+        float[] at = new float[6];
+        float lastX = 0;
+        float lastY = 0;
+        for (PathIterator path = glyphs.getOutline().getPathIterator(null); !path.isDone(); path.next()) {
+            int segment = path.currentSegment(at);
+            switch (segment) {
+                case PathIterator.SEG_MOVETO -> {
+                    content.moveTo(x + at[0], y - at[1]);
+                    lastX = at[0];
+                    lastY = at[1];
+                }
+                case PathIterator.SEG_LINETO -> {
+                    content.lineTo(x + at[0], y - at[1]);
+                    lastX = at[0];
+                    lastY = at[1];
+                }
+                case PathIterator.SEG_QUADTO -> {
+                    // A PDF has no quadratic curves: the same curve, as a cubic.
+                    content.curveTo(x + lastX + 2 * (at[0] - lastX) / 3, y - (lastY + 2 * (at[1] - lastY) / 3),
+                            x + at[2] + 2 * (at[0] - at[2]) / 3, y - (at[3] + 2 * (at[1] - at[3]) / 3),
+                            x + at[2], y - at[3]);
+                    lastX = at[2];
+                    lastY = at[3];
+                }
+                case PathIterator.SEG_CUBICTO -> {
+                    content.curveTo(x + at[0], y - at[1], x + at[2], y - at[3], x + at[4], y - at[5]);
+                    lastX = at[4];
+                    lastY = at[5];
+                }
+                default -> content.closePath();
+            }
+        }
+        content.fill();
+        return (float) glyphs.getLogicalBounds().getWidth();
+    }
+
+    /** A stretch of a line drawn one way. */
+    record Run(String text, boolean devanagari) {
+    }
+
+    /** A line split by how each part is drawn. A space stays with the stretch it falls in. */
+    static List<Run> runs(String line) {
+        List<Run> runs = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inDevanagari = false;
+        for (int c : line.codePoints().toArray()) {
+            if (c != ' ' && isDevanagari(c) != inDevanagari) {
+                if (current.length() > 0) {
+                    runs.add(new Run(current.toString(), inDevanagari));
+                    current.setLength(0);
+                }
+                inDevanagari = isDevanagari(c);
+            }
+            current.appendCodePoint(c);
+        }
+        if (current.length() > 0) {
+            runs.add(new Run(current.toString(), inDevanagari));
+        }
+        return runs;
+    }
+
+    /** The Devanagari block, and the two joiners that decide how its letters combine. */
+    private static boolean isDevanagari(int c) {
+        return (c >= 0x0900 && c <= 0x097F) || c == 0x200C || c == 0x200D;
     }
 
     /** What the built-in fonts can draw: printable ASCII. Anything else becomes "?". */

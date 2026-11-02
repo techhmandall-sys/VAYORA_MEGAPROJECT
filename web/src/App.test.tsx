@@ -2971,6 +2971,19 @@ describe('tax invoices', () => {
     expect(screen.queryByText('This is not a tax invoice.')).not.toBeInTheDocument();
   });
 
+  it('shows the credit note that reverses it once the fee has gone back', async () => {
+    signIn('PASSENGER');
+    const creditNote = { number: 'VAY-CN/2026-27/000003', issuedAt: '2026-11-02T04:00:00Z', invoiceNumber: invoice.number, taxableValue: 76.27, cgst: 6.87, sgst: 6.86, igst: 0 };
+    serve({ 'GET /bookings/90/receipt-data': () => json({ ...receipt, taxInvoice: invoice, creditNote }) });
+    open('/receipts/booking/90');
+
+    expect(await screen.findByText('Credit note VAY-CN/2026-27/000003')).toBeInTheDocument();
+    expect(screen.getByText(/against tax invoice VAY\/2026-27\/000012: the service fee was returned\./)).toBeInTheDocument();
+    expect(screen.getByText('Tax invoice VAY/2026-27/000012')).toBeInTheDocument();
+    expect(screen.getByText('CGST returned')).toBeInTheDocument();
+    expect(screen.getByText('SGST returned')).toBeInTheDocument();
+  });
+
   it('charges IGST alone from another state, and says there is none when there is none', async () => {
     signIn('PASSENGER');
     serve({ 'GET /bookings/90/receipt-data': () => json({ ...receipt, taxInvoice: { ...invoice, cgst: 0, sgst: 0, igst: 13.73 } }) });

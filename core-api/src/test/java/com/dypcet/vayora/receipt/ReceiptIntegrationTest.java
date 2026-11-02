@@ -21,6 +21,7 @@ import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
 import com.dypcet.vayora.vehicle.VehicleService;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -28,6 +29,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,8 +135,18 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
-    void textTheFontsCannotDrawIsReplacedNotDropped() {
+    void textTheFontsCannotDrawIsReplacedNotDropped() throws IOException {
         assertThat(ReceiptService.latin("आशा Patil ₹")).isEqualTo("??? Patil ?");
+        assertThat(ReceiptService.runs("Passenger: आशा पाटील, Pune")).containsExactly(
+                new ReceiptService.Run("Passenger: ", false),
+                new ReceiptService.Run("आशा पाटील", true),
+                new ReceiptService.Run(", Pune", false));
+        // Really drawn: the same line has more on the page with a name in it than without.
+        assertThat(ink(ReceiptService.pdf(List.of("Receipt", "Passenger: आशा पाटील"))))
+                .isGreaterThan(ink(ReceiptService.pdf(List.of("Receipt", "Passenger: "))));
+        // Really shaped: a repha joins the letter after it, and is not a letter of its own, as
+        // three characters drawn one by one would be.
+        assertThat(ReceiptService.shaped("र्क", 11).getNumGlyphs()).isEqualTo(2);
     }
 
     @Test
@@ -166,7 +178,7 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
                         .header("Authorization", "Bearer " + tokens.issue(devanagari, UserRole.PASSENGER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.bookingId").value(bookingId))
-                // Kept as written: the PDF can only print it as "??? ?????".
+                // Kept as written.
                 .andExpect(jsonPath("$.passenger").value("आशा पाटील"))
                 .andExpect(jsonPath("$.driver").value("Ravi Jadhav"))
                 .andExpect(jsonPath("$.fromStop").value("Kolhapur")).andExpect(jsonPath("$.toStop").value("Pune"))
@@ -176,7 +188,12 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.total").value(990.0))
                 .andExpect(jsonPath("$.refunded").value(900.0))
                 .andExpect(jsonPath("$.refundReason").value("PASSENGER_CANCELLED"));
-        assertThat(text(receipts.forBooking(devanagari, bookingId))).contains("Passenger: ??? ?????");
+        // Drawn as shapes, so not "???", and not text either.
+        assertThat(text(receipts.forBooking(devanagari, bookingId))).contains("Passenger:").doesNotContain("???");
+        // A script with no font here still prints, as "?", and does not fail.
+        long tamil = user(UserRole.PASSENGER, "ஆஷா Patil");
+        long tamilBooking = bookings.request(tamil, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        assertThat(text(receipts.forBooking(tamil, tamilBooking))).contains("Passenger: ??? Patil");
 
         mvc.perform(get("/api/v1/bookings/" + bookingId + "/receipt-data")
                         .header("Authorization", "Bearer " + tokens.issue(passenger, UserRole.PASSENGER)))
@@ -208,6 +225,22 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
         assertThat(free.price()).isEqualByComparingTo("0");
         // It starts when the bought one ends.
         assertThat(free.startsAt()).isEqualTo(receipts.pass(passenger, bought).endsAt());
+    }
+
+    /** How many dark pixels the first page draws. */
+    private static int ink(byte[] pdf) throws IOException {
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            BufferedImage page = new PDFRenderer(document).renderImageWithDPI(0, 72);
+            int dark = 0;
+            for (int x = 0; x < page.getWidth(); x++) {
+                for (int y = 0; y < page.getHeight(); y++) {
+                    if ((page.getRGB(x, y) & 0xFF) < 128) {
+                        dark++;
+                    }
+                }
+            }
+            return dark;
+        }
     }
 
     private static String text(byte[] pdf) throws IOException {
