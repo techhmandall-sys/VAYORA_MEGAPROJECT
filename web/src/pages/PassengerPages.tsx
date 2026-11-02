@@ -6,7 +6,7 @@ import { Armchair, ArrowUpDown, Award, BadgeCheck, Car, CarTaxiFront, Check, Clo
 import { Link } from 'react-router-dom';
 
 import { LeavesIn, LiveDot, LiveStatus, useTimeAhead } from '../components/live';
-import { laterLine, paidLine, PayDue, RefundTerms, SimulatedPaymentNotice, usePaymentTerms } from '../components/payment';
+import { CancellingTerms, HowToPayDriver, usePaymentTerms } from '../components/payment';
 import { RateForm, RatingSummary } from '../components/rating';
 import { RideChat } from '../components/RideChat';
 import { BoardingPassView } from '../components/boarding';
@@ -22,11 +22,10 @@ import { api } from '../lib/api';
 import { placeNamed } from '../lib/places';
 import { PlaceField } from '../components/places';
 import { answerBy, formatDate, formatDateTime, formatDayMonth, formatRupees, formatTime, formatWeekday, todayInIndia } from '../lib/format';
-import { clockFace, LIVE_MS, refundNow, useNow } from '../lib/live';
+import { clockFace, LIVE_MS, owedNow, useNow } from '../lib/live';
 import { takeWantedRoute } from '../lib/recent';
 import { msg, useT, useUnits } from '../lib/i18n';
 import { matchReasonLabels } from '../lib/match';
-import { payAtCheckout } from '../lib/razorpay';
 import { comfortLabels, luggageLabels, vehiclePhrases } from '../lib/vehicle';
 import { searchSchema, type SearchForm } from '../lib/schemas';
 import type {
@@ -37,7 +36,6 @@ import type {
   FlexTier,
   Luggage,
   MyProfile,
-  PaymentMethod,
   RequestTerms,
   RickshawEstimate,
   Ride,
@@ -271,11 +269,7 @@ export function SearchPage() {
   // Women-only rides are offered only to passengers whose profile says they are a woman.
   const me = useQuery({ queryKey: ['me', 'profile'], queryFn: () => api<MyProfile>('/me/profile') });
   const [booked, setBooked] = useState<Booking | null>(null);
-  const [method, setMethod] = useState<PaymentMethod>('UPI');
   const [tier, setTier] = useState<FlexTier>('EXACT');
-  // With Razorpay the passenger pays in its checkout, and a booking is for this ride only.
-  const terms = usePaymentTerms();
-  const checkout = terms.data?.checkout === true;
   const [sort, setSort] = useState<SearchSort>('TIME');
   // A new order is not urgent: the results on screen stay, dimmed, until the new order arrives.
   const [sorting, startSorting] = useTransition();
@@ -290,7 +284,7 @@ export function SearchPage() {
   const [mapOpen, setMapOpen] = useState(false);
   const [routeShown, setRouteShown] = useState<string | null>(null);
   // One key per thing the passenger is trying to book, kept until it succeeds, so that
-  // pressing the button again after a lost response cannot book and charge twice.
+  // pressing the button again after a lost response cannot book twice.
   const idempotencyKeys = useRef(new Map<string, string>());
   const { register, handleSubmit, formState, watch, setValue, getValues } = useForm<SearchForm>({
     resolver: zodResolver(searchSchema),
@@ -347,22 +341,18 @@ export function SearchPage() {
     seatsNow.data?.find((now) => now.rideId === candidate.rideId && now.fromSeq === candidate.fromSeq && now.toSeq === candidate.toSeq);
 
   const book = useMutation({
-    // `later`: book now and pay once the booking ends, on a ride whose driver accepts that.
-    mutationFn: async ({ candidate, later }: { candidate: Candidate; later: boolean }) => {
+    mutationFn: async (candidate: Candidate) => {
       const key = candidateKey(candidate, criteria!.form.seats);
       if (!idempotencyKeys.current.has(key)) idempotencyKeys.current.set(key, crypto.randomUUID());
-      const stretch = { rideId: candidate.rideId, fromSeq: candidate.fromSeq, toSeq: candidate.toSeq, seats: criteria!.form.seats };
-      // Paid first, at the checkout, for what core-api says is due; then booked with the proof.
-      const razorpay = checkout && !later
-        ? await payAtCheckout('/bookings/checkout', stretch, `${t(candidate.fromStop)} – ${t(candidate.toStop)}`)
-        : undefined;
       return api<Booking>('/bookings', {
         method: 'POST',
         headers: { 'Idempotency-Key': idempotencyKeys.current.get(key)! },
         body: {
-          ...stretch,
-          ...(later ? { payAfterRide: true } : razorpay ? { razorpay } : { paymentMethod: method }),
-          tier: checkout ? 'EXACT' : tier,
+          rideId: candidate.rideId,
+          fromSeq: candidate.fromSeq,
+          toSeq: candidate.toSeq,
+          seats: criteria!.form.seats,
+          tier,
           // Picked up where the search started, if that is what the result offered.
           ...(candidate.detourMinutes != null ? { pickupLat: criteria!.origin.lat, pickupLon: criteria!.origin.lon } : {}),
           // The last-mile gap and access option feature 91 showed for this result, for
@@ -372,7 +362,7 @@ export function SearchPage() {
         },
       });
     },
-    onSuccess: (booking, { candidate }) => {
+    onSuccess: (booking, candidate) => {
       idempotencyKeys.current.delete(candidateKey(candidate, criteria!.form.seats));
       setBooked(booking);
       setHeld(null);
@@ -616,8 +606,8 @@ export function SearchPage() {
                 time: formatDateTime(booked.boardingTime),
               })
             : t('Request sent. Your seats are held while the driver decides; see My bookings.')}
-          {booked.total !== null &&
-            ` ${booked.payAfterRide ? laterLine(formatRupees(booked.total), t) : paidLine(terms.data?.provider, formatRupees(booked.total), t)}`}
+          {booked.paymentStatus === 'DEFERRED' &&
+            ` ${t('Nothing to pay now: pay your driver {amount} after the ride, in cash or by UPI.', { amount: formatRupees(booked.price) })}`}
         </SuccessCard>
       )}
       {book.error && <Notice tone="error">{book.error.message}</Notice>}
@@ -644,7 +634,7 @@ export function SearchPage() {
                 </h2>
                 <LiveStatus query={seatsNow} label={t('Seats are live')} />
               </div>
-              <SimulatedPaymentNotice />
+              <Notice tone="info">{t('You pay your driver directly after the ride, in cash or by UPI. VAYORA charges nothing.')}</Notice>
               <Segmented<SearchSort>
                 label={t('Sort by')}
                 value={criteria.sort}
@@ -660,35 +650,17 @@ export function SearchPage() {
                   startSorting(() => setCriteria({ ...criteria, sort: next }));
                 }}
               />
-              <div className="grid max-w-xl gap-4 sm:grid-cols-2">
-                {checkout ? (
-                  <p className="text-sm text-slate-600">
-                    {t("You pay by card, UPI or a wallet in Razorpay's checkout when you book. A booking paid there is for this ride only: if the driver withdraws, everything comes back and other rides are suggested.")}
-                  </p>
-                ) : (
-                  <>
-                    <SelectField
-                      label={t('Pay with')}
-                      value={method}
-                      onChange={(event) => setMethod(event.target.value as PaymentMethod)}
-                      hint={t('The amount is held when you book and settled when the trip ends.')}
-                    >
-                      <option value="UPI">{t('UPI')}</option>
-                      <option value="CARD">{t('Card')}</option>
-                      <option value="WALLET">{t('Wallet')}</option>
-                    </SelectField>
-                    <SelectField
-                      label={t('If the driver withdraws')}
-                      value={tier}
-                      onChange={(event) => setTier(event.target.value as FlexTier)}
-                      hint={t('Flexible and any time book you on another ride automatically, with a new payment hold. The price is the same.')}
-                    >
-                      <option value="EXACT">{t('Only this ride: suggest others')}</option>
-                      <option value="FLEXIBLE">{t('Flexible: book me within 2 hours')}</option>
-                      <option value="ANY_TIME">{t('Any time that day')}</option>
-                    </SelectField>
-                  </>
-                )}
+              <div className="max-w-xs">
+                <SelectField
+                  label={t('If the driver withdraws')}
+                  value={tier}
+                  onChange={(event) => setTier(event.target.value as FlexTier)}
+                  hint={t('Flexible and any time book you on another ride automatically. The price is the same.')}
+                >
+                  <option value="EXACT">{t('Only this ride: suggest others')}</option>
+                  <option value="FLEXIBLE">{t('Flexible: book me within 2 hours')}</option>
+                  <option value="ANY_TIME">{t('Any time that day')}</option>
+                </SelectField>
               </div>
               {criteria.sort === 'BEST_MATCH' && (
                 <p className="max-w-xl text-sm text-slate-600">
@@ -734,35 +706,17 @@ export function SearchPage() {
                   </div>
                   <div className="flex flex-col items-end gap-1 text-right">
                     <p className="text-right">
-                      <span className="block text-2xl font-bold tracking-tight text-slate-900">{formatRupees(candidate.total)}</span>
-                      <span className="block text-xs text-slate-500">
-                        {t('{fare} fare + {fee} service fee', {
-                          fare: formatRupees(candidate.fare),
-                          fee: formatRupees(candidate.serviceFee),
-                        })}
-                      </span>
-                      {candidate.keptRides && Number(candidate.serviceFee) > 0 && (
-                        <span className="block text-xs font-medium text-emerald-800">{t('A lower fee: this driver keeps their rides')}</span>
-                      )}
+                      <span className="block text-2xl font-bold tracking-tight text-slate-900">{formatRupees(candidate.fare)}</span>
+                      <span className="block text-xs text-slate-500">{t('Pay after the ride')}</span>
                     </p>
                     <Button
                       className="mt-1 px-6"
                       disabled={book.isPending || gone || tooFew}
-                      busy={book.isPending && book.variables?.candidate === candidate && !book.variables.later}
-                      onClick={() => book.mutate({ candidate, later: false })}
+                      busy={book.isPending && book.variables === candidate}
+                      onClick={() => book.mutate(candidate)}
                     >
                       {candidate.instantBooking ? t('Book') : t('Request')}
                     </Button>
-                    {candidate.payAfterRide && (
-                      <Button
-                        tone="secondary"
-                        disabled={book.isPending || gone || tooFew}
-                        busy={book.isPending && book.variables?.candidate === candidate && book.variables.later}
-                        onClick={() => book.mutate({ candidate, later: true })}
-                      >
-                        {candidate.instantBooking ? t('Book, pay after the ride') : t('Request, pay after the ride')}
-                      </Button>
-                    )}
                   </div>
                 </div>
 
@@ -796,7 +750,6 @@ export function SearchPage() {
                   ) : (
                     <Chip icon={Clock} tone="amber">{t('Driver approves each request')}</Chip>
                   )}
-                  {candidate.payAfterRide && <Chip icon={Wallet} tone="teal">{t('Pay after the ride')}</Chip>}
                   {candidate.driverConfirmed && <Chip icon={BadgeCheck} tone="teal">{t('Contact confirmed')}</Chip>}
                   {candidate.driverIdChecked && <Chip icon={BadgeCheck} tone="emerald">{t('Identity checked by staff')}</Chip>}
                   {candidate.maxTwoInBack && <Chip icon={Armchair}>{t('At most two in the back')}</Chip>}
@@ -965,24 +918,23 @@ function Journey({ booking, rideStatus }: { booking: Booking; rideStatus?: RideS
   );
 }
 
-/** What cancelling would return this minute, and when that falls, from the same tiers the server uses. */
-function RefundNow({ booking }: { booking: Booking }) {
+/** What cancelling would cost this minute, and when that rises, from the same tiers the server uses. */
+function OwedNow({ booking }: { booking: Booking }) {
   const t = useT();
   const terms = usePaymentTerms();
   const ahead = useTimeAhead();
   const now = useNow(60_000);
   const hoursBefore = (Date.parse(booking.boardingTime) - now) / 3_600_000;
-  if (booking.status !== 'CONFIRMED' || booking.payAfterRide || booking.total === null || !terms.data || hoursBefore <= 0) return null;
-  const { share, nextShare, hoursUntilNext } = refundNow(terms.data.refundTiers, hoursBefore);
+  if (booking.status !== 'CONFIRMED' || booking.paymentStatus !== 'DEFERRED' || !terms.data || hoursBefore <= 0) return null;
+  const { share, nextShare, hoursUntilNext } = owedNow(terms.data.cancellationTiers, hoursBefore);
+  const rises = { time: ahead((hoursUntilNext ?? 0) * 3_600_000), next: formatRupees(booking.price * (nextShare ?? 1)) };
   return (
     <Detail icon={Undo2}>
-      {share === 0
-        ? t('If you cancel now, nothing comes back.')
-        : t('If you cancel now, {amount} of the fare comes back. In {time} that falls to {next}.', {
-            amount: formatRupees(booking.price * share),
-            time: ahead((hoursUntilNext ?? 0) * 3_600_000),
-            next: formatRupees(booking.price * (nextShare ?? 0)),
-          })}
+      {share === 1
+        ? t('If you cancel now, you owe your driver the whole fare.')
+        : share === 0
+          ? t('If you cancel now, you owe nothing. In {time} that rises to {next}.', rises)
+          : t('If you cancel now, you owe your driver {amount}. In {time} that rises to {next}.', { amount: formatRupees(booking.price * share), ...rises })}
     </Detail>
   );
 }
@@ -1043,27 +995,22 @@ function BookingCard({ booking, requestTerms, cancelling, onCancel }: {
           </div>
           <p className="mt-1.5 flex items-start gap-2 text-sm text-slate-600">
             <Wallet aria-hidden="true" className="mt-0.5 h-4 w-4 flex-none opacity-70" />
-            {booking.total === null
-              ? t('Fare {amount}', { amount: formatRupees(booking.price) })
-              : t('{total} ({fare} fare + {fee} service fee)', {
-                  total: formatRupees(booking.total),
-                  fare: formatRupees(booking.price),
-                  fee: formatRupees(booking.serviceFee ?? 0),
-                })}
-            {booking.refunded !== null && ` · ${t('{amount} returned', { amount: formatRupees(booking.refunded) })}`}
-            {booking.payAfterRide &&
+            {t('Fare {amount}', { amount: formatRupees(booking.price) })}
+            {booking.paymentStatus &&
               ` · ${
                 booking.paymentStatus === 'DUE' && booking.amountDue != null
-                  ? t('{amount} due', { amount: formatRupees(booking.amountDue) })
+                  ? t('{amount} owed to your driver', { amount: formatRupees(booking.amountDue) })
                   : booking.paymentStatus === 'SETTLED'
-                    ? t('paid after the ride')
+                    ? booking.paymentMethod === 'UPI'
+                      ? t('paid by UPI')
+                      : t('paid in cash')
                     : booking.paymentStatus === 'VOID'
                       ? t('nothing owed')
                       : t('pay after the ride')
               }`}
           </p>
           <div className="mt-1.5">
-            <RefundNow booking={booking} />
+            <OwedNow booking={booking} />
           </div>
           <p className="mt-2">
             <StatusBadge status={booking.status} />
@@ -1077,7 +1024,7 @@ function BookingCard({ booking, requestTerms, cancelling, onCancel }: {
           )}
           {booking.status === 'PENDING' && requestTerms && (
             <p className="mt-2 text-sm text-slate-600">
-              {t('The driver has until {time} to answer. After that the request closes and everything you paid is returned.', {
+              {t('The driver has until {time} to answer. After that the request closes and you owe nothing.', {
                 time: formatDateTime(answerBy(booking.createdAt, booking.boardingTime, requestTerms)),
               })}
             </p>
@@ -1106,7 +1053,25 @@ function BookingCard({ booking, requestTerms, cancelling, onCancel }: {
         </div>
       )}
       {booking.paymentStatus === 'DUE' && booking.amountDue != null && (
-        <PayDue bookingId={booking.id} amount={booking.amountDue} description={`${t(booking.fromStop)} – ${t(booking.toStop)}`} />
+        <div className="mt-3 space-y-2">
+          <Notice tone="info">
+            {t('You owe your driver {amount}. You can book again once they mark it paid.', { amount: formatRupees(booking.amountDue) })}
+          </Notice>
+          <HowToPayDriver bookingId={booking.id} amount={booking.amountDue} />
+          <p className="text-sm text-slate-600">
+            {t('Paid, and they will not mark it?')}{' '}
+            <Link to={`/users/${booking.driverId}`} className="font-medium text-teal-800 underline underline-offset-2">
+              {t('Report it on their profile, and staff can clear it.')}
+            </Link>
+          </p>
+        </div>
+      )}
+      {booking.status === 'CONFIRMED' && booking.paymentStatus === 'DEFERRED' && (
+        <div className="mt-3">
+          <More label={t('How to pay your driver')}>
+            <HowToPayDriver bookingId={booking.id} amount={booking.price} />
+          </More>
+        </div>
       )}
       <Collapse open={meetingShown}>
         <RideRoute
@@ -1155,8 +1120,7 @@ export function BookingsPage() {
         icon={Ticket}
         onRetry={() => void bookings.refetch()}
       />
-      {bookings.data && bookings.data.length > 0 && <SimulatedPaymentNotice />}
-      {upcoming.length > 0 && <RefundTerms />}
+      {upcoming.length > 0 && <CancellingTerms />}
       {upcoming.length > 0 && <h2 className="text-lg font-bold tracking-tight text-slate-900">{t('Coming up')}</h2>}
       {list(upcoming)}
       {past.length > 0 && <h2 className="pt-2 text-lg font-bold tracking-tight text-slate-900">{t('Earlier')}</h2>}

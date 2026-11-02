@@ -88,8 +88,6 @@ export interface Ride {
   womenOnly: boolean;
   /** Minutes in all the driver will go out of their way for pickups; 0 for none. */
   maxDetourMinutes?: number;
-  /** Passengers may pay once their booking ends, in the app or in cash to the driver. */
-  payAfterRide?: boolean;
 }
 
 export type RouteSource = 'OSRM' | 'STRAIGHT_LINE';
@@ -163,9 +161,6 @@ export interface Candidate {
   seatsAvailable: number;
   /** For the seats searched for. */
   fare: number;
-  serviceFee: number;
-  /** Fare plus fee: what booking would hold. */
-  total: number;
   driverId: number;
   /** Null until somebody has rated the driver. */
   driverRating: number | null;
@@ -192,8 +187,6 @@ export interface Candidate {
   suggestFlexible: boolean;
   /** Already on the road: offered only from stops it is not yet near, and it may reach them before the time shown. */
   underWay: boolean;
-  /** The driver has completed enough rides and withdrawn none lately, so the service fee is lower: from their record only. */
-  keptRides: boolean;
   /** Insurance the driver declares: only while it covers the trip's date. */
   insurer: string | null;
   insuredUntil: string | null;
@@ -214,8 +207,6 @@ export interface Candidate {
   /** An auto-rickshaw where the walk is long; null where none is offered (feature 91). */
   pickupRickshaw?: RickshawEstimate | null;
   dropoffRickshaw?: RickshawEstimate | null;
-  /** The driver lets passengers book now and pay once the booking ends. */
-  payAfterRide?: boolean;
 }
 
 /** An auto-rickshaw to or from a stop: an estimate, never a quote. */
@@ -478,7 +469,7 @@ export interface MockMessage {
   at: string;
 }
 
-/** How long a driver has to answer a request before it is closed and refunded. */
+/** How long a driver has to answer a request before it is closed. */
 export interface RequestTerms {
   answerWithinMinutes: number;
   /** Closed this long before boarding, however recent the request. */
@@ -503,108 +494,54 @@ export interface SeatHold {
   expiresAt: string;
 }
 
-export type PaymentMethod = 'CARD' | 'UPI' | 'WALLET';
+/** How a passenger paid their driver, as the driver says. */
+export type PaymentMethod = 'CASH' | 'UPI';
 
-/** How something was paid: as when booking, or in cash to the driver after the ride. */
-export type PaidMethod = PaymentMethod | 'CASH';
+/** Why a booking owes its driver something. */
+export type DueReason = 'TRIP_COMPLETED' | 'PASSENGER_NO_SHOW' | 'PASSENGER_CANCELLED';
 
 /**
- * Where a booking's money stands. Paid when booking: held, then settled. Paid after the
- * ride: deferred while the booking is live, then due, or void if it owed nothing, then
- * settled once paid.
+ * Where a booking's money stands: deferred while the booking is live, then due, or void if it
+ * owed nothing, then settled once the driver says they were paid.
  */
-export type PaymentStatus = 'HELD' | 'SETTLED' | 'DEFERRED' | 'DUE' | 'VOID';
+export type PaymentStatus = 'DEFERRED' | 'DUE' | 'SETTLED' | 'VOID';
 
 export interface PaymentTerms {
-  /** `MOCK` means payments are simulated and no money moves. */
-  provider: string;
-  serviceFeeRate: number;
-  /** Most generous first. Later than the last tier refunds nothing. */
-  refundTiers: { atLeastHoursBefore: number; fareShare: number }[];
-  /** The passenger pays in Razorpay's checkout before booking or buying. */
-  checkout?: boolean;
-  /** Whether a booking may be flexible: not while only the passenger can pay. */
-  flexibleTiers?: boolean;
+  /** Earliest first. Later than the last tier, the whole fare is owed. */
+  cancellationTiers: { atLeastHoursBefore: number; owedShare: number }[];
 }
 
-export type PassKind = 'WEEKLY' | 'MONTHLY' | 'ANNUAL';
-
-/** A pass on sale. */
-export interface PassOffer {
-  kind: PassKind;
-  days: number;
-  price: number;
+/** A driver's own UPI details. */
+export interface DriverPaymentDetails {
+  upiId: string | null;
+  hasQr: boolean;
 }
 
-/** A pass a passenger bought. While it runs, their bookings carry no service fee. */
-export interface TravelPass {
-  id: number;
-  kind: PassKind;
-  price: number;
-  startsAt: string;
-  endsAt: string;
-  /** `MOCK` means no money moved. */
-  provider: string;
-  /** Given free for an invitation, not bought. */
-  reward: boolean;
+/** What a passenger with a confirmed or owing booking is shown of how to pay its driver. */
+export interface HowToPay {
+  driverName: string;
+  upiId: string | null;
+  hasQr: boolean;
 }
 
-/** One of a passenger's payments, with what came back. */
+/** One of a passenger's bookings, as what it costs and owes. */
 export interface PassengerPayment {
   bookingId: number;
   fromStop: string;
   toStop: string;
   fare: number;
-  serviceFee: number;
-  /** Fare plus fee: what was held, or what a booking paid after the ride costs in full. */
-  amount: number;
-  /** Null while a booking paid after the ride has not been paid. */
-  method: PaidMethod | null;
-  /** `MOCK` means no money moved; `CASH`, paid to the driver by hand; null as for the method. */
-  provider: string | null;
   status: PaymentStatus;
-  /** 0 when nothing came back. */
-  refunded: number;
-  refundReason: RefundReason | null;
+  /** What it owed when it ended, paid or not; null until then, and if nothing. */
+  amountDue: number | null;
+  dueReason: DueReason | null;
+  /** Null until the driver says it was paid. */
+  method: PaymentMethod | null;
   createdAt: string;
-  /** Nothing was taken at booking: paid once the booking ended. */
-  payAfterRide?: boolean;
-  /** What a booking paid after the ride owed when it ended; null until then. */
-  amountDue?: number | null;
+  paidAt: string | null;
 }
-
-export type RefundReason = 'NOT_ACCEPTED' | 'DRIVER_CANCELLED' | 'PASSENGER_CANCELLED';
 
 /** What a booking's receipt says: the same facts as its PDF, names as written. */
-/** For what VAYORA itself charges, on real money only, once a GST registration is configured. */
-export interface TaxInvoice {
-  number: string;
-  issuedAt: string;
-  gstin: string;
-  legalName: string;
-  address: string;
-  sacCode: string;
-  ratePercent: number;
-  taxableValue: number;
-  cgst: number;
-  sgst: number;
-  igst: number;
-}
-
-/** The service fee returned after it was invoiced: what the invoice stated, reversed. */
-export interface CreditNote {
-  number: string;
-  issuedAt: string;
-  invoiceNumber: string;
-  taxableValue: number;
-  cgst: number;
-  sgst: number;
-  igst: number;
-}
-
 export interface BookingReceipt {
-  taxInvoice?: TaxInvoice | null;
-  creditNote?: CreditNote | null;
   bookingId: number;
   passenger: string;
   driver: string;
@@ -614,44 +551,26 @@ export interface BookingReceipt {
   boarding: string;
   status: BookingStatus;
   paidAt: string;
-  method: PaidMethod;
+  method: PaymentMethod;
   fare: number;
-  serviceFee: number;
-  total: number;
-  /** 0 when nothing came back. */
-  refunded: number;
-  refundReason: RefundReason | null;
-  /** `MOCK` means no money moved. */
-  provider: string;
+  /** What the passenger paid the driver: the fare, or part of it after a late cancellation. */
+  paid: number;
+  reason: DueReason;
 }
 
-/** What a pass's receipt says. */
-export interface PassReceipt {
-  taxInvoice?: TaxInvoice | null;
-  passId: number;
-  passenger: string;
-  kind: PassKind;
-  price: number;
-  startsAt: string;
-  endsAt: string;
-  /** When it was bought, or given if a reward. */
-  paidAt: string;
-  /** None for a reward: nothing was paid. */
-  method: PaymentMethod | null;
-  provider: string;
-  reward: boolean;
-}
-
-/** A payout to a driver. */
-export interface Settlement {
+/** What a passenger owes a driver, or has paid them. */
+export interface Earning {
   bookingId: number;
   passengerName: string;
   fromStop: string;
   toStop: string;
   amount: number;
-  reason: 'TRIP_COMPLETED' | 'PASSENGER_NO_SHOW' | 'LATE_CANCELLATION';
-  provider: string;
-  createdAt: string;
+  reason: DueReason;
+  status: 'DUE' | 'SETTLED';
+  /** Null while it is due. */
+  method: PaymentMethod | null;
+  /** When the driver said it was paid; while it is due, when the booking was made. */
+  at: string;
 }
 
 export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW';
@@ -668,10 +587,6 @@ export interface Booking {
   seats: number;
   /** The fare. */
   price: number;
-  /** Null on a booking nothing was charged for. */
-  serviceFee: number | null;
-  total: number | null;
-  refunded: number | null;
   status: BookingStatus;
   boardingTime: string;
   createdAt: string;
@@ -690,12 +605,12 @@ export interface Booking {
   pickupLon?: number | null;
   /** What the pickup costs the driver, in minutes. */
   detourMinutes?: number | null;
-  /** Nothing was taken at booking: the passenger pays once it ends. */
-  payAfterRide?: boolean;
-  /** Null on a booking nothing was charged for. */
+  /** Null on a free ride. */
   paymentStatus?: PaymentStatus | null;
-  /** What a booking paid after the ride owed when it ended; null until then. */
+  /** What it owed the driver when it ended; null until then, and if nothing. */
   amountDue?: number | null;
+  /** How the driver says it was paid; null until then. */
+  paymentMethod?: PaymentMethod | null;
 }
 
 /** A completed trip its passenger says did not happen. */

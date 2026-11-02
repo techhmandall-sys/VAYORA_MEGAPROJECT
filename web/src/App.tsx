@@ -22,9 +22,7 @@ const { passenger, driver, backOffice, receipts } = load;
 const SearchPage = page(passenger, 'SearchPage');
 const BookingsPage = page(passenger, 'BookingsPage');
 const PaymentsPage = page(load.payments, 'PaymentsPage');
-const PassesPage = page(load.passes, 'PassesPage');
 const BookingReceiptPage = page(receipts, 'BookingReceiptPage');
-const PassReceiptPage = page(receipts, 'PassReceiptPage');
 const RidesPage = page(driver, 'RidesPage');
 const PublishRidePage = page(driver, 'PublishRidePage');
 const VehiclesPage = page(driver, 'VehiclesPage');
@@ -77,9 +75,7 @@ export function AppRoutes() {
           <Route path="search" element={<SearchPage />} />
           <Route path="bookings" element={<BookingsPage />} />
           <Route path="payments" element={<PaymentsPage />} />
-          <Route path="passes" element={<PassesPage />} />
           <Route path="receipts/booking/:id" element={<BookingReceiptPage />} />
-          <Route path="receipts/pass/:id" element={<PassReceiptPage />} />
         </Route>
         <Route element={<RequireRole role="DRIVER" />}>
           <Route path="rides" element={<RidesPage />} />

@@ -177,10 +177,10 @@ function CorridorArt() {
       </AnimatePresence>
       {/* Each note in a corner the road and the names leave free, after the line finishes drawing. */}
       <FloatingChip icon={Undo2} className="-right-2 top-[24%] sm:-right-8" delay={`${DRAW_SECONDS}s`}>
-        {t('The earlier you cancel, the more comes back')}
+        {t('The earlier you cancel, the less you owe')}
       </FloatingChip>
       <FloatingChip icon={Ticket} className="-left-3 top-[47%] sm:-left-10" delay={`${DRAW_SECONDS + 0.15}s`}>
-        {t('Your seat is held while you pay')}
+        {t('Your seat is held while you decide')}
       </FloatingChip>
       <FloatingChip icon={ShieldCheck} className="-left-3 bottom-[2%] sm:-left-6" delay={`${DRAW_SECONDS + 0.3}s`}>
         {t('An emergency button on every trip')}
@@ -372,7 +372,7 @@ function HowItWorks() {
     {
       icon: Ticket,
       title: t('Book a seat'),
-      body: t('Your seat is held while you pay. Many drivers confirm at once; the others answer your request.'),
+      body: t('Your seat is held while you decide. Many drivers confirm at once; the others answer your request. You pay your driver after the ride.'),
     },
     {
       icon: MessagesSquare,
@@ -410,7 +410,7 @@ function EarlyMatters() {
         <div className="space-y-3">
           <SectionTitle>{t('Why giving a seat back early matters')}</SectionTitle>
           <p className="text-[15px] leading-relaxed text-slate-600">
-            {t('A seat given back three days before departure can still be booked by someone else. Given back two hours before, it usually travels empty. So VAYORA asks early, gives back more of the fare the earlier you cancel, and never cancels anyone on a guess.')}
+            {t('A seat given back three days before departure can still be booked by someone else. Given back two hours before, it usually travels empty. So VAYORA asks early, asks for less of the fare the earlier you cancel, and never cancels anyone on a guess.')}
           </p>
           <p className="text-[15px] font-medium leading-relaxed text-slate-800">
             {t('The project measures what counts: rides completed for every 100 searches, not bookings made.')}
@@ -502,14 +502,14 @@ function TwoSides() {
     <Reveal className="grid gap-4 md:grid-cols-2">
       <Side
         title={t('For passengers')}
-        points={[t('Pay only for the stretch you ride'), t("Each driver's record of rides kept, and their ratings"), t('Passes that waive the service fee')]}
+        points={[t('Pay only for the stretch you ride'), t("Each driver's record of rides kept, and their ratings"), t('Pay the driver directly, in cash or by UPI')]}
         action={t('Create a passenger account')}
         to="/register?as=passenger"
         gradient="from-[#14b8a6] to-[#0f766e]"
       />
       <Side
         title={t('For drivers')}
-        points={[t('Publish once, or repeat a ride every week'), t('Approve each passenger, or let them book at once'), t('A lower fee for drivers who keep their rides')]}
+        points={[t('Publish once, or repeat a ride every week'), t('Approve each passenger, or let them book at once'), t('Keep the whole fare: VAYORA charges nothing')]}
         action={t('Create a driver account')}
         to="/register?as=driver"
         gradient="from-[#6366f1] to-[#4338ca]"
@@ -530,7 +530,7 @@ export function LandingPage() {
       <Features />
       <TwoSides />
       <footer className="border-t border-slate-900/[0.07] pt-6 text-center text-[13px] leading-relaxed text-slate-500">
-        <p>{t('A final-year project at DYPCET, Kolhapur. Payments, text messages and calls are simulated unless real services are connected.')}</p>
+        <p>{t('A final-year project at DYPCET, Kolhapur. Text messages and calls are simulated unless real services are connected.')}</p>
         <p className="mt-1">{t('Road distances and times are worked out between Kolhapur and Pune. On other routes they are a straight-line estimate, and say so.')}</p>
         <p className="mt-1">{t('The research behind VAYORA was run on the Kolhapur to Pune route.')}</p>
       </footer>

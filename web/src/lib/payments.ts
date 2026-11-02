@@ -1,17 +1,15 @@
 import { msg } from './i18n';
-import type { PaidMethod, RefundReason } from './types';
+import type { DueReason, PaymentMethod } from './types';
 
-/** How a payment was made, wherever it is named. */
-export const methodLabels: Record<PaidMethod, string> = {
-  CARD: msg('Card'),
-  UPI: msg('UPI'),
-  WALLET: msg('Wallet'),
+/** How a driver was paid, wherever it is named. */
+export const methodLabels: Record<PaymentMethod, string> = {
   CASH: msg('Cash to the driver'),
+  UPI: msg('UPI'),
 };
 
-/** Why money came back, told to the passenger it came back to. */
-export const refundReasons: Record<RefundReason, string> = {
-  NOT_ACCEPTED: msg('The driver did not accept'),
-  DRIVER_CANCELLED: msg('The driver cancelled'),
-  PASSENGER_CANCELLED: msg('You cancelled'),
+/** What a passenger paid for, told to that passenger. */
+export const dueReasons: Record<DueReason, string> = {
+  TRIP_COMPLETED: msg('The trip'),
+  PASSENGER_NO_SHOW: msg('A seat you did not take up'),
+  PASSENGER_CANCELLED: msg('Cancelling late'),
 };

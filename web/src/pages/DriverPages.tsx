@@ -6,7 +6,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { LeavesIn, LiveStatus, useTimeAhead } from '../components/live';
-import { SimulatedPaymentNotice } from '../components/payment';
+import { PaymentReceivedButtons } from '../components/payment';
 import { RateForm } from '../components/rating';
 import { CheckCode } from '../components/boarding';
 import { CallButton } from '../components/call';
@@ -23,10 +23,11 @@ import { PlaceField } from '../components/places';
 import { placeNamed, roughDriveMinutes } from '../lib/places';
 import { formatDateTime, formatRupees, formatTime } from '../lib/format';
 import { msg, useT, useUnits } from '../lib/i18n';
+import { methodLabels } from '../lib/payments';
 import { LIVE_MS, useNow } from '../lib/live';
 import { rideSchema, toPublishRequest, vehicleSchema, type RideForm, type VehicleForm, MAX_DETOUR_MINUTES, MAX_REPEAT_WEEKS, ridesPublished, toVehicleRequest } from '../lib/schemas';
 import { comfortLabels, luggageLabels, vehiclePhrases } from '../lib/vehicle';
-import type { Booking, Comfort, Luggage, MyProfile, Ride, RoutePreview, Settlement, Vehicle } from '../lib/types';
+import type { Booking, Comfort, DueReason, Earning, Luggage, MyProfile, Ride, RoutePreview, Vehicle } from '../lib/types';
 
 const useVehicles = () => useQuery({ queryKey: ['vehicles'], queryFn: () => api<Vehicle[]>('/vehicles') });
 
@@ -325,7 +326,6 @@ export function PublishRidePage() {
       departure: '',
       seatsOffered: 3,
       instantBooking: true,
-      payAfterRide: false,
       maxTwoInBack: false,
       womenOnly: false,
       notes: '',
@@ -439,15 +439,12 @@ export function PublishRidePage() {
                 <input type="checkbox" className="h-4 w-4 rounded border-slate-300" {...register('instantBooking')} />
                 {t('Confirm bookings instantly, without asking me')}
               </label>
-              <label className="flex items-start gap-2 text-sm text-slate-700 sm:col-span-2">
-                <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300" {...register('payAfterRide')} />
-                <span>
-                  {t('Let passengers pay after the ride, in the app or in cash to me')}
-                  <span className="block text-slate-500">
-                    {t('Nothing is taken when they book. A late cancellation or a no-show owes what it would have cost paid up front, and they cannot book again until it is paid.')}
-                  </span>
-                </span>
-              </label>
+              <p className="text-sm text-slate-600 sm:col-span-2">
+                {t('Passengers pay you directly after the ride, in cash or by UPI.')}{' '}
+                <Link to="/account" className="font-medium text-teal-800 underline underline-offset-2">
+                  {t('Your UPI ID and QR code')}
+                </Link>
+              </p>
             </div>
             </FormStep>
 
@@ -699,7 +696,7 @@ export function RidesPage() {
       )}
       {series.data && (
         <Notice tone="success">
-          {t('{n} rides cancelled. Every passenger has been refunded and told.', { n: series.data.withdrawn })}
+          {t('{n} rides cancelled. Every passenger has been told, and owes nothing.', { n: series.data.withdrawn })}
         </Notice>
       )}
       {series.error && <Notice tone="error">{series.error.message}</Notice>}
@@ -723,7 +720,6 @@ export function RidesPage() {
               <p className="mt-1 text-sm text-slate-600">
                 {t('Leaves {time}', { time: formatDateTime(ride.departureTime) })} ·{' '}
                 {ride.instantBooking ? t('Instant booking') : t('You approve requests')}
-                {ride.payAfterRide && ` · ${t('Passengers may pay after the ride')}`}
               </p>
               {ride.distanceKm !== null && ride.durationMinutes !== null && (
                 <p className="mt-1 text-sm text-slate-600">
@@ -817,12 +813,12 @@ function RideBookings({ ride }: { ride: Ride }) {
     refetchInterval: open && live ? LIVE_MS.lists : false,
   });
   const decide = useMutation({
-    mutationFn: ({ booking, action }: { booking: number; action: 'accept' | 'reject' | 'no-show' | 'cash-received' }) =>
+    mutationFn: ({ booking, action }: { booking: number; action: 'accept' | 'reject' | 'no-show' }) =>
       api<Booking>(`/bookings/${booking}/${action}`, { method: 'POST' }),
-    // Covers this ride's bookings and the seat counts on the ride itself; cash changes earnings.
+    // Covers this ride's bookings and the seat counts on the ride itself; what ends a booking changes earnings.
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['rides'] });
-      void queryClient.invalidateQueries({ queryKey: ['settlements'] });
+      void queryClient.invalidateQueries({ queryKey: ['earnings'] });
     },
   });
 
@@ -890,12 +886,14 @@ function RideBookings({ ride }: { ride: Ride }) {
                         </a>
                       </p>
                     )}
-                    {booking.payAfterRide && (
+                    {booking.paymentStatus && (
                       <p className={booking.paymentStatus === 'DUE' ? 'font-medium text-amber-800' : 'text-slate-600'}>
                         {booking.paymentStatus === 'DUE' && booking.amountDue != null
-                          ? t('{amount} due, in the app or in cash to you', { amount: formatRupees(booking.amountDue) })
+                          ? t('{amount} owed to you', { amount: formatRupees(booking.amountDue) })
                           : booking.paymentStatus === 'SETTLED'
-                            ? t('Paid after the ride')
+                            ? booking.paymentMethod === 'UPI'
+                              ? t('Paid by UPI')
+                              : t('Paid in cash')
                             : booking.paymentStatus === 'VOID'
                               ? t('Owes nothing')
                               : t('Pays after the ride')}
@@ -907,13 +905,7 @@ function RideBookings({ ride }: { ride: Ride }) {
                   </div>
                   <div className="flex gap-2">
                     {booking.paymentStatus === 'DUE' && booking.amountDue != null && (
-                      <ConfirmButton
-                        label={t('Cash received')}
-                        confirmLabel={t('Yes, I was paid {amount} in cash', { amount: formatRupees(booking.amountDue) })}
-                        tone="primary"
-                        disabled={decide.isPending}
-                        onConfirm={() => decide.mutate({ booking: booking.id, action: 'cash-received' })}
-                      />
+                      <PaymentReceivedButtons bookingId={booking.id} amount={booking.amountDue} />
                     )}
                     {booking.status === 'PENDING' && ride.status === 'SCHEDULED' && (
                       <>
@@ -968,40 +960,60 @@ function NextRideIn({ time }: { time: string }) {
   return <>{left > 0 ? t('Leaves in {time}', { time: ahead(left) }) : t('Time to set off')}</>;
 }
 
-const settlementReason: Record<Settlement['reason'], string> = {
+const earningReason: Record<DueReason, string> = {
   TRIP_COMPLETED: msg('Trip completed'),
   PASSENGER_NO_SHOW: msg('Passenger did not board'),
-  LATE_CANCELLATION: msg('Passenger cancelled late'),
+  PASSENGER_CANCELLED: msg('Passenger cancelled late'),
 };
 
 export function EarningsPage() {
   const t = useT();
-  const settlements = useQuery({ queryKey: ['settlements'], queryFn: () => api<Settlement[]>('/settlements') });
-  const cashFees = useQuery({ queryKey: ['settlements', 'cash-fees'], queryFn: () => api<{ held: number }>('/settlements/cash-fees') });
-  const total = settlements.data?.reduce((sum, settlement) => sum + settlement.amount, 0) ?? 0;
-  const lastWeek = settlements.data?.filter((settlement) => Date.now() - Date.parse(settlement.createdAt) < 7 * 86_400_000) ?? [];
+  const earnings = useQuery({ queryKey: ['earnings'], queryFn: () => api<Earning[]>('/earnings') });
+  const owed = earnings.data?.filter((earning) => earning.status === 'DUE') ?? [];
+  const paid = earnings.data?.filter((earning) => earning.status === 'SETTLED') ?? [];
+  const total = paid.reduce((sum, earning) => sum + earning.amount, 0);
+  const lastWeek = paid.filter((earning) => Date.now() - Date.parse(earning.at) < 7 * 86_400_000);
 
   return (
     <Page title={t('Earnings')}>
-      <SimulatedPaymentNotice forDrivers />
-      {cashFees.data && cashFees.data.held > 0 && (
-        <Notice tone="info">
-          {t("{amount} of the cash passengers paid you after their rides is VAYORA's service fee, which you hold for the platform.", {
-            amount: formatRupees(cashFees.data.held),
-          })}
-        </Notice>
-      )}
+      <Notice tone="info">
+        {t('Passengers pay you directly, in cash or by UPI, and VAYORA takes nothing. What shows here is what you marked as paid.')}{' '}
+        <Link to="/account" className="font-medium underline underline-offset-2">
+          {t('Your UPI ID and QR code')}
+        </Link>
+      </Notice>
       <QueryState
-        isPending={settlements.isPending}
-        error={settlements.error}
-        isEmpty={settlements.data?.length === 0}
-        empty={t('Nothing has been paid out yet. You are paid the fare when a trip completes.')}
+        isPending={earnings.isPending}
+        error={earnings.error}
+        isEmpty={earnings.data?.length === 0}
+        empty={t('Nothing yet. Once a trip ends, what passengers owe you shows here.')}
         icon={IndianRupee}
-        onRetry={() => void settlements.refetch()}
+        onRetry={() => void earnings.refetch()}
       />
-      {settlements.data && settlements.data.length > 0 && (
+      {owed.length > 0 && (
         <Card>
-          <p className="text-sm font-medium text-slate-600">{t('Total paid out')}</p>
+          <h2 className="text-lg font-bold tracking-tight text-slate-900">{t('Waiting to be paid')}</h2>
+          <p className="mt-1 text-sm text-slate-600">{t('A passenger cannot book again until you mark what they owe as paid.')}</p>
+          <ul className="mt-3 divide-y divide-slate-100 text-sm">
+            {owed.map((earning) => (
+              <li key={earning.bookingId} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div>
+                  <p className="font-medium text-slate-900">
+                    {earning.passengerName} · {formatRupees(earning.amount)}
+                  </p>
+                  <p className="text-slate-600">
+                    {t(earning.fromStop)} → {t(earning.toStop)} · {t(earningReason[earning.reason])}
+                  </p>
+                </div>
+                <PaymentReceivedButtons bookingId={earning.bookingId} amount={earning.amount} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      {paid.length > 0 && (
+        <Card>
+          <p className="text-sm font-medium text-slate-600">{t('Total paid to you')}</p>
           <p className="mt-1 text-5xl font-bold tracking-tight tabular-nums text-slate-900">
             <CountUp value={total} format={formatRupees} />
           </p>
@@ -1009,20 +1021,20 @@ export function EarningsPage() {
             <div>
               <dt className="text-slate-600">{t('In the last 7 days')}</dt>
               <dd className="text-lg font-bold tabular-nums text-slate-900">
-                <CountUp value={lastWeek.reduce((sum, settlement) => sum + settlement.amount, 0)} format={formatRupees} />
+                <CountUp value={lastWeek.reduce((sum, earning) => sum + earning.amount, 0)} format={formatRupees} />
               </dd>
             </div>
             <div>
-              <dt className="text-slate-600">{t('Payouts')}</dt>
-              <dd className="text-lg font-bold tabular-nums text-slate-900">{settlements.data.length}</dd>
+              <dt className="text-slate-600">{t('Payments')}</dt>
+              <dd className="text-lg font-bold tabular-nums text-slate-900">{paid.length}</dd>
             </div>
           </dl>
           <div className="mt-6">
-            <WeeklyPayoutChart payouts={settlements.data} />
+            <WeeklyPayoutChart payouts={paid.map((earning) => ({ amount: earning.amount, createdAt: earning.at }))} />
           </div>
           <div className="mt-6 overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <caption className="sr-only">{t('Payouts, newest first')}</caption>
+              <caption className="sr-only">{t('Payments, newest first')}</caption>
               <thead className="border-b border-slate-200 text-slate-600">
                 <tr>
                   <th scope="col" className="py-2 pr-4 font-medium">{t('Paid')}</th>
@@ -1033,18 +1045,18 @@ export function EarningsPage() {
                 </tr>
               </thead>
               <tbody>
-                {settlements.data.map((settlement) => (
-                  <tr key={settlement.bookingId} className="border-b border-slate-100 last:border-0">
-                    <td className="py-2 pr-4">{formatDateTime(settlement.createdAt)}</td>
-                    <td className="py-2 pr-4">{settlement.passengerName}</td>
+                {paid.map((earning) => (
+                  <tr key={earning.bookingId} className="border-b border-slate-100 last:border-0">
+                    <td className="py-2 pr-4">{formatDateTime(earning.at)}</td>
+                    <td className="py-2 pr-4">{earning.passengerName}</td>
                     <td className="py-2 pr-4">
-                      {t(settlement.fromStop)} → {t(settlement.toStop)}
+                      {t(earning.fromStop)} → {t(earning.toStop)}
                     </td>
                     <td className="py-2 pr-4">
-                      {t(settlementReason[settlement.reason])}
-                      {settlement.provider === 'CASH' && ` · ${t('taken in cash')}`}
+                      {t(earningReason[earning.reason])}
+                      {earning.method && ` · ${t(methodLabels[earning.method])}`}
                     </td>
-                    <td className="py-2 text-right font-medium">{formatRupees(settlement.amount)}</td>
+                    <td className="py-2 text-right font-medium">{formatRupees(earning.amount)}</td>
                   </tr>
                 ))}
               </tbody>

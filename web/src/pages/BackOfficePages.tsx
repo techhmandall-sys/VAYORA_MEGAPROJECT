@@ -12,7 +12,7 @@ import { msg, useT } from '../lib/i18n';
 import { LIVE_MS } from '../lib/live';
 import { idDocumentLabels } from '../lib/idDocuments';
 import { formatDate, formatDateTime, formatRupees } from '../lib/format';
-import type { AdminOverview, AuditEntry, BookingStatus, BusService, DisputedTrip, Stopover, SupplyGap, Member, MemberReport, ReportOutcome, RideStatus, Role, WaitingCheck } from '../lib/types';
+import type { AdminOverview, AuditEntry, BookingStatus, BusService, DisputedTrip, PaymentStatus, Stopover, SupplyGap, Member, MemberReport, ReportOutcome, RideStatus, Role, WaitingCheck } from '../lib/types';
 
 // The server's own codes, in words. A code with no entry here is shown as it is.
 const codeLabels: Record<string, string> = {
@@ -671,6 +671,8 @@ interface BookingRow {
   seats: number;
   status: BookingStatus;
   createdAt: string;
+  paymentStatus: PaymentStatus | null;
+  amountDue: number | null;
 }
 
 const RIDE_STATUSES: RideStatus[] = ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
@@ -721,9 +723,13 @@ export function AdminRidesPage() {
 export function AdminBookingsPage() {
   const t = useT();
   const [status, setStatus] = useState('');
+  const [owing, setOwing] = useState(false);
   const bookings = useQuery({
-    queryKey: ['admin', 'bookings', status],
-    queryFn: () => api<BookingRow[]>(`/admin/bookings${status ? `?status=${status}` : ''}`),
+    queryKey: ['admin', 'bookings', status, owing],
+    queryFn: () => {
+      const params = new URLSearchParams({ ...(status ? { status } : {}), ...(owing ? { owing: 'true' } : {}) }).toString();
+      return api<BookingRow[]>(`/admin/bookings${params ? `?${params}` : ''}`);
+    },
   });
   return (
     <Page title={t('Bookings')}>
@@ -736,6 +742,10 @@ export function AdminBookingsPage() {
             </option>
           ))}
         </SelectField>
+        <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" className="h-4 w-4 rounded border-slate-300" checked={owing} onChange={(event) => setOwing(event.target.checked)} />
+          {t('Only those still owing a driver')}
+        </label>
       </div>
       <QueryState isPending={bookings.isPending} error={bookings.error} isEmpty={bookings.data?.length === 0} empty={t('No bookings.')} onRetry={() => void bookings.refetch()} />
       {bookings.data?.map((booking) => (
@@ -752,8 +762,34 @@ export function AdminBookingsPage() {
           <p className="mt-1">
             <StatusBadge status={booking.status} />
           </p>
+          {booking.paymentStatus === 'DUE' && booking.amountDue != null && <ClearDue bookingId={booking.id} amount={booking.amountDue} />}
         </Card>
       ))}
     </Page>
+  );
+}
+
+/** Lets a passenger off what they owe, when a driver who was paid will not say so. */
+function ClearDue({ bookingId, amount }: { bookingId: number; amount: number }) {
+  const t = useT();
+  const queryClient = useQueryClient();
+  const [reason, setReason] = useState('');
+  const clear = useMutation({
+    mutationFn: () => api<unknown>(`/admin/bookings/${bookingId}/clear-due`, { method: 'POST', body: { reason } }),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: ['admin', 'bookings'] }),
+  });
+  return (
+    <div className="mt-3 max-w-md space-y-2 border-t border-slate-200 pt-3 text-sm">
+      <p className="font-medium text-amber-800">{t('Owes the driver {amount}', { amount: formatRupees(amount) })}</p>
+      <TextField
+        label={t('Why clear it')}
+        hint={t('For a driver who was paid and will not mark it. Kept in the audit log, and not shown to either side.')}
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        maxLength={300}
+      />
+      <ConfirmButton label={t('Clear what is owed')} confirmLabel={t('Yes, clear it')} disabled={clear.isPending || !reason.trim()} onConfirm={() => clear.mutate()} />
+      {clear.error && <Notice tone="error">{clear.error.message}</Notice>}
+    </div>
   );
 }

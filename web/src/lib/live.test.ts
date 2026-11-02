@@ -1,27 +1,27 @@
 import { describe, expect, it } from 'vitest';
 
-import { clockFace, refundNow } from './live';
+import { clockFace, owedNow } from './live';
 
 const TIERS = [
-  { atLeastHoursBefore: 48, fareShare: 1 },
-  { atLeastHoursBefore: 24, fareShare: 0.75 },
-  { atLeastHoursBefore: 6, fareShare: 0.5 },
+  { atLeastHoursBefore: 48, owedShare: 0 },
+  { atLeastHoursBefore: 24, owedShare: 0.25 },
+  { atLeastHoursBefore: 6, owedShare: 0.5 },
 ];
 
-describe('refundNow', () => {
+describe('owedNow', () => {
   it('gives the tier a cancellation falls in now and what comes after it', () => {
-    expect(refundNow(TIERS, 72)).toEqual({ share: 1, nextShare: 0.75, hoursUntilNext: 24 });
-    expect(refundNow(TIERS, 30)).toEqual({ share: 0.75, nextShare: 0.5, hoursUntilNext: 6 });
+    expect(owedNow(TIERS, 72)).toEqual({ share: 0, nextShare: 0.25, hoursUntilNext: 24 });
+    expect(owedNow(TIERS, 30)).toEqual({ share: 0.25, nextShare: 0.5, hoursUntilNext: 6 });
   });
 
   it('counts exactly on a tier\'s edge as in it, as the server does', () => {
-    expect(refundNow(TIERS, 48).share).toBe(1);
-    expect(refundNow(TIERS, 24).share).toBe(0.75);
+    expect(owedNow(TIERS, 48).share).toBe(0);
+    expect(owedNow(TIERS, 24).share).toBe(0.25);
   });
 
-  it('says nothing comes back after the last tier, and that the last tier falls to nothing', () => {
-    expect(refundNow(TIERS, 7)).toEqual({ share: 0.5, nextShare: 0, hoursUntilNext: 1 });
-    expect(refundNow(TIERS, 5)).toEqual({ share: 0, nextShare: null, hoursUntilNext: null });
+  it('says the whole fare is owed after the last tier, and that the last tier rises to it', () => {
+    expect(owedNow(TIERS, 7)).toEqual({ share: 0.5, nextShare: 1, hoursUntilNext: 1 });
+    expect(owedNow(TIERS, 5)).toEqual({ share: 1, nextShare: null, hoursUntilNext: null });
   });
 });
 

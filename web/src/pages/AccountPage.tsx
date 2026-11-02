@@ -5,14 +5,14 @@ import { useEffect, useId, useState, type FormEvent } from 'react';
 import { useToast } from '../components/toast';
 import { Button, Card, ConfirmButton, Notice, Page, QueryState, SelectField, TextField } from '../components/ui';
 import { api } from '../lib/api';
+import { DriverPaymentEditor } from '../components/payment';
 import { initialsOf, PhotoEditor } from '../components/photo';
 import { PushChoice } from '../components/push';
 import { useAuth } from '../lib/auth';
 import { msg, useT } from '../lib/i18n';
 import { DocumentCheckStatus } from '../components/documentCheck';
 import { idDocumentLabels } from '../lib/idDocuments';
-import { passKindLabels } from '../lib/passes';
-import type { Chattiness, EmergencyContact, Gender, IdDocument, MyProfile, PassKind } from '../lib/types';
+import type { Chattiness, EmergencyContact, Gender, IdDocument, MyProfile } from '../lib/types';
 
 const PHONE = /^\+?[0-9]{10,15}$/;
 const PHONE_ERROR = msg('Enter 10 to 15 digits, with or without a + in front');
@@ -317,7 +317,7 @@ function Invitations() {
   const t = useT();
   const referral = useQuery({
     queryKey: ['me', 'referral'],
-    queryFn: () => api<{ code: string; signedUp: number; qualified: number; rewardPass: PassKind | null }>('/me/referral'),
+    queryFn: () => api<{ code: string; signedUp: number; qualified: number }>('/me/referral'),
   });
   if (!referral.data) {
     return <QueryState isPending={referral.isPending} error={referral.error} isEmpty={false} empty="" onRetry={() => void referral.refetch()} />;
@@ -331,15 +331,6 @@ function Invitations() {
       <p className="text-slate-600">
         {t('{n} signed up with it; {q} of them have completed a trip.', { n: referral.data.signedUp, q: referral.data.qualified })}
       </p>
-      {referral.data.rewardPass ? (
-        <p className="text-slate-500">
-          {t('When someone you invite completes a first trip, each of you who travels as a passenger gets a free {pass}. Drivers get none: a pass only waives the fee a passenger pays.', {
-            pass: t(passKindLabels[referral.data.rewardPass]).toLowerCase(),
-          })}
-        </p>
-      ) : (
-        <p className="text-slate-500">{t('Inviting earns nothing yet: no reward has been decided.')}</p>
-      )}
     </div>
   );
 }
@@ -467,6 +458,14 @@ export function AccountPage() {
               </div>
             </Card>
           </section>
+          {user?.role === 'DRIVER' && (
+            <section aria-label={t('How passengers pay you')} className="space-y-3">
+              <h2 className="text-lg font-semibold">{t('How passengers pay you')}</h2>
+              <Card>
+                <DriverPaymentEditor />
+              </Card>
+            </section>
+          )}
           {user?.role === 'DRIVER' && (
             <section aria-label={t('Identity document')} className="space-y-3">
               <h2 className="text-lg font-semibold">{t('Identity document')}</h2>

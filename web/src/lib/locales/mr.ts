@@ -29,8 +29,6 @@ export const mr: Record<string, string> = {
   Reload: 'पुन्हा लोड करा',
   'This screen could not be loaded. VAYORA may have been updated: reload to get the new version.':
     'ही स्क्रीन लोड होऊ शकली नाही. VAYORA कदाचित अपडेट झाले आहे: नवीन आवृत्ती मिळवण्यासाठी पुन्हा लोड करा.',
-  'Paid out each week (₹)':
-    'दर आठवड्याला दिलेली रक्कम (₹)',
   'Week of {date}':
     '{date} चा आठवडा',
   'Fewer seats':
@@ -46,26 +44,6 @@ export const mr: Record<string, string> = {
   'Theme: {name}':
     'थीम: {name}',
   // Tax invoices
-  'Tax invoice {number}':
-    'कर बीजक {number}',
-  'Issued on {date} by {name}, {address}':
-    '{date} रोजी {name}, {address} यांनी जारी केले',
-  'GSTIN: {gstin}':
-    'जीएसटीआयएन: {gstin}',
-  'For: VAYORA service fee (SAC {code})':
-    'यासाठी: VAYORA सेवा शुल्क (SAC {code})',
-  'For: VAYORA travel pass (SAC {code})':
-    'यासाठी: VAYORA प्रवास पास (SAC {code})',
-  'Value before tax':
-    'करापूर्वीचे मूल्य',
-  'CGST at {rate}%':
-    'CGST {rate}% दराने',
-  'SGST at {rate}%':
-    'SGST {rate}% दराने',
-  'IGST at {rate}%':
-    'IGST {rate}% दराने',
-  'The fare is collected for the driver and is not part of this tax invoice.':
-    'भाडे चालकासाठी घेतले जाते आणि ते या कर बीजकात समाविष्ट नाही.',
   // Staff checks of identity documents and insurance
   'Declare an identity document first':
     'आधी ओळखपत्र जाहीर करा',
@@ -169,18 +147,9 @@ export const mr: Record<string, string> = {
     'या स्क्रीनवर काहीतरी चूक झाली.',
 
   // Payments and refunds
-  'Payments here are simulated. No card, UPI or wallet is contacted and no money is taken or paid out.':
-    'येथील पेमेंट केवळ नमुना (सिम्युलेशन) आहे. कोणत्याही कार्ड, UPI किंवा वॉलेटशी संपर्क केला जात नाही आणि कोणतेही पैसे घेतले किंवा दिले जात नाहीत.',
   'If you cancel': 'तुम्ही रद्द केल्यास',
-  'Before the driver accepts: everything back, including the service fee.':
-    'चालकाने स्वीकारण्यापूर्वी: सेवा शुल्कासह संपूर्ण रक्कम परत.',
   '{hours} hours or more before boarding': 'बसण्याच्या {hours} तास किंवा त्याहून आधी',
   '{from} to {to} hours before boarding': 'बसण्याच्या {from} ते {to} तास आधी',
-  '{when}: the whole fare back.': '{when}: संपूर्ण भाडे परत.',
-  '{when}: {share} of the fare back.': '{when}: भाड्याच्या {share} रक्कम परत.',
-  'Less than {hours} hours before boarding: nothing back.': 'बसण्याच्या {hours} तासांपेक्षा कमी आधी: काहीही परत नाही.',
-  'Once the driver has accepted, the service fee is not returned.': 'चालकाने स्वीकारल्यानंतर सेवा शुल्क परत केले जात नाही.',
-  'If the driver cancels or declines: everything back.': 'चालकाने रद्द केल्यास किंवा नाकारल्यास: संपूर्ण रक्कम परत.',
 
   // Ratings
   'No ratings yet': 'अद्याप रेटिंग नाही',
@@ -413,10 +382,6 @@ export const mr: Record<string, string> = {
   'Trip completed': 'प्रवास पूर्ण झाला',
   'Passenger did not board': 'प्रवासी बसला नाही',
   'Passenger cancelled late': 'प्रवाशाने उशिरा रद्द केले',
-  'Nothing has been paid out yet. You are paid the fare when a trip completes.':
-    'अद्याप कोणतीही रक्कम दिलेली नाही. प्रवास पूर्ण झाल्यावर तुम्हाला भाडे मिळते.',
-  'Total paid out': 'एकूण दिलेली रक्कम',
-  'Payouts, newest first': 'दिलेल्या रकमा, सर्वात नवीन आधी',
   Paid: 'रक्कम दिल्याची तारीख',
   Why: 'कारण',
   Amount: 'रक्कम',
@@ -455,7 +420,6 @@ export const mr: Record<string, string> = {
   'Booked. {from} to {to}, leaving {time}.': 'बुक झाले. {from} ते {to}, निघण्याची वेळ {time}.',
   'Request sent. Your seats are held while the driver decides; see My bookings.':
     'विनंती पाठवली. चालक निर्णय घेईपर्यंत तुमच्या जागा राखून ठेवल्या आहेत; "माझी बुकिंग" पहा.',
-  '{amount} is held (simulated payment).': '{amount} राखून ठेवले आहेत (नमुना पेमेंट).',
   'Search results': 'शोधाचे निकाल',
   'No rides have a stop near both ends on that day with that many seats. Try another date or other points.':
     'त्या दिवशी, तितक्या जागांसह, दोन्ही टोकांजवळ थांबा असलेला एकही प्रवास नाही. दुसरी तारीख किंवा दुसरी ठिकाणे वापरून पहा.',
@@ -464,19 +428,13 @@ export const mr: Record<string, string> = {
   'Lowest price': 'सर्वात कमी किंमत',
   'Best-rated driver': 'सर्वोत्तम रेटिंग असलेला चालक',
   'Nearest pickup': 'सर्वात जवळचे पिकअप',
-  'Pay with': 'पेमेंटचा प्रकार',
-  'The amount is held when you book and settled when the trip ends.':
-    'बुकिंग करताना रक्कम राखून ठेवली जाते आणि प्रवास संपल्यावर तिचा हिशोब केला जातो.',
   UPI: 'UPI',
-  Card: 'कार्ड',
-  Wallet: 'वॉलेट',
   '{n} seat left': '{n} जागा शिल्लक',
   '{n} seats left': '{n} जागा शिल्लक',
   'Confirms instantly': 'लगेच निश्चित होते',
   'Driver approves each request': 'चालक प्रत्येक विनंती मंजूर करतो',
   'Pickup {pickup} from your start · drop-off {dropoff} from your destination':
     'पिकअप तुमच्या सुरुवातीच्या ठिकाणापासून {pickup} · ड्रॉप तुमच्या गंतव्यस्थानापासून {dropoff}',
-  '{fare} fare + {fee} service fee': '{fare} भाडे + {fee} सेवा शुल्क',
   Book: 'बुक करा',
   Request: 'विनंती करा',
   'Hide route': 'मार्ग लपवा',
@@ -485,8 +443,6 @@ export const mr: Record<string, string> = {
   'Leaves {time} · {n} seat': 'निघण्याची वेळ {time} · {n} जागा',
   'Leaves {time} · {n} seats': 'निघण्याची वेळ {time} · {n} जागा',
   'Fare {amount}': 'भाडे {amount}',
-  '{total} ({fare} fare + {fee} service fee)': '{total} ({fare} भाडे + {fee} सेवा शुल्क)',
-  '{amount} returned': '{amount} परत केले',
   'Hide meeting point': 'भेटण्याचे ठिकाण लपवा',
   'Show meeting point': 'भेटण्याचे ठिकाण दाखवा',
   'Cancel booking': 'बुकिंग रद्द करा',
@@ -823,33 +779,13 @@ export const mr: Record<string, string> = {
   'Held for you until {time}. This is not a booking: book before then or the seats go back.':
     '{time} पर्यंत तुमच्यासाठी राखून ठेवल्या आहेत. हे बुकिंग नाही: त्याआधी बुक करा, नाहीतर जागा परत जातील.',
   // Request expiry
-  'The driver has until {time} to answer. After that the request closes and everything you paid is returned.':
-    'चालकाकडे उत्तर देण्यासाठी {time} पर्यंत वेळ आहे. त्यानंतर विनंती बंद होईल आणि तुम्ही भरलेली सर्व रक्कम परत केली जाईल.',
   // Passenger payments
   'Payments':
     'देयके',
-  'The driver did not accept':
-    'चालकाने स्वीकारले नाही',
-  'The driver cancelled':
-    'चालकाने रद्द केले',
-  'You cancelled':
-    'तुम्ही रद्द केले',
-  'You have not paid for anything yet.':
-    'तुम्ही अजून कशाचेही पैसे भरलेले नाहीत.',
-  'Paid, less what came back':
-    'भरलेली रक्कम, परत आलेली वजा करून',
   'Payments, newest first':
     'देयके, सर्वात नवीन आधी',
   'Booked':
     'बुकिंगची वेळ',
-  'Paid with':
-    'भरण्याची पद्धत',
-  'Came back':
-    'परत मिळाले',
-  'Held until the trip ends':
-    'प्रवास संपेपर्यंत राखून ठेवले',
-  'Nothing':
-    'काहीही नाही',
   // Women-only rides
   'Women passengers only':
     'फक्त महिला प्रवासी',
@@ -862,38 +798,8 @@ export const mr: Record<string, string> = {
   'Not shown on your profile. Choosing Woman lets you offer and book women-only rides; nobody checks it.':
     'तुमच्या प्रोफाइलवर दाखवले जात नाही. स्त्री निवडल्यास तुम्ही फक्त-महिला प्रवास देऊ आणि बुक करू शकता; याची कोणी तपासणी करत नाही.',
   // Travel passes
-  'Weekly pass':
-    'साप्ताहिक पास',
-  'Monthly pass':
-    'मासिक पास',
-  'Annual pass':
-    'वार्षिक पास',
-  'Travel passes':
-    'प्रवास पास',
-  'Passes':
-    'पास',
-  'While a pass runs, you pay no service fee on the rides you book. Drivers are paid the same fare either way.':
-    'पास चालू असेपर्यंत तुम्ही बुक केलेल्या प्रवासांवर सेवा शुल्क भरत नाही. चालकांना दोन्ही बाबतीत तेवढेच भाडे मिळते.',
-  'Your passes':
-    'तुमचे पास',
-  'You have no pass.':
-    'तुमच्याकडे कोणताही पास नाही.',
-  'Starts {start}, runs until {end}':
-    '{start} पासून सुरू, {end} पर्यंत चालू',
-  'Running until {end}':
-    '{end} पर्यंत चालू',
-  'Ended {end}':
-    '{end} रोजी संपला',
-  'Buy a pass':
-    'पास खरेदी करा',
-  'A pass bought while another runs starts when that one ends.':
-    'एखादा पास चालू असताना घेतलेला पास तो संपल्यावर सुरू होतो.',
-  'Your pass is bought.':
-    'तुमचा पास खरेदी झाला.',
   '{n} days':
     '{n} दिवस',
-  'Buy {pass}':
-    '{pass} खरेदी करा',
   // Receipts
   'Download receipt (PDF, in English)':
     'पावती डाउनलोड करा (PDF, इंग्रजीत)',
@@ -905,8 +811,6 @@ export const mr: Record<string, string> = {
     'पावती पाहा किंवा छापा',
   'Receipt for booking {id}':
     'बुकिंग {id} ची पावती',
-  'Receipt for travel pass {id}':
-    'प्रवास पास {id} ची पावती',
   '{from} to {to}, {n} seat':
     '{from} ते {to}, {n} जागा',
   '{from} to {to}, {n} seats':
@@ -919,30 +823,6 @@ export const mr: Record<string, string> = {
     '{when}, {method} ने',
   'Fare':
     'भाडे',
-  'Service fee':
-    'सेवा शुल्क',
-  'Total':
-    'एकूण',
-  'Refunded':
-    'परत केलेले',
-  'Pass':
-    'पास',
-  'Period':
-    'कालावधी',
-  '{start} until {end}':
-    '{start} पासून {end} पर्यंत',
-  'No service fee is charged on bookings requested while it runs.':
-    'तो चालू असताना केलेल्या बुकिंग विनंत्यांवर सेवा शुल्क आकारले जात नाही.',
-  'Given free on {date} as a reward for an invitation. Nothing was paid.':
-    '{date} रोजी निमंत्रणाचे बक्षीस म्हणून मोफत दिला. काहीही पैसे भरले नाहीत.',
-  'Simulated payment: no money was taken or paid. This is a student project.':
-    'नमुना (सिम्युलेशन) पेमेंट: कोणतेही पैसे घेतले किंवा दिले गेले नाहीत. हा एक विद्यार्थी प्रकल्प आहे.',
-  "Paid in Razorpay's test mode, where no real money moves. This is a student project.":
-    'Razorpay च्या टेस्ट मोडमध्ये पैसे भरले, जिथे खरे पैसे हलत नाहीत. हा एक विद्यार्थी प्रकल्प आहे.',
-  'Paid through Razorpay.':
-    'Razorpay मधून पैसे भरले.',
-  'Payment provider: {provider}':
-    'पेमेंट प्रदाता: {provider}',
   'This is not a tax invoice.':
     'हे कर बीजक (टॅक्स इनव्हॉइस) नाही.',
   'Times are India Standard Time.':
@@ -1081,8 +961,6 @@ export const mr: Record<string, string> = {
     'या मालिकेतील सर्व प्रवास रद्द करा',
   'Yes, cancel them all':
     'होय, सर्व रद्द करा',
-  '{n} rides cancelled. Every passenger has been refunded and told.':
-    '{n} प्रवास रद्द. प्रत्येक प्रवाशाला पैसे परत केले आणि कळवले.',
   'Rides':
     'प्रवास',
   'Bookings':
@@ -1106,8 +984,6 @@ export const mr: Record<string, string> = {
     'तुमचा आमंत्रण कोड',
   '{n} signed up with it; {q} of them have completed a trip.':
     'याने {n} जणांनी नोंदणी केली; त्यांपैकी {q} जणांनी प्रवास पूर्ण केला आहे.',
-  'Inviting earns nothing yet: no reward has been decided.':
-    'आमंत्रित केल्याने अजून काही मिळत नाही: कोणतेही बक्षीस ठरलेले नाही.',
   // Bus services
   'Buses instead':
     'त्याऐवजी बसेस',
@@ -1256,24 +1132,16 @@ export const mr: Record<string, string> = {
     '{passenger} यांनी {seats} साठी विनंती केली.',
   'The driver accepted your booking for {seats}.':
     'चालकाने {seats} साठी तुमचे बुकिंग स्वीकारले.',
-  'The driver did not answer your request for {seats} in time, so it has been closed. Everything you paid has been returned.':
-    'चालकाने {seats} साठीच्या तुमच्या विनंतीला वेळेत उत्तर दिले नाही, म्हणून ती बंद केली आहे. तुम्ही भरलेले सर्व पैसे परत केले आहेत.',
   '{passenger}\'s request for {seats} was closed because it was not answered in time.':
     '{passenger} यांची {seats} साठीची विनंती वेळेत उत्तर न दिल्याने बंद केली.',
   '{passenger} cancelled {seats}.':
     '{passenger} यांनी {seats} रद्द केल्या.',
-  'The driver did not accept your request for {seats}. Everything you paid has been returned.':
-    'चालकाने {seats} साठीची तुमची विनंती स्वीकारली नाही. तुम्ही भरलेले सर्व पैसे परत केले आहेत.',
   '{n} seat, {from} to {to}':
     '{n} जागा, {from} ते {to}',
   '{n} seats, {from} to {to}':
     '{n} जागा, {from} ते {to}',
-  'The driver reported that you did not board for {seats}. Nothing is refunded for a missed ride.':
-    'चालकाने कळवले की तुम्ही {seats} साठी बसला नाहीत. चुकलेल्या राइडचे पैसे परत मिळत नाहीत.',
   'Your trip from {from} to {to} is complete. You can rate your driver in My bookings.':
     '{from} ते {to} हा तुमचा प्रवास पूर्ण झाला. माझी बुकिंग मध्ये तुम्ही चालकाला रेटिंग देऊ शकता.',
-  'The driver cancelled the ride you booked for {seats}. Everything you paid has been returned. {more}':
-    'तुम्ही {seats} बुक केलेली राइड चालकाने रद्द केली. तुम्ही भरलेले सर्व पैसे परत केले आहेत. {more}',
   'No other ride with seats leaves near that time.':
     'त्या वेळेच्या आसपास जागा असलेली दुसरी राइड नाही.',
   'No other ride with seats leaves near that time. Buses listed by VAYORA staff (check with the operator before travelling): {buses}.':
@@ -1342,8 +1210,6 @@ export const mr: Record<string, string> = {
   // Flexibility tiers
   'If the driver withdraws':
     'चालकाने राइड मागे घेतल्यास',
-  'Flexible and any time book you on another ride automatically, with a new payment hold. The price is the same.':
-    'लवचिक आणि केव्हाही निवडल्यास तुम्हाला आपोआप दुसऱ्या राइडवर बुक केले जाते, नव्या पेमेंट होल्डसह. किंमत तीच राहते.',
   'Only this ride: suggest others':
     'फक्त हीच राइड: इतर सुचवा',
   'Flexible: book me within 2 hours':
@@ -1352,8 +1218,6 @@ export const mr: Record<string, string> = {
     'त्या दिवशी केव्हाही',
   'This driver has withdrawn some rides. A flexible booking would move you to another ride automatically.':
     'या चालकाने काही राइड मागे घेतल्या आहेत. लवचिक बुकिंग तुम्हाला आपोआप दुसऱ्या राइडवर नेईल.',
-  'A lower fee: this driver keeps their rides':
-    'कमी शुल्क: हा चालक आपल्या राइड पूर्ण करतो',
   'Already on the road: it may reach {stop} before the time shown, so be there early.':
     'राइड आधीच रस्त्यावर आहे: ती दाखवलेल्या वेळेआधी {stop} ला पोहोचू शकते, म्हणून आधी पोहोचा.',
   'If the driver withdraws, you are booked on another ride within 2 hours.':
@@ -1407,8 +1271,6 @@ export const mr: Record<string, string> = {
     'फोटो नाही',
   'No receipt for that booking':
     'त्या बुकिंगची पावती नाही',
-  'No receipt for that pass':
-    'त्या पासची पावती नाही',
   'No ride open for booking has those stops':
     'बुकिंगसाठी उघड्या कोणत्याही राइडमध्ये हे थांबे नाहीत',
   'No such bus service':
@@ -1463,8 +1325,6 @@ export const mr: Record<string, string> = {
     'VAYORA हा फोटो वाचू शकत नाही: JPEG किंवा PNG वापरा',
   'That is not a push service VAYORA sends to':
     'VAYORA या पुश सेवेला पाठवत नाही',
-  'That pass is not on sale':
-    'तो पास विक्रीसाठी नाही',
   'That phone number belongs to another account':
     'तो फोन नंबर दुसऱ्या खात्याचा आहे',
   'That photo has too many pixels':
@@ -1483,10 +1343,6 @@ export const mr: Record<string, string> = {
     'पहिल्या थांब्याचे offsetMinutes 0 असावे',
   'The lowest price must not be above the highest':
     'सर्वात कमी किंमत सर्वात जास्त किमतीपेक्षा जास्त नसावी',
-  'The payment was declined. No pass was bought.':
-    'पेमेंट नाकारले गेले. कोणताही पास खरेदी झाला नाही.',
-  'The payment was declined. Nothing was booked.':
-    'पेमेंट नाकारले गेले. काहीही बुक झाले नाही.',
   'The return must leave after the ride out has arrived':
     'परतीची राइड जाणारी राइड पोहोचल्यानंतरच निघायला हवी',
   'This account has no email address':
@@ -1549,16 +1405,6 @@ export const mr: Record<string, string> = {
     "प्रवाशांना विमा कंपनी आणि तारीख दिसते, 'तपासलेले नाही' अशा खुणेसह. कोणताही पॉलिसी नंबर विचारला जात नाही.",
   'Insurance declared by the driver: {insurer}, until {date}. Not checked.':
     'चालकाने नोंदवलेला विमा: {insurer}, {date} पर्यंत. तपासलेले नाही.',
-  'Free: a reward for an invitation':
-    'मोफत: निमंत्रणाचे बक्षीस',
-  'When someone you invite completes a first trip, each of you who travels as a passenger gets a free {pass}. Drivers get none: a pass only waives the fee a passenger pays.':
-    'तुम्ही निमंत्रित केलेली व्यक्ती पहिला प्रवास पूर्ण करते तेव्हा तुमच्यापैकी जो प्रवासी म्हणून प्रवास करतो त्याला मोफत {pass} मिळतो. चालकांना काहीही मिळत नाही: पास फक्त प्रवासी भरत असलेले शुल्क माफ करतो.',
-  '{name} joined with your invitation and completed a first trip, so you have a free travel pass. It waives the service fee while it runs: see Passes.':
-    '{name} तुमच्या निमंत्रणाने सामील झाले आणि पहिला प्रवास पूर्ण केला, म्हणून तुम्हाला मोफत प्रवास पास मिळाला आहे. तो चालू असेपर्यंत सेवा शुल्क माफ करतो: पास पहा.',
-  'You completed your first trip after joining with an invitation, so you have a free travel pass. It waives the service fee while it runs: see Passes.':
-    'निमंत्रणाने सामील झाल्यानंतर तुम्ही पहिला प्रवास पूर्ण केला, म्हणून तुम्हाला मोफत प्रवास पास मिळाला आहे. तो चालू असेपर्यंत सेवा शुल्क माफ करतो: पास पहा.',
-  'Your seat from {from} to {to} leaves {when}. If your plans have changed, cancelling now lets someone else take it, and Rs {refund} of your Rs {fare} fare comes back. If you are still travelling, there is nothing to do.':
-    '{from} ते {to} तुमची जागा {when} ला निघते. तुमचे नियोजन बदलले असल्यास, आत्ता रद्द केल्याने दुसरे कोणी ती घेऊ शकते, आणि तुमच्या Rs {fare} भाड्यापैकी Rs {refund} परत मिळतात. तुम्ही अजूनही प्रवास करत असल्यास, काहीही करण्याची गरज नाही.',
   'Best match for both of you':
     'तुम्हा दोघांसाठी सर्वोत्तम जुळणी',
   'Match {score} of 100':
@@ -1729,38 +1575,6 @@ export const mr: Record<string, string> = {
     'तुमच्या {n} आपत्कालीन संपर्कांना संदेश पाठवता आला नाही. त्यांना स्वतः फोन करा, किंवा 112 वर कॉल करा.',
   '{n} emergency contacts could not be messaged.':
     '{n} आपत्कालीन संपर्कांना संदेश पाठवता आला नाही.',
-  'Choose how to pay':
-    'पैसे कसे भरायचे ते निवडा',
-  'What was paid is not what is due, or not a card, UPI or a wallet. It is being refunded in full, and nothing was bought.':
-    'जे पैसे भरले ते देय रक्कम नाही, किंवा कार्ड, UPI किंवा वॉलेटने भरले नाहीत. पूर्ण रक्कम परत केली जात आहे, आणि काहीही खरेदी झाले नाही.',
-  'The payment service did not answer. Nothing was bought; anything taken is refunded.':
-    'पेमेंट सेवेने उत्तर दिले नाही. काहीही खरेदी झाले नाही; घेतलेली कोणतीही रक्कम परत केली जाईल.',
-  'The refund could not be made just now. Nothing was changed; try again.':
-    'आत्ता परतावा होऊ शकला नाही. काहीही बदलले नाही; पुन्हा प्रयत्न करा.',
-  'Payments are simulated here: there is no checkout':
-    'येथे पेमेंट नकली आहेत: कोणतेही चेकआउट नाही',
-  'There is nothing to pay':
-    'भरण्यासारखे काहीही नाही',
-  'The payment service did not answer. Nothing was charged; try again.':
-    'पेमेंट सेवेने उत्तर दिले नाही. कोणतीही रक्कम घेतली नाही; पुन्हा प्रयत्न करा.',
-  'A booking paid at checkout is for this ride only: a flexible one would need you to pay again while you are away':
-    'चेकआउटवर पैसे भरलेले बुकिंग फक्त याच राइडसाठी आहे: लवचिक बुकिंगसाठी तुम्ही नसताना पुन्हा पैसे भरावे लागले असते',
-  "Razorpay's checkout could not be loaded. Check your connection and try again.":
-    'Razorpay चे चेकआउट लोड होऊ शकले नाही. तुमचे कनेक्शन तपासा आणि पुन्हा प्रयत्न करा.',
-  'The payment was not completed. Nothing was bought.':
-    'पेमेंट पूर्ण झाले नाही. काहीही खरेदी झाले नाही.',
-  'Payments go through Razorpay in test mode: pay with its test card or UPI details. No real money moves.':
-    'पेमेंट Razorpay च्या टेस्ट मोडमधून होतात: त्याच्या टेस्ट कार्ड किंवा UPI तपशिलांनी पैसे भरा. कोणतेही खरे पैसे जात नाहीत.',
-  'Passengers pay through Razorpay, but VAYORA does not pay drivers through it: what you are owed is recorded here, not sent.':
-    'प्रवासी Razorpay मधून पैसे भरतात, पण VAYORA त्यातून चालकांना पैसे देत नाही: तुमची येणे रक्कम येथे नोंदवली जाते, पाठवली जात नाही.',
-  "{amount} paid in Razorpay's test mode: no real money moved.":
-    '{amount} Razorpay च्या टेस्ट मोडमध्ये भरले: कोणतेही खरे पैसे गेले नाहीत.',
-  '{amount} paid through Razorpay.':
-    '{amount} Razorpay मधून भरले.',
-  "You pay by card, UPI or a wallet in Razorpay's checkout when you book. A booking paid there is for this ride only: if the driver withdraws, everything comes back and other rides are suggested.":
-    'बुक करताना तुम्ही Razorpay च्या चेकआउटमध्ये कार्ड, UPI किंवा वॉलेटने पैसे भरता. तिथे पैसे भरलेले बुकिंग फक्त याच राइडसाठी आहे: चालकाने राइड मागे घेतल्यास सर्व रक्कम परत मिळते आणि इतर राइड सुचवल्या जातात.',
-  "You pay by card, UPI or a wallet in Razorpay's checkout when you buy.":
-    'खरेदी करताना तुम्ही Razorpay च्या चेकआउटमध्ये कार्ड, UPI किंवा वॉलेटने पैसे भरता.',
   "{name} is calling you through VAYORA, from the platform's number. Neither of you sees the other's number.":
     '{name} VAYORA मधून, प्लॅटफॉर्मच्या नंबरवरून तुम्हाला कॉल करत आहेत. तुमच्यापैकी कोणीही दुसऱ्याचा नंबर पाहत नाही.',
   "The call could not be placed. Try again, or use the ride's chat.":
@@ -1836,10 +1650,6 @@ export const mr: Record<string, string> = {
     'आधीच हा प्रवास करणाऱ्या कारमध्ये सीट बुक करा, किंवा तुमच्या कारमधील रिकाम्या सीट भरा. तुमचे बेत बदलले, तर दुसरे कोणी ती सीट घेऊ शकेल तोपर्यंत VAYORA तुम्हाला ती परत देण्याची आठवण करून देते.',
   'Offer a ride':
     'प्रवास द्या',
-  'Your seat is held while you pay':
-    'पैसे भरताना तुमची सीट राखून ठेवली जाते',
-  'The earlier you cancel, the more comes back':
-    'जितक्या लवकर रद्द कराल, तितके जास्त परत',
   'An emergency button on every trip':
     'प्रत्येक प्रवासात आपत्कालीन बटण',
   'days ahead you can book':
@@ -1852,16 +1662,14 @@ export const mr: Record<string, string> = {
     'तुम्ही कुठून सुरू करता आणि कुठे जाता ते निवडा, किंवा नकाशावरील एखादे ठिकाण. आवाक्यातून जाणारे प्रवास, बसण्याच्या ठिकाणापर्यंतच्या चालण्यासह दाखवले जातात.',
   'Book a seat':
     'सीट बुक करा',
-  'Your seat is held while you pay. Many drivers confirm at once; the others answer your request.':
-    'पैसे भरताना तुमची सीट राखून ठेवली जाते. अनेक चालक लगेच पुष्टी करतात; बाकीचे तुमच्या विनंतीला उत्तर देतात.',
   'Travel together':
     'एकत्र प्रवास करा',
   'Chat with your driver and follow the car on the map. The emergency button puts calling 112 first.':
     'तुमच्या चालकाशी चॅट करा आणि नकाशावर कार पाहा. आपत्कालीन बटण 112 वर कॉल करणे सर्वात आधी ठेवते.',
   'Why giving a seat back early matters':
     'सीट लवकर परत देणे का महत्त्वाचे आहे',
-  'A seat given back three days before departure can still be booked by someone else. Given back two hours before, it usually travels empty. So VAYORA asks early, gives back more of the fare the earlier you cancel, and never cancels anyone on a guess.':
-    'सुटण्याच्या तीन दिवस आधी परत दिलेली सीट दुसरे कोणी अजूनही बुक करू शकते. दोन तास आधी परत दिलेली सीट बहुतेक रिकामीच जाते. म्हणून VAYORA लवकर विचारते, जितक्या लवकर रद्द कराल तितके जास्त भाडे परत देते, आणि अंदाजावरून कधीही कोणाचे बुकिंग रद्द करत नाही.',
+  'A seat given back three days before departure can still be booked by someone else. Given back two hours before, it usually travels empty. So VAYORA asks early, asks for less of the fare the earlier you cancel, and never cancels anyone on a guess.':
+    'सुटण्याच्या तीन दिवस आधी परत दिलेली सीट दुसरे कोणी अजूनही बुक करू शकते. दोन तास आधी परत दिलेली सीट बहुतेक रिकामीच जाते. म्हणून VAYORA लवकर विचारते, जितक्या लवकर रद्द कराल तितके कमी भाडे मागते, आणि अंदाजावरून कधीही कोणाचे बुकिंग रद्द करत नाही.',
   'The project measures what counts: rides completed for every 100 searches, not bookings made.':
     'प्रकल्प महत्त्वाचे तेच मोजतो: दर 100 शोधांमागे पूर्ण झालेले प्रवास, केलेली बुकिंग नव्हे.',
   'Days before: someone else can book it':
@@ -1898,8 +1706,6 @@ export const mr: Record<string, string> = {
     'फक्त तुम्ही प्रवास करता त्या टप्प्याचे पैसे भरा',
   "Each driver's record of rides kept, and their ratings":
     'प्रत्येक चालकाची पाळलेल्या प्रवासांची नोंद, आणि त्यांचे रेटिंग',
-  'Passes that waive the service fee':
-    'सेवा शुल्क माफ करणारे पास',
   'Create a passenger account':
     'प्रवासी खाते तयार करा',
   'For drivers':
@@ -1908,83 +1714,29 @@ export const mr: Record<string, string> = {
     'एकदा प्रकाशित करा, किंवा दर आठवड्याला प्रवास पुन्हा करा',
   'Approve each passenger, or let them book at once':
     'प्रत्येक प्रवाशाला मंजुरी द्या, किंवा त्यांना लगेच बुक करू द्या',
-  'A lower fee for drivers who keep their rides':
-    'आपले प्रवास पाळणाऱ्या चालकांसाठी कमी शुल्क',
   'Create a driver account':
     'चालक खाते तयार करा',
-  'A final-year project at DYPCET, Kolhapur. Payments, text messages and calls are simulated unless real services are connected.':
-    'DYPCET, कोल्हापूर येथील अंतिम वर्षाचा प्रकल्प. खऱ्या सेवा जोडल्या जाईपर्यंत पेमेंट, मजकूर संदेश आणि कॉल नमुना (सिम्युलेशन) आहेत.',
   // Paying after the ride
   'Cash to the driver':
     'चालकाला रोख',
-  'Nothing is taken now: pay {amount} after the ride, in the app or in cash to the driver.':
-    'आत्ता काहीही घेतले नाही: प्रवासानंतर {amount} भरा, ॲपमध्ये किंवा चालकाला रोख.',
-  '{amount} is due. Pay it here, or in cash to your driver.':
-    '{amount} देय आहे. ते इथे भरा, किंवा तुमच्या चालकाला रोख द्या.',
-  'Pay {amount}':
-    '{amount} भरा',
-  'Book, pay after the ride':
-    'बुक करा, प्रवासानंतर पैसे द्या',
-  'Request, pay after the ride':
-    'विनंती करा, प्रवासानंतर पैसे द्या',
   'Pay after the ride':
     'प्रवासानंतर पेमेंट',
-  '{amount} due':
-    '{amount} देय',
-  'paid after the ride':
-    'प्रवासानंतर पेमेंट झाले',
   'nothing owed':
     'काहीही देय नाही',
   'pay after the ride':
     'प्रवासानंतर पेमेंट',
-  'Let passengers pay after the ride, in the app or in cash to me':
-    'प्रवाशांना प्रवासानंतर पैसे देऊ द्या, ॲपमध्ये किंवा मला रोख',
-  'Nothing is taken when they book. A late cancellation or a no-show owes what it would have cost paid up front, and they cannot book again until it is paid.':
-    'बुक करताना काहीही घेतले जात नाही. उशिरा रद्द केल्यास किंवा न आल्यास, आधी पैसे भरले असते तितकेच देय होते, आणि ते भरेपर्यंत त्यांना पुन्हा बुक करता येत नाही.',
-  'Passengers may pay after the ride':
-    'प्रवासी प्रवासानंतर पैसे देऊ शकतात',
-  '{amount} due, in the app or in cash to you':
-    '{amount} देय, ॲपमध्ये किंवा तुम्हाला रोख',
-  'Paid after the ride':
-    'प्रवासानंतर पेमेंट झाले',
   'Owes nothing':
     'काहीही देय नाही',
   'Pays after the ride':
     'प्रवासानंतर पैसे देतील',
-  'Cash received':
-    'रोख मिळाले',
   'Yes, I was paid {amount} in cash':
     'हो, मला {amount} रोख मिळाले',
-  '{amount} of the cash passengers paid you after their rides is VAYORA\'s service fee, which you hold for the platform.':
-    'प्रवासानंतर प्रवाशांनी तुम्हाला दिलेल्या रोख रकमेपैकी {amount} हे VAYORA चे सेवा शुल्क आहे, जे तुम्ही प्लॅटफॉर्मसाठी ठेवले आहे.',
-  'taken in cash':
-    'रोख घेतले',
-  'Not paid yet':
-    'अजून पेमेंट झाले नाही',
-  '{amount} due: pay it in My bookings':
-    '{amount} देय: माझी बुकिंग मध्ये भरा',
-  '{amount} paid after the ride':
-    'प्रवासानंतर {amount} भरले',
   'Nothing owed':
     'काहीही देय नाही',
-  'Paid in cash to the driver after the ride, as the driver recorded it.':
-    'प्रवासानंतर चालकाला रोख दिले, चालकाने नोंदवल्याप्रमाणे.',
-  'You have a payment due from an earlier booking. Pay it in My bookings before booking again.':
-    'मागील बुकिंगचे पेमेंट देय आहे. पुन्हा बुक करण्यापूर्वी ते माझी बुकिंग मध्ये भरा.',
-  'This driver takes payment when you book, not after the ride':
-    'या राइडसाठी पेमेंट बुक करतानाच होते, प्रवासानंतर नाही',
   'Nothing is due on this booking':
     'या बुकिंगवर काहीही देय नाही',
-  'The payment was declined. Nothing was paid.':
-    'पेमेंट नाकारले गेले. काहीही भरले गेले नाही.',
-  '{passenger} paid Rs {amount} in the app for {seats}.':
-    '{passenger} यांनी {seats} साठी ॲपमध्ये Rs {amount} भरले.',
   'Your driver recorded Rs {amount} paid in cash for {seats}.':
     'तुमच्या चालकाने {seats} साठी Rs {amount} रोख मिळाल्याची नोंद केली.',
-  'The driver reported that you did not board for {seats}. As for a seat paid when booking, the full Rs {amount} is due: pay it in My bookings.':
-    'चालकाने कळवले की तुम्ही {seats} साठी बसला नाहीत. बुक करताना भरलेल्या सीटप्रमाणे, पूर्ण Rs {amount} देय आहेत: ते माझी बुकिंग मध्ये भरा.',
-  'Your trip from {from} to {to} is complete. Rs {amount} is due: pay it in My bookings, or in cash to your driver.':
-    '{from} ते {to} हा तुमचा प्रवास पूर्ण झाला. Rs {amount} देय आहेत: माझी बुकिंग मध्ये भरा, किंवा तुमच्या चालकाला रोख द्या.',
   // Any route in India
   'Choose a place':
     'ठिकाण निवडा',
@@ -2234,10 +1986,6 @@ export const mr: Record<string, string> = {
     'पोहोचलो',
   'How far this booking has got':
     'ही बुकिंग कुठपर्यंत आली आहे',
-  'If you cancel now, nothing comes back.':
-    'तुम्ही आत्ता रद्द केल्यास काहीही परत मिळणार नाही.',
-  'If you cancel now, {amount} of the fare comes back. In {time} that falls to {next}.':
-    'तुम्ही आत्ता रद्द केल्यास भाड्यातील {amount} परत मिळतील. {time} मध्ये हे कमी होऊन {next} होईल.',
   'Your ride is on the road. Open the chat to see where the driver is.':
     'तुमचा प्रवास सुरू आहे. चालक कुठे आहे हे पाहण्यासाठी चॅट उघडा.',
   'Coming up':
@@ -2260,21 +2008,194 @@ export const mr: Record<string, string> = {
     'निघण्याची वेळ झाली',
   'In the last 7 days':
     'गेल्या 7 दिवसांत',
-  'Payouts':
-    'देयके',
   'Example':
     'उदाहरण',
   // Credit notes
-  'Credit note {number}':
-    'क्रेडिट नोट {number}',
-  'Issued on {date} against tax invoice {invoice}: the service fee was returned.':
-    '{date} रोजी कर बीजक {invoice} विरुद्ध जारी: सेवा शुल्क परत केले.',
-  'Value before tax returned':
-    'परत केलेले करापूर्वीचे मूल्य',
-  'CGST returned':
-    'परत केलेला CGST',
-  'SGST returned':
-    'परत केलेला SGST',
-  'IGST returned':
-    'परत केलेला IGST',
+  // Paying the driver directly, in cash or by UPI
+  'Paid to you each week (₹)':
+    'दर आठवड्याला तुम्हाला मिळालेले पैसे (₹)',
+  'UPI ID':
+    'UPI आयडी',
+  'Copied':
+    'कॉपी झाले',
+  'Copy':
+    'कॉपी करा',
+  'Open in my UPI app':
+    'माझ्या UPI ॲपमध्ये उघडा',
+  'Pay {name} {amount} in cash, or by UPI from your own app.':
+    '{name} यांना {amount} रोख द्या, किंवा तुमच्या UPI ॲपमधून पाठवा.',
+  'Pay {name} {amount} in cash: they have not given a UPI ID or QR code.':
+    '{name} यांना {amount} रोख द्या: त्यांनी UPI आयडी किंवा QR कोड दिलेला नाही.',
+  'UPI QR code of {name}':
+    '{name} यांचा UPI QR कोड',
+  'Check the name your UPI app shows before you pay. VAYORA never sees this money and cannot get it back.':
+    'पैसे भरण्यापूर्वी तुमच्या UPI ॲपमध्ये दिसणारे नाव तपासा. VAYORA ला हे पैसे कधीच दिसत नाहीत आणि ते परत मिळवून देऊ शकत नाही.',
+  'Paid in cash':
+    'रोख मिळाले',
+  'Paid by UPI':
+    'UPI ने मिळाले',
+  'Yes, I was paid {amount} by UPI':
+    'हो, मला UPI ने {amount} मिळाले',
+  'Passengers pay you directly after the ride, in cash or by UPI, and VAYORA takes nothing. They see these only once their booking is confirmed.':
+    'प्रवासी प्रवासानंतर थेट तुम्हाला रोख किंवा UPI ने पैसे देतात, आणि VAYORA काहीही घेत नाही. त्यांची बुकिंग निश्चित झाल्यावरच प्रवाशांना हे तपशील दिसतात.',
+  'Your UPI ID':
+    'तुमचा UPI आयडी',
+  'As your UPI app shows it, like name@bank.':
+    'तुमच्या UPI ॲपमध्ये दिसतो तसा, उदा. name@bank.',
+  'Save UPI ID':
+    'UPI आयडी जतन करा',
+  'Your UPI ID is saved.':
+    'तुमचा UPI आयडी जतन झाला आहे.',
+  'Your UPI ID is removed.':
+    'तुमचा UPI आयडी काढला आहे.',
+  'Your UPI QR code':
+    'तुमचा UPI QR कोड',
+  'Choose your UPI QR code':
+    'तुमचा UPI QR कोड निवडा',
+  'Replace QR code':
+    'QR कोड बदला',
+  'Add a QR code':
+    'QR कोड जोडा',
+  'Remove QR code':
+    'QR कोड काढा',
+  'A screenshot from your UPI app, as a JPEG or PNG up to 5 MB. Scan it yourself once it is up, to check it still works.':
+    'तुमच्या UPI ॲपचा स्क्रीनशॉट, JPEG किंवा PNG मध्ये, 5 MB पर्यंत. अपलोड केल्यावर तो चालतो का ते स्वतः स्कॅन करून तपासा.',
+  'Before the driver accepts: nothing to pay.':
+    'चालकाने स्वीकारण्यापूर्वी: काहीही द्यायचे नाही.',
+  '{when}: nothing to pay.':
+    '{when}: काहीही द्यायचे नाही.',
+  '{when}: {share} of the fare to your driver.':
+    '{when}: भाड्याचा {share} तुमच्या चालकाला.',
+  'Less than {hours} hours before boarding, or if you do not turn up: the whole fare to your driver.':
+    'बसण्याच्या {hours} तासांपेक्षा कमी आधी, किंवा तुम्ही न आल्यास: संपूर्ण भाडे तुमच्या चालकाला.',
+  'If the driver cancels or declines: nothing to pay.':
+    'चालकाने रद्द केल्यास किंवा नाकारल्यास: काहीही द्यायचे नाही.',
+  'You cannot book again until your driver marks what you owe as paid.':
+    'तुमच्या चालकाने देय रक्कम मिळाल्याची नोंद करेपर्यंत तुम्ही पुन्हा बुक करू शकत नाही.',
+  'The driver did not answer your request for {seats} in time, so it has been closed. You owe nothing.':
+    'चालकाने {seats} साठीच्या तुमच्या विनंतीला वेळेत उत्तर दिले नाही, म्हणून ती बंद केली आहे. तुम्हाला काहीही द्यायचे नाही.',
+  'The driver did not accept your request for {seats}. You owe nothing.':
+    'चालकाने {seats} साठीची तुमची विनंती स्वीकारली नाही. तुम्हाला काहीही द्यायचे नाही.',
+  'The driver reported that you did not board for {seats}.':
+    'चालकाने कळवले की तुम्ही {seats} साठी बसला नाहीत.',
+  'The driver cancelled the ride you booked for {seats}. You owe nothing. {more}':
+    'तुम्ही {seats} बुक केलेली राइड चालकाने रद्द केली. तुम्हाला काहीही द्यायचे नाही. {more}',
+  'Your seat from {from} to {to} leaves {when}. If your plans have changed, cancelling now lets someone else take it, and you would owe nothing. If you are still travelling, there is nothing to do.':
+    '{from} ते {to} तुमची जागा {when} ला निघते. तुमचे नियोजन बदलले असल्यास, आत्ता रद्द केल्याने दुसऱ्या कोणाला ती मिळू शकते, आणि तुम्हाला काहीही द्यावे लागणार नाही. तुम्ही प्रवास करत असाल तर काहीही करण्याची गरज नाही.',
+  'Your seat from {from} to {to} leaves {when}. If your plans have changed, cancelling now lets someone else take it, and you would owe your driver Rs {owed} of your Rs {fare} fare. If you are still travelling, there is nothing to do.':
+    '{from} ते {to} तुमची जागा {when} ला निघते. तुमचे नियोजन बदलले असल्यास, आत्ता रद्द केल्याने दुसऱ्या कोणाला ती मिळू शकते, आणि तुमच्या Rs {fare} भाड्यापैकी Rs {owed} चालकाला द्यावे लागतील. तुम्ही प्रवास करत असाल तर काहीही करण्याची गरज नाही.',
+  'Your trip from {from} to {to} is complete. Pay your driver Rs {amount}, in cash or by UPI: see My bookings.':
+    '{from} ते {to} हा तुमचा प्रवास पूर्ण झाला. तुमच्या चालकाला Rs {amount} रोख किंवा UPI ने द्या: माझी बुकिंग पाहा.',
+  'The driver reported that you did not board for {seats}. The full Rs {amount} is owed to them: see My bookings.':
+    'चालकाने कळवले की तुम्ही {seats} साठी बसला नाहीत. पूर्ण Rs {amount} त्यांना द्यायचे आहेत: माझी बुकिंग पाहा.',
+  '{passenger} cancelled {seats}, late enough to owe you Rs {amount}.':
+    '{passenger} यांनी {seats} उशिरा रद्द केली, म्हणून तुम्हाला Rs {amount} मिळायचे आहेत.',
+  'Your driver recorded Rs {amount} paid by UPI for {seats}.':
+    'तुमच्या चालकाने {seats} साठी Rs {amount} UPI ने मिळाल्याची नोंद केली.',
+  'VAYORA staff cleared what you owed for {seats}, so you can book again.':
+    'VAYORA कर्मचाऱ्यांनी {seats} साठीची तुमची देय रक्कम काढून टाकली आहे, म्हणून तुम्ही पुन्हा बुक करू शकता.',
+  'VAYORA staff cleared what {passenger} owed you for {seats}.':
+    'VAYORA कर्मचाऱ्यांनी {seats} साठी {passenger} यांची तुम्हाला देय रक्कम काढून टाकली आहे.',
+  'The trip':
+    'प्रवास',
+  'A seat you did not take up':
+    'तुम्ही न घेतलेली जागा',
+  'Cancelling late':
+    'उशिरा रद्द करणे',
+  'You still owe a driver for an earlier booking. You can book again once they mark it paid: see My bookings.':
+    'मागील बुकिंगचे पैसे अजून चालकाला द्यायचे आहेत. त्यांनी मिळाल्याची नोंद केल्यावर तुम्ही पुन्हा बुक करू शकाल: माझी बुकिंग पाहा.',
+  'That does not look like a UPI ID. It looks like name@bank, as your UPI app shows it':
+    'हा UPI आयडी वाटत नाही. तो name@bank सारखा असतो, तुमच्या UPI ॲपमध्ये दिसतो तसा',
+  'No QR code':
+    'QR कोड नाही',
+  'How passengers pay you':
+    'प्रवासी तुम्हाला पैसे कसे देतात',
+  'Only those still owing a driver':
+    'फक्त ज्यांच्याकडे चालकाचे पैसे बाकी आहेत',
+  'Owes the driver {amount}':
+    'चालकाला {amount} द्यायचे आहेत',
+  'Why clear it':
+    'हे का काढत आहात',
+  'For a driver who was paid and will not mark it. Kept in the audit log, and not shown to either side.':
+    'ज्या चालकाला पैसे मिळाले पण जो नोंद करत नाही त्याच्यासाठी. हे ऑडिट लॉगमध्ये राहते आणि दोन्ही बाजूंना दिसत नाही.',
+  'Clear what is owed':
+    'देय रक्कम काढा',
+  'Yes, clear it':
+    'हो, काढा',
+  'Passengers pay you directly after the ride, in cash or by UPI.':
+    'प्रवासी प्रवासानंतर थेट तुम्हाला रोख किंवा UPI ने पैसे देतात.',
+  'Your UPI ID and QR code':
+    'तुमचा UPI आयडी आणि QR कोड',
+  '{amount} owed to you':
+    'तुम्हाला {amount} मिळायचे आहेत',
+  'Passengers pay you directly, in cash or by UPI, and VAYORA takes nothing. What shows here is what you marked as paid.':
+    'प्रवासी थेट तुम्हाला रोख किंवा UPI ने पैसे देतात, आणि VAYORA काहीही घेत नाही. तुम्ही मिळाल्याची नोंद केलेलेच इथे दिसते.',
+  'Nothing yet. Once a trip ends, what passengers owe you shows here.':
+    'अजून काही नाही. प्रवास संपल्यावर प्रवाशांकडून येणे रक्कम इथे दिसेल.',
+  'Waiting to be paid':
+    'पैशांच्या प्रतीक्षेत',
+  'A passenger cannot book again until you mark what they owe as paid.':
+    'तुम्ही देय रक्कम मिळाल्याची नोंद करेपर्यंत प्रवासी पुन्हा बुक करू शकत नाही.',
+  'Total paid to you':
+    'तुम्हाला एकूण मिळाले',
+  'The earlier you cancel, the less you owe':
+    'जितक्या लवकर रद्द कराल, तितके कमी द्यावे लागेल',
+  'Your seat is held while you decide':
+    'निर्णय घेताना तुमची सीट राखून ठेवली जाते',
+  'Pay the driver directly, in cash or by UPI':
+    'चालकाला थेट रोख किंवा UPI ने पैसे द्या',
+  'Keep the whole fare: VAYORA charges nothing':
+    'संपूर्ण भाडे तुमचे: VAYORA काहीही घेत नाही',
+  'A final-year project at DYPCET, Kolhapur. Text messages and calls are simulated unless real services are connected.':
+    'DYPCET, कोल्हापूर येथील अंतिम वर्षाचा प्रकल्प. खऱ्या सेवा जोडल्या जाईपर्यंत मजकूर संदेश आणि कॉल अनुकरणित आहेत.',
+  'Nothing to pay now: pay your driver {amount} after the ride, in cash or by UPI.':
+    'आत्ता काहीही द्यायचे नाही: प्रवासानंतर तुमच्या चालकाला {amount} रोख किंवा UPI ने द्या.',
+  'You pay your driver directly after the ride, in cash or by UPI. VAYORA charges nothing.':
+    'तुम्ही प्रवासानंतर थेट तुमच्या चालकाला रोख किंवा UPI ने पैसे देता. VAYORA काहीही घेत नाही.',
+  'Flexible and any time book you on another ride automatically. The price is the same.':
+    'लवचिक आणि केव्हाही निवडल्यास तुम्हाला आपोआप दुसऱ्या राइडवर बुक केले जाते. किंमत तीच राहते.',
+  'If you cancel now, you owe your driver the whole fare.':
+    'तुम्ही आत्ता रद्द केल्यास संपूर्ण भाडे चालकाला द्यावे लागेल.',
+  'If you cancel now, you owe nothing. In {time} that rises to {next}.':
+    'तुम्ही आत्ता रद्द केल्यास काहीही द्यायचे नाही. {time} मध्ये हे वाढून {next} होईल.',
+  'If you cancel now, you owe your driver {amount}. In {time} that rises to {next}.':
+    'तुम्ही आत्ता रद्द केल्यास चालकाला {amount} द्यावे लागतील. {time} मध्ये हे वाढून {next} होईल.',
+  '{amount} owed to your driver':
+    'चालकाला {amount} द्यायचे आहेत',
+  'paid by UPI':
+    'UPI ने दिले',
+  'paid in cash':
+    'रोख दिले',
+  'The driver has until {time} to answer. After that the request closes and you owe nothing.':
+    'चालकाकडे उत्तर देण्यासाठी {time} पर्यंत वेळ आहे. त्यानंतर विनंती बंद होईल आणि तुम्हाला काहीही द्यायचे नाही.',
+  'You owe your driver {amount}. You can book again once they mark it paid.':
+    'तुम्हाला तुमच्या चालकाला {amount} द्यायचे आहेत. त्यांनी नोंद केल्यावर तुम्ही पुन्हा बुक करू शकाल.',
+  'Paid, and they will not mark it?':
+    'पैसे दिले, पण ते नोंद करत नाहीत?',
+  'Report it on their profile, and staff can clear it.':
+    'त्यांच्या प्रोफाइलवर तक्रार करा, कर्मचारी ते काढू शकतात.',
+  'How to pay your driver':
+    'तुमच्या चालकाला पैसे कसे द्यावे',
+  'You owe {amount}. You can book again once your driver marks it paid.':
+    'तुम्हाला {amount} द्यायचे आहेत. तुमच्या चालकाने नोंद केल्यावर तुम्ही पुन्हा बुक करू शकाल.',
+  'See My bookings':
+    'माझी बुकिंग पाहा',
+  'You have not booked anything yet.':
+    'तुम्ही अजून काहीही बुक केलेले नाही.',
+  'Paid to your drivers':
+    'तुमच्या चालकांना दिलेले',
+  'Where it stands':
+    'स्थिती',
+  '{amount} paid':
+    '{amount} दिले',
+  'For':
+    'कशासाठी',
+  'Paid to the driver':
+    'चालकाला दिले',
+  'Paid directly to the driver, as the driver recorded it. VAYORA took no part of it and charged nothing.':
+    'थेट चालकाला दिले, चालकाने नोंदवल्याप्रमाणे. VAYORA ने यातून काहीही घेतले नाही आणि कोणतेही शुल्क आकारले नाही.',
+  'Your seat is held while you decide. Many drivers confirm at once; the others answer your request. You pay your driver after the ride.':
+    'निर्णय घेताना तुमची सीट राखून ठेवली जाते. बरेच चालक लगेच निश्चित करतात; बाकीचे तुमच्या विनंतीला उत्तर देतात. तुम्ही प्रवासानंतर तुमच्या चालकाला पैसे देता.',
+  '{n} rides cancelled. Every passenger has been told, and owes nothing.':
+    '{n} राइड रद्द केल्या. प्रत्येक प्रवाशाला कळवले आहे, आणि त्यांना काहीही द्यायचे नाही.',
 };

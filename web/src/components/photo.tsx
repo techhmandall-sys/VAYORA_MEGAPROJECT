@@ -11,8 +11,8 @@ const ACCEPTED = 'image/jpeg,image/png';
 export const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]!.toUpperCase()).join('');
 
 /** The photo at this path, fetched with the session token, or null while there is none. */
-function usePhotoUrl(path: string): { url: string | null; isPending: boolean } {
-  const photo = useQuery({ queryKey: ['photo', path], queryFn: () => fetchFile(path) });
+export function usePhotoUrl(path: string, enabled = true): { url: string | null; isPending: boolean } {
+  const photo = useQuery({ queryKey: ['photo', path], queryFn: () => fetchFile(path), enabled });
   const [url, setUrl] = useState<string | null>(null);
   // Made and revoked by the same effect, so a remount (StrictMode does one in development)
   // makes a fresh address instead of keeping one already revoked.

@@ -73,11 +73,9 @@ function serve(routes: Record<string, () => Response>) {
 }
 
 const terms = {
-  provider: 'MOCK',
-  serviceFeeRate: 0.1,
-  refundTiers: [
-    { atLeastHoursBefore: 48, fareShare: 1 },
-    { atLeastHoursBefore: 24, fareShare: 0.5 },
+  cancellationTiers: [
+    { atLeastHoursBefore: 48, owedShare: 0 },
+    { atLeastHoursBefore: 24, owedShare: 0.5 },
   ],
 };
 
@@ -97,8 +95,6 @@ const candidate: Candidate = {
   pricePerSeat: 520,
   seatsAvailable: 3,
   fare: 1040,
-  serviceFee: 104,
-  total: 1144,
   driverId: 7,
   driverRating: 4.6667,
   driverRatingCount: 3,
@@ -113,7 +109,6 @@ const candidate: Candidate = {
   dropoffWalkMinutes: 0,
   suggestFlexible: false,
   underWay: false,
-  keptRides: false,
   insurer: null,
   insuredUntil: null,
   matchScore: 72,
@@ -163,9 +158,7 @@ const booking: Booking = {
   toStop: 'Pune',
   seats: 1,
   price: 520,
-  serviceFee: 52,
-  total: 572,
-  refunded: null,
+  paymentStatus: 'DEFERRED',
   status: 'PENDING',
   boardingTime: '2026-11-02T01:30:00Z',
   createdAt: '2026-10-30T10:00:00Z',
@@ -297,7 +290,7 @@ describe('signing in', () => {
 });
 
 describe('finding and booking a ride', () => {
-  it('searches, shows the total for the party, and requests the booking', async () => {
+  it('searches, shows the fare for the party, and requests the booking', async () => {
     signIn('PASSENGER');
     const fetchMock = serve({
       'GET /rides/search': () => json([candidate]),
@@ -313,22 +306,22 @@ describe('finding and booking a ride', () => {
     expect(await within(results).findByRole('link', { name: 'Ravi Jadhav' })).toHaveAttribute('href', '/users/7');
     expect(within(results).getByText(/4\.7 out of 5 · 3 ratings/)).toBeInTheDocument();
     expect(within(results).getByText(/3 seats left/)).toBeInTheDocument();
-    expect(within(results).getByText('₹1,144')).toBeInTheDocument();
-    expect(within(results).getByText('₹1,040 fare + ₹104 service fee')).toBeInTheDocument();
-    expect(await within(results).findByText(/Payments here are simulated/)).toBeInTheDocument();
+    expect(within(results).getByText('₹1,040')).toBeInTheDocument();
+    expect(within(results).getByText(/You pay your driver directly after the ride, in cash or by UPI/)).toBeInTheDocument();
+    // There is nothing to choose: no card, no wallet, no second way to book.
+    expect(within(results).queryByLabelText('Pay with')).not.toBeInTheDocument();
+    expect(within(results).queryByText(/service fee/)).not.toBeInTheDocument();
     expect(within(results).getByText(/Driver approves each request/)).toBeInTheDocument();
 
-    await userEvent.selectOptions(within(results).getByLabelText('Pay with'), 'Card');
     await userEvent.click(within(results).getByRole('button', { name: 'Request' }));
 
-    expect(await screen.findByText(/Request sent/)).toHaveTextContent('₹572 is held (simulated payment)');
+    expect(await screen.findByText(/Request sent/)).toHaveTextContent('Nothing to pay now: pay your driver ₹520 after the ride, in cash or by UPI.');
     const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')!;
     expect(JSON.parse(post[1]!.body as string)).toEqual({
       rideId: 12,
       fromSeq: 0,
       toSeq: 2,
       seats: 2,
-      paymentMethod: 'CARD',
       tier: 'EXACT',
       lastMileDistanceM: candidate.pickupDistanceM,
       lastMileModeShown: 'walk',
@@ -372,13 +365,13 @@ describe('finding and booking a ride', () => {
     const fetchMock = serve({
       'GET /rides/search': () => json([candidate]),
       'POST /bookings': () =>
-        attempts++ === 0 ? json({ detail: 'The payment was declined. Nothing was booked.' }, 402) : json(booking, 201),
+        attempts++ === 0 ? json({ detail: 'Not enough seats left on that part of the ride' }, 409) : json(booking, 201),
     });
     open('/search');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Request' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('The payment was declined. Nothing was booked.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not enough seats left on that part of the ride');
     await userEvent.click(screen.getByRole('button', { name: 'Request' }));
     expect(await screen.findByText(/Request sent/)).toBeInTheDocument();
 
@@ -735,11 +728,11 @@ describe('my bookings', () => {
     open('/bookings');
 
     expect(await screen.findByText('Waiting for the driver')).toBeInTheDocument();
-    expect(screen.getByText('₹572 (₹520 fare + ₹52 service fee)')).toBeInTheDocument();
-    // The refund policy is stated, from the server's own terms, before anything is cancelled.
-    expect(await screen.findByText('48 hours or more before boarding: the whole fare back.')).toBeInTheDocument();
-    expect(screen.getByText('24 to 48 hours before boarding: 50% of the fare back.')).toBeInTheDocument();
-    expect(screen.getByText('Less than 24 hours before boarding: nothing back.')).toBeInTheDocument();
+    expect(screen.getByText(/Fare ₹520 · pay after the ride/)).toBeInTheDocument();
+    // What cancelling costs is stated, from the server's own terms, before anything is cancelled.
+    expect(await screen.findByText('48 hours or more before boarding: nothing to pay.')).toBeInTheDocument();
+    expect(screen.getByText('24 to 48 hours before boarding: 50% of the fare to your driver.')).toBeInTheDocument();
+    expect(screen.getByText('Less than 24 hours before boarding, or if you do not turn up: the whole fare to your driver.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Cancel booking' }));
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
 
@@ -757,12 +750,15 @@ describe('my bookings', () => {
     expect(screen.queryByText('If you cancel')).not.toBeInTheDocument();
   });
 
-  it('shows what came back on a cancelled booking', async () => {
+  it('shows what a booking cancelled late still owes the driver', async () => {
     signIn('PASSENGER');
-    serve({ 'GET /bookings': () => json([{ ...booking, status: 'CANCELLED', refunded: 260 }]) });
+    serve({
+      'GET /bookings/90/pay-driver': () => json({ driverName: 'Ravi Jadhav', upiId: null, hasQr: false }),
+      'GET /bookings': () => json([{ ...booking, status: 'CANCELLED', paymentStatus: 'DUE', amountDue: 260, driverId: 7 }]),
+    });
     open('/bookings');
 
-    expect(await screen.findByText(/₹260 returned/)).toBeInTheDocument();
+    expect(await screen.findByText(/₹260 owed to your driver/)).toBeInTheDocument();
   });
 });
 
@@ -932,37 +928,41 @@ describe('ratings', () => {
 });
 
 describe('earnings (driver)', () => {
-  it('lists payouts with their reason and a total, and says the money is simulated', async () => {
+  it('lists what was paid with its reason and a total, and what is still owed, and that VAYORA takes nothing', async () => {
     signIn('DRIVER');
-    const payout = {
+    const earning = {
       bookingId: 1,
       passengerName: 'Meera Kulkarni',
       fromStop: 'Kolhapur',
       toStop: 'Pune',
-      provider: 'MOCK',
-      createdAt: '2026-11-02T06:00:00Z',
+      status: 'SETTLED',
+      method: 'CASH',
+      at: '2026-11-02T06:00:00Z',
     };
     serve({
-      'GET /settlements': () =>
+      'GET /earnings': () =>
         json([
-          { ...payout, amount: 520, reason: 'TRIP_COMPLETED' },
-          { ...payout, bookingId: 2, amount: 260, reason: 'LATE_CANCELLATION' },
+          { ...earning, amount: 520, reason: 'TRIP_COMPLETED' },
+          { ...earning, bookingId: 2, amount: 260, reason: 'PASSENGER_CANCELLED', method: 'UPI' },
+          { ...earning, bookingId: 3, amount: 400, reason: 'PASSENGER_NO_SHOW', status: 'DUE', method: null, passengerName: 'Asha Patil' },
         ]),
     });
     open('/earnings');
 
     expect((await screen.findAllByText('₹780')).length).toBeGreaterThan(0);
-    expect(screen.getByText('Trip completed')).toBeInTheDocument();
-    expect(screen.getByText('Passenger cancelled late')).toBeInTheDocument();
-    expect(await screen.findByText(/Payments here are simulated/)).toBeInTheDocument();
+    expect(screen.getByText(/Trip completed · Cash to the driver/)).toBeInTheDocument();
+    expect(screen.getByText(/Passenger cancelled late · UPI/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Waiting to be paid' })).toBeInTheDocument();
+    expect(screen.getByText(/Asha Patil · ₹400/)).toBeInTheDocument();
+    expect(screen.getByText(/Passengers pay you directly, in cash or by UPI, and VAYORA takes nothing/)).toBeInTheDocument();
+    expect(screen.queryByText(/paid out|service fee|simulated/i)).not.toBeInTheDocument();
   });
-
   it('explains when nothing has been paid yet', async () => {
     signIn('DRIVER');
-    serve({ 'GET /settlements': () => json([]) });
+    serve({ 'GET /earnings': () => json([]) });
     open('/earnings');
 
-    expect(await screen.findByText(/Nothing has been paid out yet/)).toBeInTheDocument();
+    expect(await screen.findByText(/Nothing yet\. Once a trip ends/)).toBeInTheDocument();
   });
 });
 
@@ -1595,7 +1595,7 @@ describe('a request waiting for the driver', () => {
     serve({ 'GET /bookings': () => json([booking, { ...booking, id: 91, status: 'CONFIRMED' }]) });
     open('/bookings');
 
-    const deadlines = await screen.findAllByText(/The driver has until .* to answer\. After that the request closes and everything you paid is returned\./);
+    const deadlines = await screen.findAllByText(/The driver has until .* to answer\. After that the request closes and you owe nothing\./);
     expect(deadlines).toHaveLength(1); // the pending one only
   });
 });
@@ -1821,41 +1821,45 @@ describe('running a ride from my rides', () => {
 
 describe('payments (passenger)', () => {
   const payment = {
-    bookingId: 90, fromStop: 'Kolhapur', toStop: 'Pune', fare: 520, serviceFee: 52, amount: 572,
-    method: 'UPI', provider: 'MOCK', status: 'SETTLED', refunded: 0, refundReason: null, createdAt: '2026-10-30T10:00:00Z',
+    bookingId: 90, fromStop: 'Kolhapur', toStop: 'Pune', fare: 520, status: 'SETTLED', amountDue: 520, dueReason: 'TRIP_COMPLETED',
+    method: 'UPI', createdAt: '2026-10-30T10:00:00Z', paidAt: '2026-10-31T10:00:00Z',
   };
+  const open_ = { amountDue: null, dueReason: null, method: null, paidAt: null };
 
-  it('lists what was paid and what came back, and says the money is simulated', async () => {
+  it('lists where each booking stands and what was paid to drivers', async () => {
     signIn('PASSENGER');
     serve({
       'GET /payments': () =>
         json([
-          { ...payment, bookingId: 92, status: 'HELD' },
-          { ...payment, bookingId: 91, method: 'CARD', refunded: 572, refundReason: 'DRIVER_CANCELLED' },
+          { ...payment, ...open_, bookingId: 93, status: 'DEFERRED' },
+          { ...payment, ...open_, bookingId: 92, status: 'VOID' },
+          { ...payment, ...open_, bookingId: 91, status: 'DUE', amountDue: 260, dueReason: 'PASSENGER_CANCELLED' },
           payment,
         ]),
     });
     open('/payments');
 
-    // 572 held + (572 - 572) + 572 settled.
-    expect(await screen.findByText('₹1,144')).toBeInTheDocument();
-    expect(screen.getByText('₹572: The driver cancelled')).toBeInTheDocument();
-    expect(screen.getByText('Held until the trip ends')).toBeInTheDocument();
-    expect(screen.getByText('Nothing')).toBeInTheDocument();
-    expect(screen.getByText('Card')).toBeInTheDocument();
-    expect(screen.getAllByText('₹520 fare + ₹52 service fee')).toHaveLength(3);
-    expect(await screen.findByText(/Payments here are simulated/)).toBeInTheDocument();
+    expect(await screen.findByText('Paid to your drivers')).toBeInTheDocument();
+    expect(screen.getByText('₹520 paid · UPI')).toBeInTheDocument();
+    expect(screen.getByText('₹260 owed to your driver')).toBeInTheDocument();
+    expect(screen.getByText('Nothing owed')).toBeInTheDocument();
+    expect(screen.getByText('Pay after the ride')).toBeInTheDocument();
+    expect(screen.getByText(/You owe ₹260\. You can book again once your driver marks it paid\./)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'See My bookings' })).toHaveAttribute('href', '/bookings');
+    // Only what is paid has a receipt.
+    expect(screen.getAllByRole('link', { name: 'View or print receipt' })).toHaveLength(1);
+    expect(screen.queryByText(/service fee|simulated/i)).not.toBeInTheDocument();
     expect(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Payments' })).toHaveAttribute('href', '/payments');
+    expect(within(screen.getByRole('navigation', { name: 'Main' })).queryByRole('link', { name: 'Passes' })).not.toBeInTheDocument();
   });
 
-  it('says so when nothing has been paid, and is not offered to drivers', async () => {
+  it('says so when nothing has been booked', async () => {
     signIn('PASSENGER');
     serve({ 'GET /payments': () => json([]) });
     open('/payments');
-    expect(await screen.findByText('You have not paid for anything yet.')).toBeInTheDocument();
+    expect(await screen.findByText('You have not booked anything yet.')).toBeInTheDocument();
   });
 });
-
 describe('women-only rides', () => {
   const vehicle = { id: 3, make: 'Maruti', model: 'Ertiga', year: 2022, colour: 'Silver', seats: 7 };
 
@@ -1913,82 +1917,16 @@ describe('women-only rides', () => {
   });
 });
 
-describe('travel passes', () => {
-  const offers = [
-    { kind: 'WEEKLY', days: 7, price: 99 },
-    { kind: 'MONTHLY', days: 30, price: 299 },
-    { kind: 'ANNUAL', days: 365, price: 2499 },
-  ];
-  const day = 24 * 3600 * 1000;
-  const iso = (offset: number) => new Date(Date.now() + offset).toISOString();
-
-  it('buys a pass with the chosen method and shows it running', async () => {
-    signIn('PASSENGER');
-    let owned: unknown[] = [];
-    const bought = { id: 1, kind: 'MONTHLY', price: 299, startsAt: iso(-1000), endsAt: iso(30 * day), provider: 'MOCK' };
-    const fetchMock = serve({
-      'GET /passes/offers': () => json(offers),
-      'GET /passes': () => json(owned),
-      'POST /passes': () => {
-        owned = [bought];
-        return json(bought, 201);
-      },
-    });
-    open('/passes');
-
-    expect(await screen.findByText('You have no pass.')).toBeInTheDocument();
-    expect(screen.getByText('₹2,499')).toBeInTheDocument();
-    expect(await screen.findByText(/Payments here are simulated/)).toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByLabelText('Pay with'), 'Card');
-    await userEvent.click(screen.getByRole('button', { name: 'Buy Monthly pass' }));
-
-    expect(await screen.findByText('Your pass is bought.')).toBeInTheDocument();
-    expect(await screen.findByText(/Running until/)).toBeInTheDocument();
-    const sent = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
-    expect(JSON.parse(String(sent?.[1]?.body))).toEqual({ kind: 'MONTHLY', paymentMethod: 'CARD' });
-  });
-
-  it('tells a running, a waiting and an ended pass apart', async () => {
-    signIn('PASSENGER');
-    serve({
-      'GET /passes/offers': () => json(offers),
-      'GET /passes': () =>
-        json([
-          { id: 3, kind: 'WEEKLY', price: 99, startsAt: iso(5 * day), endsAt: iso(12 * day), provider: 'MOCK' },
-          { id: 2, kind: 'WEEKLY', price: 99, startsAt: iso(-2 * day), endsAt: iso(5 * day), provider: 'MOCK' },
-          { id: 1, kind: 'ANNUAL', price: 2499, startsAt: iso(-400 * day), endsAt: iso(-35 * day), provider: 'MOCK' },
-        ]),
-    });
-    open('/passes');
-
-    expect(await screen.findByText(/^Starts .*, runs until/)).toBeInTheDocument();
-    expect(screen.getByText(/^Running until/)).toBeInTheDocument();
-    expect(screen.getByText(/^Ended/)).toBeInTheDocument();
-  });
-
-  it("shows the server's reason when the payment is declined", async () => {
-    signIn('PASSENGER');
-    serve({
-      'GET /passes/offers': () => json(offers),
-      'GET /passes': () => json([]),
-      'POST /passes': () => json({ detail: 'The payment was declined. No pass was bought.' }, 402),
-    });
-    open('/passes');
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Buy Weekly pass' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('The payment was declined. No pass was bought.');
-  });
-});
-
 describe('receipts', () => {
+  const paidFor = {
+    bookingId: 90, fromStop: 'Kolhapur', toStop: 'Pune', fare: 900, status: 'SETTLED', amountDue: 450, dueReason: 'PASSENGER_CANCELLED',
+    method: 'UPI', createdAt: '2026-10-25T10:00:00Z', paidAt: '2026-10-27T10:00:00Z',
+  };
+
   it('downloads a receipt with the session token and saves it under its name', async () => {
     signIn('PASSENGER');
-    const payment = {
-      bookingId: 90, fromStop: 'Kolhapur', toStop: 'Pune', fare: 520, serviceFee: 52, amount: 572,
-      method: 'UPI', provider: 'MOCK', status: 'SETTLED', refunded: 0, refundReason: null, createdAt: '2026-10-30T10:00:00Z',
-    };
     const fetchMock = serve({
-      'GET /payments': () => json([payment]),
+      'GET /payments': () => json([paidFor]),
       'GET /bookings/90/receipt': () => new Response(new Blob(['%PDF-1.4']), { status: 200, headers: { 'Content-Type': 'application/pdf' } }),
     });
     // jsdom has neither, so they are put in for this test and taken out after it.
@@ -2016,17 +1954,14 @@ describe('receipts', () => {
   it('says so when the receipt cannot be downloaded', async () => {
     signIn('PASSENGER');
     serve({
-      // Most specific first: routes match by prefix.
-      'GET /passes/4/receipt': () => json({ detail: 'No receipt for that pass' }, 404),
-      'GET /passes/offers': () => json([]),
-      'GET /passes': () => json([{ id: 4, kind: 'WEEKLY', price: 99, startsAt: '2026-10-01T00:00:00Z', endsAt: '2026-10-08T00:00:00Z', provider: 'MOCK' }]),
+      'GET /bookings/90/receipt': () => json({ detail: 'No receipt for that booking' }, 404),
+      'GET /payments': () => json([paidFor]),
     });
-    open('/passes');
+    open('/payments');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Download receipt (PDF, in English)' }));
     expect(await screen.findByText('The receipt could not be downloaded. Try again.')).toBeInTheDocument();
   });
-
   /** As `open`, in a language other than English. */
   function openIn(path: string, language: Language) {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -2046,14 +1981,13 @@ describe('receipts', () => {
   const receipt = {
     bookingId: 90, passenger: 'आशा पाटील', driver: 'Ravi Jadhav', fromStop: 'Kolhapur', toStop: 'Pune', seats: 2,
     boarding: '2026-10-30T04:30:00Z', status: 'CANCELLED', paidAt: '2026-10-27T10:00:00Z', method: 'UPI',
-    fare: 900, serviceFee: 90, total: 990, refunded: 900, refundReason: 'PASSENGER_CANCELLED', provider: 'MOCK',
+    fare: 900, paid: 450, reason: 'PASSENGER_CANCELLED',
   };
 
-  it('opens a receipt from the payments page, saying the payment was simulated and is no tax invoice', async () => {
+  it('opens a receipt from the payments page, saying the driver was paid directly and it is no tax invoice', async () => {
     signIn('PASSENGER');
     serve({
-      'GET /payments': () => json([{ bookingId: 90, fromStop: 'Kolhapur', toStop: 'Pune', fare: 900, serviceFee: 90, amount: 990,
-        method: 'UPI', provider: 'MOCK', status: 'SETTLED', refunded: 900, refundReason: 'PASSENGER_CANCELLED', createdAt: '2026-10-27T10:00:00Z' }]),
+      'GET /payments': () => json([paidFor]),
       'GET /bookings/90/receipt-data': () => json(receipt),
     });
     open('/payments');
@@ -2063,12 +1997,12 @@ describe('receipts', () => {
     expect(await screen.findByRole('heading', { name: 'Receipt for booking 90' })).toBeInTheDocument();
     expect(await screen.findByText('Kolhapur to Pune, 2 seats')).toBeInTheDocument();
     expect(screen.getByText('27 Oct 2026, 3:30 pm, by UPI')).toBeInTheDocument();
-    expect(screen.getByText('₹990.00')).toBeInTheDocument();
-    expect(screen.getByText('₹900.00: You cancelled')).toBeInTheDocument();
-    expect(screen.getByText('Simulated payment: no money was taken or paid. This is a student project.')).toBeInTheDocument();
+    expect(screen.getByText('Cancelling late')).toBeInTheDocument();
+    expect(screen.getByText('₹900.00')).toBeInTheDocument();
+    expect(screen.getByText('₹450.00')).toBeInTheDocument();
+    expect(screen.getByText('Paid directly to the driver, as the driver recorded it. VAYORA took no part of it and charged nothing.')).toBeInTheDocument();
     expect(screen.getByText('This is not a tax invoice.')).toBeInTheDocument();
   });
-
   it('shows a receipt in the reader language with names as written, and prints it from the browser', async () => {
     signIn('PASSENGER');
     serve({ 'GET /bookings/90/receipt-data': () => json(receipt) });
@@ -2081,8 +2015,8 @@ describe('receipts', () => {
       expect(await screen.findByText('आशा पाटील')).toBeInTheDocument();
       expect(screen.getByText('कोल्हापूर ते पुणे, 2 जागा')).toBeInTheDocument();
       expect(screen.getByText('रद्द')).toBeInTheDocument();
-      expect(screen.getByText('₹900.00: तुम्ही रद्द केले')).toBeInTheDocument();
-      expect(screen.getByText(/^नमुना \(सिम्युलेशन\) पेमेंट/)).toBeInTheDocument();
+      expect(screen.getByText('उशिरा रद्द करणे')).toBeInTheDocument();
+      expect(screen.getByText(/^थेट चालकाला दिले/)).toBeInTheDocument();
       expect(screen.getByText('हे कर बीजक (टॅक्स इनव्हॉइस) नाही.')).toBeInTheDocument();
 
       await userEvent.click(screen.getByRole('button', { name: 'छापा किंवा PDF म्हणून जतन करा' }));
@@ -2092,23 +2026,6 @@ describe('receipts', () => {
       setFormatLanguage('en');
       document.documentElement.lang = '';
     }
-  });
-
-  it('says a pass given as a reward was not paid for, and names no provider', async () => {
-    signIn('PASSENGER');
-    serve({
-      'GET /passes/4/receipt-data': () => json({ passId: 4, passenger: 'Asha Patil', kind: 'WEEKLY', price: 0,
-        startsAt: '2026-11-01T00:00:00Z', endsAt: '2026-11-08T00:00:00Z', paidAt: '2026-10-20T08:00:00Z',
-        method: null, provider: 'REFERRAL', reward: true }),
-    });
-    open('/receipts/pass/4');
-
-    expect(await screen.findByRole('heading', { name: 'Receipt for travel pass 4' })).toBeInTheDocument();
-    expect(await screen.findByText('Weekly pass')).toBeInTheDocument();
-    expect(screen.getByText('Given free on 20 Oct 2026, 1:30 pm as a reward for an invitation. Nothing was paid.')).toBeInTheDocument();
-    expect(screen.getByText('₹0.00')).toBeInTheDocument();
-    expect(screen.queryByText(/Simulated payment|Payment provider|REFERRAL/)).not.toBeInTheDocument();
-    expect(screen.getByText('This is not a tax invoice.')).toBeInTheDocument();
   });
 
   it('says why a receipt cannot be shown', async () => {
@@ -2308,7 +2225,7 @@ describe('series and the back-office browser', () => {
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
     await userEvent.click(screen.getByRole('button', { name: 'Yes, cancel them all' }));
 
-    expect(await screen.findByText('4 rides cancelled. Every passenger has been refunded and told.')).toBeInTheDocument();
+    expect(await screen.findByText('4 rides cancelled. Every passenger has been told, and owes nothing.')).toBeInTheDocument();
   });
 
   it('offers no series button on a ride published alone', async () => {
@@ -2335,7 +2252,7 @@ describe('series and the back-office browser', () => {
 });
 
 describe('invitations', () => {
-  it('shows the code and who used it, and says no reward is attached', async () => {
+  it('shows the code and who used it', async () => {
     signIn('PASSENGER');
     serve({
       'GET /me/profile': () => json({ email: 'user@example.test', emailVerified: false, phone: null, phoneVerified: false,
@@ -2348,7 +2265,7 @@ describe('invitations', () => {
     const section = within(await screen.findByRole('region', { name: 'Invite friends' }));
     expect(await section.findByText('K7QX2M')).toBeInTheDocument();
     expect(section.getByText('3 signed up with it; 1 of them have completed a trip.')).toBeInTheDocument();
-    expect(section.getByText(/no reward has been decided/)).toBeInTheDocument();
+    expect(section.queryByText(/reward|free|pass/i)).not.toBeInTheDocument();
   });
 });
 
@@ -2624,9 +2541,9 @@ describe('notifications in the reader language', () => {
   const seats = { template: '{n} seats, {from} to {to}', values: { n: '2', from: 'Kolhapur', to: 'Pune' } };
   const cancelled = {
     id: 'a1', type: 'RIDE_CANCELLED', bookingId: 7, createdAt: '2026-11-02T01:30:00Z', read: false,
-    message: 'The driver cancelled the ride you booked for 2 seats, Kolhapur to Pune. Everything you paid has been returned. No other ride with seats leaves near that time.',
+    message: 'The driver cancelled the ride you booked for 2 seats, Kolhapur to Pune. You owe nothing. No other ride with seats leaves near that time.',
     text: {
-      template: 'The driver cancelled the ride you booked for {seats}. Everything you paid has been returned. {more}',
+      template: 'The driver cancelled the ride you booked for {seats}. You owe nothing. {more}',
       values: { seats, more: { template: 'No other ride with seats leaves near that time.', values: {} } },
     },
   };
@@ -2812,26 +2729,6 @@ describe('flexibility tiers', () => {
   });
 });
 
-describe('a driver who keeps their rides', () => {
-  it('says why the fee is lower, only on their rides and only when there is a fee', async () => {
-    signIn('PASSENGER');
-    serve({
-      'GET /rides/search': () =>
-        json([
-          { ...candidate, rideId: 1, keptRides: true },
-          { ...candidate, rideId: 2, keptRides: true, serviceFee: 0 },
-          { ...candidate, rideId: 3 },
-        ]),
-    });
-    open('/search');
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
-
-    expect(await screen.findByText('A lower fee: this driver keeps their rides')).toBeInTheDocument();
-    expect(screen.getAllByText('A lower fee: this driver keeps their rides')).toHaveLength(1);
-  });
-});
-
 describe('a ride already on the road', () => {
   it('says so, and that it may reach the stop early, only on such a ride', async () => {
     signIn('PASSENGER');
@@ -2948,55 +2845,6 @@ describe('declared insurance: the driver’s word, never checked', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
 
     expect(await screen.findByText(/Insurance declared by the driver: New India Assurance, until .*2027\. Not checked\./)).toBeInTheDocument();
-  });
-});
-
-describe('tax invoices', () => {
-  const invoice = { number: 'VAY/2026-27/000012', issuedAt: '2026-11-01T04:00:00Z', gstin: '27AAAAA0000A1Z5', legalName: 'Vayora Mobility LLP', address: 'Kolhapur 416006',
-    sacCode: '9985', ratePercent: 18, taxableValue: 76.27, cgst: 6.87, sgst: 6.86, igst: 0 };
-  const receipt = { bookingId: 90, passenger: 'Asha Patil', driver: 'Ravi Jadhav', fromStop: 'Kolhapur', toStop: 'Pune', seats: 2, boarding: '2026-11-05T01:30:00Z', status: 'CONFIRMED',
-    paidAt: '2026-11-01T04:00:00Z', method: 'CARD', fare: 900, serviceFee: 90, total: 990, refunded: 0, refundReason: null, provider: 'RAZORPAY' };
-
-  it('shows one for the service fee only, instead of saying there is none', async () => {
-    signIn('PASSENGER');
-    serve({ 'GET /bookings/90/receipt-data': () => json({ ...receipt, taxInvoice: invoice }) });
-    open('/receipts/booking/90');
-
-    expect(await screen.findByText('Tax invoice VAY/2026-27/000012')).toBeInTheDocument();
-    expect(screen.getByText('GSTIN: 27AAAAA0000A1Z5')).toBeInTheDocument();
-    expect(screen.getByText('For: VAYORA service fee (SAC 9985)')).toBeInTheDocument();
-    expect(screen.getByText('CGST at 9%')).toBeInTheDocument();
-    expect(screen.getByText('SGST at 9%')).toBeInTheDocument();
-    expect(screen.getByText('The fare is collected for the driver and is not part of this tax invoice.')).toBeInTheDocument();
-    expect(screen.queryByText('This is not a tax invoice.')).not.toBeInTheDocument();
-  });
-
-  it('shows the credit note that reverses it once the fee has gone back', async () => {
-    signIn('PASSENGER');
-    const creditNote = { number: 'VAY-CN/2026-27/000003', issuedAt: '2026-11-02T04:00:00Z', invoiceNumber: invoice.number, taxableValue: 76.27, cgst: 6.87, sgst: 6.86, igst: 0 };
-    serve({ 'GET /bookings/90/receipt-data': () => json({ ...receipt, taxInvoice: invoice, creditNote }) });
-    open('/receipts/booking/90');
-
-    expect(await screen.findByText('Credit note VAY-CN/2026-27/000003')).toBeInTheDocument();
-    expect(screen.getByText(/against tax invoice VAY\/2026-27\/000012: the service fee was returned\./)).toBeInTheDocument();
-    expect(screen.getByText('Tax invoice VAY/2026-27/000012')).toBeInTheDocument();
-    expect(screen.getByText('CGST returned')).toBeInTheDocument();
-    expect(screen.getByText('SGST returned')).toBeInTheDocument();
-  });
-
-  it('charges IGST alone from another state, and says there is none when there is none', async () => {
-    signIn('PASSENGER');
-    serve({ 'GET /bookings/90/receipt-data': () => json({ ...receipt, taxInvoice: { ...invoice, cgst: 0, sgst: 0, igst: 13.73 } }) });
-    open('/receipts/booking/90');
-
-    expect(await screen.findByText('IGST at 18%')).toBeInTheDocument();
-    expect(screen.queryByText(/CGST/)).not.toBeInTheDocument();
-    cleanup();
-
-    serve({ 'GET /bookings/90/receipt-data': () => json({ ...receipt, taxInvoice: null }) });
-    open('/receipts/booking/90');
-    expect(await screen.findByText('This is not a tax invoice.')).toBeInTheDocument();
-    expect(screen.queryByText(/Tax invoice VAY/)).not.toBeInTheDocument();
   });
 });
 
@@ -3197,38 +3045,6 @@ describe('calling the other side: simulated', () => {
   });
 });
 
-describe('the referral reward', () => {
-  it('says what an invitation earns, and that drivers get none', async () => {
-    signIn('PASSENGER');
-    serve({
-      'GET /me/profile': () => json({ email: 'user@example.test', emailVerified: false, phone: null, phoneVerified: false,
-        bio: null, birthYear: null, gender: null, smoking: null, pets: null, music: null, chattiness: null }),
-      'GET /me/emergency-contacts': () => json([]),
-      'GET /me/referral': () => json({ code: 'K7QX2M', signedUp: 3, qualified: 1, rewardPass: 'WEEKLY' }),
-    });
-    open('/account');
-
-    const section = within(await screen.findByRole('region', { name: 'Invite friends' }));
-    expect(await section.findByText(/each of you who travels as a passenger gets a free weekly pass\. Drivers get none/)).toBeInTheDocument();
-    expect(section.queryByText(/no reward has been decided/)).not.toBeInTheDocument();
-  });
-
-  it('shows a reward pass as free, not as a price paid', async () => {
-    signIn('PASSENGER');
-    const now = Date.now();
-    serve({
-      'GET /passes/offers': () => json([{ kind: 'WEEKLY', days: 7, price: 99 }]),
-      'GET /passes': () =>
-        json([{ id: 4, kind: 'WEEKLY', price: 0, startsAt: new Date(now - 1000).toISOString(),
-          endsAt: new Date(now + 7 * 24 * 3600 * 1000).toISOString(), provider: 'REFERRAL', reward: true }]),
-    });
-    open('/passes');
-
-    expect(await screen.findByText(/Running until .* · Free: a reward for an invitation/)).toBeInTheDocument();
-    expect(screen.queryByText(/₹0/)).not.toBeInTheDocument();
-  });
-});
-
 describe('best match for both people', () => {
   it('asks for that order, and shows each score with its reasons only then', async () => {
     signIn('PASSENGER');
@@ -3323,217 +3139,221 @@ describe('the meeting point of a pickup away from the stops', () => {
     expect(screen.queryByText('Board here: Kolhapur')).not.toBeInTheDocument();
   });
 });
-describe('paying through Razorpay', () => {
-  const razorpayTerms = { ...terms, provider: 'RAZORPAY_TEST', checkout: true, flexibleTiers: false };
-  const order = { orderId: 'order_T', keyId: 'rzp_test_vayora', amount: 57200, currency: 'INR', testMode: true };
-
-  /** Razorpay's checkout, replaced: it pays at once, or is closed unpaid. */
-  function stubCheckout(outcome: 'pay' | 'close') {
-    const opened: Record<string, unknown>[] = [];
-    (window as unknown as { Razorpay?: unknown }).Razorpay = class {
-      readonly options: Record<string, never>;
-      constructor(options: Record<string, never>) {
-        this.options = options;
-        opened.push(options);
-      }
-      open() {
-        const options = this.options as unknown as {
-          order_id: string;
-          handler: (paid: Record<string, string>) => void;
-          modal: { ondismiss: () => void };
-        };
-        if (outcome === 'pay') {
-          options.handler({ razorpay_order_id: options.order_id, razorpay_payment_id: 'pay_T', razorpay_signature: 'sig_T' });
-        } else {
-          options.modal.ondismiss();
-        }
-      }
-    };
-    return opened;
-  }
-
-  const bodyOf = (fetchMock: ReturnType<typeof serve>, path: string) => {
-    const call = fetchMock.mock.calls.find(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith(path));
-    return call ? JSON.parse(String(call[1]?.body)) : undefined;
-  };
-
-  it('pays at the checkout before booking, sends the proof, and says it was test mode', async () => {
-    signIn('PASSENGER');
-    const opened = stubCheckout('pay');
-    try {
-      const fetchMock = serve({
-        'GET /payment-terms': () => json(razorpayTerms),
-        'GET /rides/search': () => json([candidate]),
-        'POST /bookings/checkout': () => json(order),
-        'POST /bookings': () => json(booking, 201),
-      });
-      open('/search');
-
-      await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
-      expect(await screen.findByText(/Payments go through Razorpay in test mode/)).toBeInTheDocument();
-      expect(screen.queryByLabelText('Pay with')).not.toBeInTheDocument();
-      expect(screen.queryByLabelText('If the driver withdraws')).not.toBeInTheDocument();
-      await userEvent.click(screen.getAllByRole('button', { name: /^(Book|Request)/ })[0]);
-
-      expect(await screen.findByText(/paid in Razorpay's test mode: no real money moved/)).toBeInTheDocument();
-      expect(opened[0]).toMatchObject({ key: 'rzp_test_vayora', order_id: 'order_T', amount: 57200, currency: 'INR' });
-      const stretch = { rideId: candidate.rideId, fromSeq: candidate.fromSeq, toSeq: candidate.toSeq, seats: 1 };
-      expect(bodyOf(fetchMock, '/bookings/checkout')).toEqual(stretch);
-      expect(bodyOf(fetchMock, '/bookings')).toEqual({
-        ...stretch,
-        razorpay: { orderId: 'order_T', paymentId: 'pay_T', signature: 'sig_T' },
-        tier: 'EXACT',
-        lastMileDistanceM: candidate.pickupDistanceM,
-        lastMileModeShown: 'walk',
-      });
-    } finally {
-      Reflect.deleteProperty(window, 'Razorpay');
-    }
-  });
-
-  it('books nothing when the checkout is closed unpaid, and says so', async () => {
-    signIn('PASSENGER');
-    stubCheckout('close');
-    try {
-      const fetchMock = serve({
-        'GET /payment-terms': () => json(razorpayTerms),
-        'GET /rides/search': () => json([candidate]),
-        'POST /bookings/checkout': () => json(order),
-      });
-      open('/search');
-
-      await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
-      await userEvent.click((await screen.findAllByRole('button', { name: /^(Book|Request)/ }))[0]);
-
-      expect(await screen.findByText('The payment was not completed. Nothing was bought.')).toBeInTheDocument();
-      expect(bodyOf(fetchMock, '/bookings')).toBeUndefined();
-    } finally {
-      Reflect.deleteProperty(window, 'Razorpay');
-    }
-  });
-
-  it('buys a pass through the checkout', async () => {
-    signIn('PASSENGER');
-    stubCheckout('pay');
-    try {
-      const bought = { id: 1, kind: 'WEEKLY', price: 99, startsAt: new Date().toISOString(),
-        endsAt: new Date(Date.now() + 7 * 864e5).toISOString(), provider: 'RAZORPAY_TEST' };
-      const fetchMock = serve({
-        'GET /payment-terms': () => json(razorpayTerms),
-        'GET /passes/offers': () => json([{ kind: 'WEEKLY', days: 7, price: 99 }]),
-        'GET /passes': () => json([]),
-        'POST /passes/checkout': () => json({ ...order, amount: 9900 }),
-        'POST /passes': () => json(bought, 201),
-      });
-      open('/passes');
-
-      await userEvent.click(await screen.findByRole('button', { name: 'Buy Weekly pass' }));
-
-      expect(await screen.findByText('Your pass is bought.')).toBeInTheDocument();
-      expect(screen.queryByLabelText('Pay with')).not.toBeInTheDocument();
-      expect(bodyOf(fetchMock, '/passes/checkout')).toEqual({ kind: 'WEEKLY' });
-      expect(bodyOf(fetchMock, '/passes')).toEqual({ kind: 'WEEKLY', razorpay: { orderId: 'order_T', paymentId: 'pay_T', signature: 'sig_T' } });
-    } finally {
-      Reflect.deleteProperty(window, 'Razorpay');
-    }
-  });
-
-  it('tells drivers that what they are owed is recorded, not sent', async () => {
-    signIn('DRIVER');
-    serve({ 'GET /payment-terms': () => json(razorpayTerms), 'GET /settlements': () => json([]) });
-    open('/earnings');
-
-    expect(await screen.findByText(/VAYORA does not pay drivers through it: what you are owed is recorded here, not sent/))
-      .toBeInTheDocument();
-    expect(screen.queryByText(/Payments here are simulated/)).not.toBeInTheDocument();
-  });
-});
-
-describe('paying after the ride', () => {
+describe('paying the driver', () => {
   const bodyOf = (fetchMock: ReturnType<typeof serve>, path: string) => {
     const call = fetchMock.mock.calls.find(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith(path));
     return call ? JSON.parse(String(call[1]?.body ?? 'null')) : undefined;
   };
+  const owing = { ...booking, status: 'COMPLETED' as Booking['status'], passengerRated: true, passengerConfirmed: true, driverId: 7,
+    paymentStatus: 'DUE' as Booking['paymentStatus'], amountDue: 520 };
 
-  it('books without paying on a ride whose driver accepts it, and says nothing was taken', async () => {
+  it('books with one button and says nothing is taken now', async () => {
     signIn('PASSENGER');
     const fetchMock = serve({
-      'GET /rides/search': () => json([{ ...candidate, instantBooking: true, payAfterRide: true }]),
-      'POST /bookings': () => json({ ...booking, status: 'CONFIRMED', payAfterRide: true, paymentStatus: 'DEFERRED' }, 201),
+      'GET /rides/search': () => json([{ ...candidate, instantBooking: true }]),
+      'POST /bookings': () => json({ ...booking, status: 'CONFIRMED', paymentStatus: 'DEFERRED' }, 201),
     });
     open('/search');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
     const results = await screen.findByRole('region', { name: 'Search results' });
-    expect(within(results).getByText('Pay after the ride')).toBeInTheDocument();
-    await userEvent.click(within(results).getByRole('button', { name: 'Book, pay after the ride' }));
+    expect(within(results).queryByRole('button', { name: /pay after the ride/i })).not.toBeInTheDocument();
+    await userEvent.click(within(results).getByRole('button', { name: 'Book' }));
 
-    expect(await screen.findByText(/Nothing is taken now: pay ₹572 after the ride/)).toBeInTheDocument();
+    expect(await screen.findByText(/Nothing to pay now: pay your driver ₹520 after the ride/)).toBeInTheDocument();
     const body = bodyOf(fetchMock, '/bookings');
-    expect(body).toMatchObject({ rideId: 12, payAfterRide: true });
+    expect(body).toMatchObject({ rideId: 12 });
     expect(body).not.toHaveProperty('paymentMethod');
+    expect(body).not.toHaveProperty('payAfterRide');
   });
 
-  it('offers no way to pay later where the driver takes payment when booking', async () => {
+  it('shows what is owed and where to pay it, with no way to pay in the app', async () => {
     signIn('PASSENGER');
-    serve({ 'GET /rides/search': () => json([candidate]) });
-    open('/search');
+    const user = userEvent.setup();
+    Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:qr'), revokeObjectURL: vi.fn() });
+    serve({
+      'GET /bookings/90/pay-driver/qr': () => new Response(new Blob(['png']), { status: 200, headers: { 'Content-Type': 'image/png' } }),
+      'GET /bookings/90/pay-driver': () => json({ driverName: 'Ravi Jadhav', upiId: 'ravi@okaxis', hasQr: true }),
+      'GET /bookings': () => json([owing]),
+    });
+    try {
+      open('/bookings');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
-    const results = await screen.findByRole('region', { name: 'Search results' });
-    expect(await within(results).findByRole('button', { name: 'Request' })).toBeInTheDocument();
-    expect(within(results).queryByRole('button', { name: /pay after the ride/ })).not.toBeInTheDocument();
-    expect(within(results).queryByText('Pay after the ride')).not.toBeInTheDocument();
+      expect(await screen.findByText(/You owe your driver ₹520\. You can book again once they mark it paid\./)).toBeInTheDocument();
+      expect(await screen.findByText('ravi@okaxis')).toBeInTheDocument();
+      expect(await screen.findByRole('img', { name: 'UPI QR code of Ravi Jadhav' })).toHaveAttribute('src', 'blob:qr');
+      expect(screen.getByText(/Check the name your UPI app shows before you pay/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Pay/ })).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Pay with')).not.toBeInTheDocument();
+      // A driver who was paid and will not say so can be reported.
+      expect(screen.getByRole('link', { name: 'Report it on their profile, and staff can clear it.' })).toHaveAttribute('href', '/users/7');
+
+      await user.click(screen.getByRole('button', { name: 'Copy' }));
+      expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
+      expect(await navigator.clipboard.readText()).toBe('ravi@okaxis');
+    } finally {
+      Reflect.deleteProperty(URL, 'createObjectURL');
+      Reflect.deleteProperty(URL, 'revokeObjectURL');
+    }
   });
 
-  it('shows what is due on a booking and pays it by the method chosen', async () => {
+  it('offers the UPI app only on a phone, with the amount filled in', async () => {
     signIn('PASSENGER');
-    let mine = [{ ...booking, status: 'COMPLETED' as Booking['status'], passengerRated: true, passengerConfirmed: true,
-      payAfterRide: true, paymentStatus: 'DUE' as Booking['paymentStatus'], amountDue: 572 }];
-    const fetchMock = serve({
-      'GET /bookings': () => json(mine),
-      'POST /bookings/90/pay': () => {
-        mine = [{ ...mine[0], paymentStatus: 'SETTLED' }];
-        return json(mine[0]);
-      },
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(pointer: coarse)', addEventListener: () => {}, removeEventListener: () => {} }));
+    serve({
+      'GET /bookings/90/pay-driver': () => json({ driverName: 'Ravi Jadhav', upiId: 'ravi@okaxis', hasQr: false }),
+      'GET /bookings': () => json([owing]),
     });
     open('/bookings');
 
-    expect(await screen.findByText('₹572 is due. Pay it here, or in cash to your driver.')).toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByLabelText('Pay with'), 'Card');
-    await userEvent.click(screen.getByRole('button', { name: 'Pay ₹572' }));
-
-    expect(await screen.findByText(/paid after the ride/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Pay ₹572' })).not.toBeInTheDocument();
-    expect(bodyOf(fetchMock, '/bookings/90/pay')).toEqual({ paymentMethod: 'CARD' });
+    expect(await screen.findByRole('link', { name: 'Open in my UPI app' })).toHaveAttribute(
+      'href',
+      'upi://pay?pa=ravi%40okaxis&pn=Ravi%20Jadhav&am=520.00&cu=INR',
+    );
   });
 
-  it('lets the driver record cash, but only after confirming', async () => {
-    signIn('DRIVER');
-    let aboard = [{ ...booking, status: 'COMPLETED' as Booking['status'], driverRated: true,
-      payAfterRide: true, paymentStatus: 'DUE' as Booking['paymentStatus'], amountDue: 572 }];
+  it('says to pay in cash when the driver gave no UPI details', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /bookings/90/pay-driver': () => json({ driverName: 'Ravi Jadhav', upiId: null, hasQr: false }),
+      'GET /bookings': () => json([owing]),
+    });
+    open('/bookings');
+
+    expect(await screen.findByText('Pay Ravi Jadhav ₹520 in cash: they have not given a UPI ID or QR code.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Copy' })).not.toBeInTheDocument();
+  });
+
+  it('keeps how to pay behind a click on a confirmed booking, and shows it to nobody before that', async () => {
+    signIn('PASSENGER');
     const fetchMock = serve({
-      'GET /rides/mine': () => json([{ ...rideWithRoute, status: 'COMPLETED', notes: null, maxTwoInBack: false, seriesSize: 1, payAfterRide: true }]),
+      'GET /bookings/91/pay-driver': () => json({ driverName: 'Ravi Jadhav', upiId: 'ravi@okaxis', hasQr: false }),
+      'GET /bookings': () => json([{ ...booking, id: 91, status: 'CONFIRMED', driverId: 7 }, booking]),
+      'GET /rides/12': () => json(rideWithRoute),
+    });
+    open('/bookings');
+
+    expect(await screen.findByText('How to pay your driver')).toBeInTheDocument();
+    // Only the confirmed one: a request still waiting for the driver does not ask.
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/bookings/91/pay-driver'))).toBe(true));
+    expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/bookings/90/pay-driver'))).toBe(false);
+  });
+
+  it('lets the driver say how they were paid, but only after confirming', async () => {
+    signIn('DRIVER');
+    let aboard = [{ ...owing, driverRated: true }];
+    const fetchMock = serve({
+      'GET /rides/mine': () => json([{ ...rideWithRoute, status: 'COMPLETED', notes: null, maxTwoInBack: false, seriesSize: 1 }]),
       'GET /rides/12/bookings': () => json(aboard),
-      'POST /bookings/90/cash-received': () => {
-        aboard = [{ ...aboard[0], paymentStatus: 'SETTLED' }];
+      'POST /bookings/90/payment-received': () => {
+        aboard = [{ ...aboard[0], paymentStatus: 'SETTLED', paymentMethod: 'UPI' }];
         return json(aboard[0]);
       },
     });
     open('/rides');
 
-    expect(await screen.findByText(/Passengers may pay after the ride/)).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('button', { name: 'Show passengers' }));
-    expect(await screen.findByText('₹572 due, in the app or in cash to you')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Cash received' }));
-    expect(bodyOf(fetchMock, '/cash-received')).toBeUndefined(); // asks first
-    await userEvent.click(screen.getByRole('button', { name: 'Yes, I was paid ₹572 in cash' }));
+    expect(await screen.findByText('₹520 owed to you')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Paid by UPI' }));
+    expect(bodyOf(fetchMock, '/payment-received')).toBeUndefined(); // asks first
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, I was paid ₹520 by UPI' }));
 
-    expect(await screen.findByText('Paid after the ride')).toBeInTheDocument();
-    expect(fetchMock.mock.calls.some(([url, init]) => init?.method === 'POST' && String(url).endsWith('/bookings/90/cash-received'))).toBe(true);
+    await waitFor(() => expect(bodyOf(fetchMock, '/payment-received')).toEqual({ method: 'UPI' }));
+    expect(await screen.findByText('Paid by UPI')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Paid by UPI' })).not.toBeInTheDocument();
+  });
+
+  const profile = { email: 'user@example.test', emailVerified: false, phone: null, phoneVerified: false,
+    bio: null, birthYear: null, gender: null, smoking: null, pets: null, music: null, chattiness: null };
+
+  it('lets a driver save a UPI ID on their account, and shows why one is refused', async () => {
+    signIn('DRIVER');
+    let attempts = 0;
+    const fetchMock = serve({
+      'GET /me/profile': () => json(profile),
+      'GET /me/emergency-contacts': () => json([]),
+      'GET /me/payment-details/qr': () => json({ detail: 'No QR code' }, 404),
+      'GET /me/payment-details': () => json({ upiId: null, hasQr: false }),
+      'PUT /me/payment-details': () =>
+        attempts++ === 0
+          ? json({ detail: 'That does not look like a UPI ID. It looks like name@bank, as your UPI app shows it' }, 400)
+          : json({ upiId: 'ravi@okaxis', hasQr: false }),
+    });
+    open('/account');
+
+    const section = within(await screen.findByRole('region', { name: 'How passengers pay you' }));
+    await userEvent.type(await section.findByLabelText(/Your UPI ID/), 'ravi@gmail.com');
+    await userEvent.click(section.getByRole('button', { name: 'Save UPI ID' }));
+    expect(await section.findByRole('alert')).toHaveTextContent('That does not look like a UPI ID');
+
+    await userEvent.clear(section.getByLabelText(/Your UPI ID/));
+    await userEvent.type(section.getByLabelText(/Your UPI ID/), 'ravi@okaxis');
+    await userEvent.click(section.getByRole('button', { name: 'Save UPI ID' }));
+    expect(await section.findByText('Your UPI ID is saved.')).toBeInTheDocument();
+    const put = fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT').at(-1);
+    expect(JSON.parse(String(put?.[1]?.body))).toEqual({ upiId: 'ravi@okaxis' });
+  });
+
+  it('lets a driver upload a QR code, and sends the picture itself', async () => {
+    signIn('DRIVER');
+    const fetchMock = serve({
+      'GET /me/profile': () => json(profile),
+      'GET /me/emergency-contacts': () => json([]),
+      'GET /me/payment-details/qr': () => json({ detail: 'No QR code' }, 404),
+      'PUT /me/payment-details/qr': () => new Response(null, { status: 204 }),
+      'GET /me/payment-details': () => json({ upiId: null, hasQr: false }),
+    });
+    open('/account');
+
+    const section = within(await screen.findByRole('region', { name: 'How passengers pay you' }));
+    expect(await section.findByRole('button', { name: 'Add a QR code' })).toBeInTheDocument();
+    const picture = new File(['png'], 'qr.png', { type: 'image/png' });
+    await userEvent.upload(section.getByLabelText('Choose your UPI QR code'), picture);
+
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find(([url, init]) => init?.method === 'PUT' && String(url).endsWith('/me/payment-details/qr'));
+      expect(put?.[1]?.body).toBe(picture);
+    });
+  });
+
+  it('is not asked of a passenger on their account', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /me/profile': () => json(profile),
+      'GET /me/emergency-contacts': () => json([]),
+    });
+    open('/account');
+
+    expect(await screen.findByRole('region', { name: 'Invite friends' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'How passengers pay you' })).not.toBeInTheDocument();
+  });
+
+  it('lets staff clear what is owed, only with a reason', async () => {
+    signIn('ADMIN');
+    let rows = [{ id: 90, rideId: 12, passengerName: 'Asha Patil', passengerId: 5, driverName: 'Ravi Jadhav', fromStop: 'Kolhapur', toStop: 'Pune',
+      seats: 1, status: 'COMPLETED', createdAt: '2026-10-30T10:00:00Z', paymentStatus: 'DUE', amountDue: 520 }];
+    const fetchMock = serve({
+      'POST /admin/bookings/90/clear-due': () => {
+        rows = [{ ...rows[0], paymentStatus: 'VOID', amountDue: null as unknown as number }];
+        return json({});
+      },
+      'GET /admin/bookings': () => json(rows),
+    });
+    open('/admin/bookings');
+
+    expect(await screen.findByText('Owes the driver ₹520')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear what is owed' })).toBeDisabled();
+    await userEvent.type(screen.getByLabelText(/Why clear it/), 'Saw the UPI payment');
+    await userEvent.click(screen.getByRole('button', { name: 'Clear what is owed' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, clear it' }));
+
+    await waitFor(() => expect(bodyOf(fetchMock, '/clear-due')).toEqual({ reason: 'Saw the UPI payment' }));
+    await waitFor(() => expect(screen.queryByText('Owes the driver ₹520')).not.toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Only those still owing a driver' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/admin/bookings?owing=true'))).toBe(true));
   });
 });
-
 describe('a screen that keeps itself current', () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -3683,7 +3503,7 @@ describe('a booking as it goes', () => {
   const inHours = (hours: number) => new Date(Date.now() + hours * 3_600_000).toISOString();
   const stage = (name: string) => within(screen.getByRole('list', { name: 'How far this booking has got' })).getByText(name).closest('li');
 
-  it('shows how far it has got, how long until it leaves, and what cancelling returns right now', async () => {
+  it('shows how far it has got, how long until it leaves, and what cancelling costs right now', async () => {
     signIn('PASSENGER');
     serve({
       'GET /bookings': () => json([{ ...booking, status: 'CONFIRMED', boardingTime: inHours(30) }]),
@@ -3693,11 +3513,11 @@ describe('a booking as it goes', () => {
 
     expect(await screen.findByText(/Leaves in 1 day|Leaves in 30 h/)).toBeInTheDocument();
     expect(stage('Accepted')).toHaveAttribute('aria-current', 'step');
-    // Thirty hours out is the 50% tier; six hours from now it falls to nothing.
-    expect(await screen.findByText('If you cancel now, ₹260 of the fare comes back. In 6 h that falls to ₹0.')).toBeInTheDocument();
+    // Thirty hours out is the 50% tier; six hours from now the whole fare is owed.
+    expect(await screen.findByText('If you cancel now, you owe your driver ₹260. In 6 h that rises to ₹520.')).toBeInTheDocument();
   });
 
-  it('says when nothing would come back', async () => {
+  it('says when the whole fare would be owed', async () => {
     signIn('PASSENGER');
     serve({
       'GET /bookings': () => json([{ ...booking, status: 'CONFIRMED', boardingTime: inHours(3) }]),
@@ -3705,21 +3525,19 @@ describe('a booking as it goes', () => {
     });
     open('/bookings');
 
-    expect(await screen.findByText('If you cancel now, nothing comes back.')).toBeInTheDocument();
+    expect(await screen.findByText('If you cancel now, you owe your driver the whole fare.')).toBeInTheDocument();
   });
 
-  it('says nothing of a refund on a booking paid after the ride, which took nothing', async () => {
+  it('says when cancelling would cost nothing yet', async () => {
     signIn('PASSENGER');
     serve({
-      'GET /bookings': () => json([{ ...booking, status: 'CONFIRMED', boardingTime: inHours(30), payAfterRide: true, paymentStatus: 'DEFERRED' }]),
+      'GET /bookings': () => json([{ ...booking, status: 'CONFIRMED', boardingTime: inHours(72) }]),
       'GET /rides/12': () => json(rideWithRoute),
     });
     open('/bookings');
 
-    await screen.findByRole('list', { name: 'How far this booking has got' });
-    expect(screen.queryByText(/If you cancel now/)).not.toBeInTheDocument();
+    expect(await screen.findByText(/If you cancel now, you owe nothing\. In .* that rises to ₹260\./)).toBeInTheDocument();
   });
-
   it('moves on when the driver sets off, and points to where they are', async () => {
     signIn('PASSENGER');
     serve({

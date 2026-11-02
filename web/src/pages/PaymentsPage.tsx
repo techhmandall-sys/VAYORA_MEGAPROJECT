@@ -1,42 +1,46 @@
 import { useQuery } from '@tanstack/react-query';
 import { Wallet } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-import { SimulatedPaymentNotice } from '../components/payment';
 import { ReceiptLinks } from '../components/receipt';
-import { Card, Page, QueryState } from '../components/ui';
+import { Card, Notice, Page, QueryState } from '../components/ui';
 import { api } from '../lib/api';
 import { formatDateTime, formatRupees } from '../lib/format';
 import { useT } from '../lib/i18n';
-import { methodLabels, refundReasons } from '../lib/payments';
+import { methodLabels } from '../lib/payments';
 import type { PassengerPayment } from '../lib/types';
 
-/** What was actually taken: for a booking paid after the ride, what it owed, once paid. */
-function taken(payment: PassengerPayment): number {
-  if (!payment.payAfterRide) return payment.amount - payment.refunded;
-  return payment.status === 'SETTLED' ? (payment.amountDue ?? 0) : 0;
-}
-
-/** What a passenger has paid, and what came back, newest first. */
+/** What a passenger has paid their drivers, and what they still owe, newest first. */
 export function PaymentsPage() {
   const t = useT();
   const payments = useQuery({ queryKey: ['payments'], queryFn: () => api<PassengerPayment[]>('/payments') });
-  const paid = payments.data?.reduce((sum, payment) => sum + taken(payment), 0) ?? 0;
+  const total = (status: PassengerPayment['status']) =>
+    payments.data?.filter((payment) => payment.status === status).reduce((sum, payment) => sum + (payment.amountDue ?? 0), 0) ?? 0;
+  const owed = total('DUE');
 
   return (
     <Page title={t('Payments')}>
-      <SimulatedPaymentNotice />
+      <Notice tone="info">{t('You pay your driver directly after the ride, in cash or by UPI. VAYORA charges nothing.')}</Notice>
+      {owed > 0 && (
+        <Notice tone="error">
+          {t('You owe {amount}. You can book again once your driver marks it paid.', { amount: formatRupees(owed) })}{' '}
+          <Link to="/bookings" className="font-medium underline underline-offset-2">
+            {t('See My bookings')}
+          </Link>
+        </Notice>
+      )}
       <QueryState
         isPending={payments.isPending}
         error={payments.error}
         isEmpty={payments.data?.length === 0}
-        empty={t('You have not paid for anything yet.')}
+        empty={t('You have not booked anything yet.')}
         icon={Wallet}
         onRetry={() => void payments.refetch()}
       />
       {payments.data && payments.data.length > 0 && (
         <Card>
-          <p className="text-sm text-slate-600">{t('Paid, less what came back')}</p>
-          <p className="text-2xl font-semibold">{formatRupees(paid)}</p>
+          <p className="text-sm text-slate-600">{t('Paid to your drivers')}</p>
+          <p className="text-2xl font-semibold">{formatRupees(total('SETTLED'))}</p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">{t('Payments, newest first')}</caption>
@@ -44,9 +48,8 @@ export function PaymentsPage() {
                 <tr>
                   <th scope="col" className="py-2 pr-4 font-medium">{t('Booked')}</th>
                   <th scope="col" className="py-2 pr-4 font-medium">{t('Trip')}</th>
-                  <th scope="col" className="py-2 pr-4 font-medium">{t('Paid with')}</th>
-                  <th scope="col" className="py-2 pr-4 text-right font-medium">{t('Amount')}</th>
-                  <th scope="col" className="py-2 pr-4 font-medium">{t('Came back')}</th>
+                  <th scope="col" className="py-2 pr-4 text-right font-medium">{t('Fare')}</th>
+                  <th scope="col" className="py-2 pr-4 font-medium">{t('Where it stands')}</th>
                   <th scope="col" className="py-2 font-medium">
                     <span className="sr-only">{t('Receipt')}</span>
                   </th>
@@ -59,33 +62,19 @@ export function PaymentsPage() {
                     <td className="py-2 pr-4">
                       {t(payment.fromStop)} → {t(payment.toStop)}
                     </td>
+                    <td className="py-2 pr-4 text-right font-medium">{formatRupees(payment.fare)}</td>
                     <td className="py-2 pr-4">
-                      {payment.method ? t(methodLabels[payment.method]) : payment.status === 'VOID' ? '—' : t('Not paid yet')}
-                    </td>
-                    <td className="py-2 pr-4 text-right">
-                      <span className="font-medium">{formatRupees(payment.amount)}</span>
-                      <span className="block text-xs text-slate-500">
-                        {t('{fare} fare + {fee} service fee', { fare: formatRupees(payment.fare), fee: formatRupees(payment.serviceFee) })}
-                      </span>
-                    </td>
-                    <td className="py-2 pr-4">
-                      {payment.payAfterRide
-                        ? payment.status === 'DUE' && payment.amountDue != null
-                          ? t('{amount} due: pay it in My bookings', { amount: formatRupees(payment.amountDue) })
-                          : payment.status === 'SETTLED' && payment.amountDue != null
-                            ? t('{amount} paid after the ride', { amount: formatRupees(payment.amountDue) })
-                            : payment.status === 'VOID'
-                              ? t('Nothing owed')
-                              : t('Pay after the ride')
-                        : payment.refunded > 0 && payment.refundReason
-                          ? `${formatRupees(payment.refunded)}: ${t(refundReasons[payment.refundReason])}`
-                          : payment.status === 'HELD'
-                            ? t('Held until the trip ends')
-                            : t('Nothing')}
+                      {payment.status === 'DUE' && payment.amountDue != null
+                        ? t('{amount} owed to your driver', { amount: formatRupees(payment.amountDue) })
+                        : payment.status === 'SETTLED' && payment.amountDue != null && payment.method
+                          ? `${t('{amount} paid', { amount: formatRupees(payment.amountDue) })} · ${t(methodLabels[payment.method])}`
+                          : payment.status === 'VOID'
+                            ? t('Nothing owed')
+                            : t('Pay after the ride')}
                     </td>
                     <td className="py-2">
-                      {/* Paid after the ride, there is a receipt once it is paid and not before. */}
-                      {(!payment.payAfterRide || payment.status === 'SETTLED') && <ReceiptLinks of="booking" id={payment.bookingId} />}
+                      {/* There is a receipt once the driver says they were paid, and not before. */}
+                      {payment.status === 'SETTLED' && <ReceiptLinks id={payment.bookingId} />}
                     </td>
                   </tr>
                 ))}

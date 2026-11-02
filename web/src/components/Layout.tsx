@@ -3,7 +3,6 @@ import {
   Activity,
   Award,
   BadgeCheck,
-  BadgePercent,
   Bell,
   Bus,
   Car,
@@ -67,7 +66,6 @@ const links: Record<Role, Section[]> = {
     { to: '/search', label: msg('Find a ride'), icon: Search },
     { to: '/bookings', label: msg('My bookings'), icon: Ticket },
     { to: '/payments', label: msg('Payments'), icon: Wallet },
-    { to: '/passes', label: msg('Passes'), icon: BadgePercent },
   ],
   DRIVER: [
     { to: '/rides', label: msg('My rides'), icon: Car },

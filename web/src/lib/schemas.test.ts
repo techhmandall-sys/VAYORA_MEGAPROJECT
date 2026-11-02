@@ -14,7 +14,6 @@ function ride(overrides: Partial<RideForm> = {}): RideForm {
     departure: tomorrow(),
     seatsOffered: 3,
     instantBooking: true,
-    payAfterRide: false,
     maxTwoInBack: false,
     womenOnly: false,
     notes: '',
@@ -169,11 +168,6 @@ describe('return and repeated rides', () => {
     const body = toPublishRequest(ride({ notes: '  Two bags each.  ', maxTwoInBack: true }));
 
     expect(body).toMatchObject({ notes: 'Two bags each.', maxTwoInBack: true, returnDepartureTime: null, repeatWeeks: 0 });
-  });
-
-  it('sends whether passengers may pay after the ride, which is off unless chosen', () => {
-    expect(toPublishRequest(ride()).payAfterRide).toBe(false);
-    expect(toPublishRequest(ride({ payAfterRide: true })).payAfterRide).toBe(true);
   });
 
   it('sends the return as an instant and the number of further weeks', () => {

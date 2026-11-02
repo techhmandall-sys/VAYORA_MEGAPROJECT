@@ -232,7 +232,7 @@ describe('notifications', () => {
 
   it('are translated piece by piece: the sentence, the seats, the towns and each other ride', () => {
     const notice = {
-      template: 'The driver cancelled the ride you booked for {seats}. Everything you paid has been returned. {more}',
+      template: 'The driver cancelled the ride you booked for {seats}. You owe nothing. {more}',
       values: {
         seats: { template: '{n} seats, {from} to {to}', values: { n: '2', from: 'Kolhapur', to: 'Pune' } },
         more: {
@@ -242,7 +242,7 @@ describe('notifications', () => {
       },
     };
     expect(translatedNotification(hindi, notice)).toBe(
-      'चालक ने वह सवारी रद्द कर दी जिसमें आपने 2 सीटें, कोल्हापुर से पुणे बुक की थीं। आपका पूरा भुगतान लौटा दिया गया है।'
+      'चालक ने वह सवारी रद्द कर दी जिसमें आपने 2 सीटें, कोल्हापुर से पुणे बुक की थीं। आपको कुछ नहीं देना।'
         + ' अन्य सवारियाँ जो आपको ले जा सकती हैं: 07:15, कोल्हापुर से, Pune Kulkarni के साथ। बुक करने के लिए फिर से खोजें।',
     );
   });
@@ -261,8 +261,8 @@ describe('notifications', () => {
     setFormatLanguage('mr');
     const marathi = (text: string, values?: Record<string, string | number>) => translate('mr', text, values);
     const reminder = translatedNotification(marathi, {
-      template: 'Your seat from {from} to {to} leaves {when}. If your plans have changed, cancelling now lets someone else take it, and Rs {refund} of your Rs {fare} fare comes back. If you are still travelling, there is nothing to do.',
-      values: { from: 'Kolhapur', to: 'Pune', when: '2026-10-23T02:00:00Z', refund: '200.00', fare: '400.00' },
+      template: 'Your seat from {from} to {to} leaves {when}. If your plans have changed, cancelling now lets someone else take it, and you would owe your driver Rs {owed} of your Rs {fare} fare. If you are still travelling, there is nothing to do.',
+      values: { from: 'Kolhapur', to: 'Pune', when: '2026-10-23T02:00:00Z', owed: '200.00', fare: '400.00' },
     });
     const nudge = translatedNotification(marathi, {
       template: 'Passengers looked for a ride from {from} to {to} on {date} and found none. If you are driving then, you could offer seats.',

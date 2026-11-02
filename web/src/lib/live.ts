@@ -48,17 +48,17 @@ export function clockFace(milliseconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-/** The refund now, and when it next falls, by the tiers a booking is cancelled under. */
-export function refundNow(
-  tiers: readonly { atLeastHoursBefore: number; fareShare: number }[],
+/** The share of the fare owed on cancelling now, and when it next rises, by the tiers a booking is cancelled under. */
+export function owedNow(
+  tiers: readonly { atLeastHoursBefore: number; owedShare: number }[],
   hoursBefore: number,
 ): { share: number; nextShare: number | null; hoursUntilNext: number | null } {
-  // Most generous first, as the server walks them.
+  // Earliest first, as the server walks them.
   const index = tiers.findIndex((tier) => hoursBefore >= tier.atLeastHoursBefore);
-  if (index === -1) return { share: 0, nextShare: null, hoursUntilNext: null };
+  if (index === -1) return { share: 1, nextShare: null, hoursUntilNext: null };
   return {
-    share: tiers[index].fareShare,
-    nextShare: tiers[index + 1]?.fareShare ?? 0,
+    share: tiers[index].owedShare,
+    nextShare: tiers[index + 1]?.owedShare ?? 1,
     hoursUntilNext: hoursBefore - tiers[index].atLeastHoursBefore,
   };
 }

@@ -69,9 +69,9 @@ export function WeeklyPayoutChart({ payouts, weeks = 8 }: { payouts: { amount: n
 
   return (
     <figure className="relative">
-      <figcaption className="text-sm font-semibold text-slate-900">{t('Paid out each week (₹)')}</figcaption>
+      <figcaption className="text-sm font-semibold text-slate-900">{t('Paid to you each week (₹)')}</figcaption>
       <div ref={box} className="relative mt-3">
-        <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} className="overflow-visible" role="group" aria-label={t('Paid out each week (₹)')}>
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} className="overflow-visible" role="group" aria-label={t('Paid to you each week (₹)')}>
           {ticks.map((tick) => (
             <g key={tick}>
               <line x1={PAD.left} x2={W - PAD.right} y1={yOf(tick)} y2={yOf(tick)} className="stroke-slate-200" strokeWidth={1} />
