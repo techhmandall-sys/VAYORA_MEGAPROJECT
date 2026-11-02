@@ -1023,3 +1023,46 @@ AI_ML_METHODOLOGY.md section 5, "Against the truth":
 - The Cox model's average survival matches the generating survival (0.829 predicted, 0.826
   true, 0.825 observed).
 - It captures 77% of the discrimination any model could reach; timing alone captures 71%.
+
+## 24. How much the results depend on the demand assumed
+
+Feature 89 asked for demand calibrated to the corridor. It cannot be: no real figures for the
+corridor exist, so the 60 searches a day in `world.yaml` is the authors' assumption. **This is not a
+calibration.** It measures how much the conclusions lean on that assumption, by halving and doubling
+it, and it says nothing about what real demand is.
+
+Run `5eeb0000-0000-4000-8000-000000000010`, 30 seeds per cell, B4 against B3 **on the same world**
+(`experiments/configs/sweeps/demand_density.yaml`). Supply stays at 12 rides a day. Synthetic data.
+
+| Searches per day | Searches offered no ride (B3) | B3, completed per 100 | B4 minus B3 (95% CI) | Change in late share | More seats refilled (95% CI) |
+|---|---|---|---|---|---|
+| 30 | 0.373 | 38.26 | -0.02 (-0.08 to +0.04) | -0.063 | +10.8 (+9.2 to +12.4) |
+| 60 | 0.532 | 30.54 | +0.03 (-0.02 to +0.07) | -0.067 | +16.3 (+13.6 to +19.1) |
+| 120 | 0.733 | 18.78 | -0.04 (-0.07 to -0.01) | -0.068 | +24.8 (+20.9 to +28.7) |
+
+Every figure is read from the event log through `metrics.sql`. The late share fell on all 30 seeds at
+every level, and more seats were refilled on all 30.
+
+### What this shows
+
+- **The central result does not depend on the demand assumed.** A released seat is only worth something
+  if somebody is waiting to take it, so this was the assumption most likely to be hiding a benefit. It
+  is not: across a four-fold range, asking bookings to reconfirm adds nothing to completed rides, and at
+  double the demand it costs a little, even with 73% of searches offered no ride at all.
+- **Earlier release is just as reliable at every level**, by about 0.065 of the late share.
+- **More seats are refilled the more demand there is, without more completed rides.** The extra refills
+  are mostly not by people with no other choice: those refills moved +1.5 (+0.6 to +2.4), +1.0 (-1.7 to
+  +3.7) and -6.9 (-11.7 to -2.1). This agrees with what section 8's refill measure found: a refill is a
+  completed trip only if whoever took it would not have travelled anyway.
+- **Absolute figures do depend on it.** Completed rides per 100 searches halve as demand quadruples,
+  because supply is fixed. Any such figure in the report means "at 60 searches a day", not a forecast.
+
+### What this does not show
+
+- What real demand is, or that it lies between 30 and 120 searches a day.
+- Anything where demand and supply move together. Supply has its own sweep (section 7).
+- How the model does in a world it knows: it was trained at 60 searches a day, so at 30 and 120 it is
+  used outside the world it learnt from, as in the supply sweep.
+
+When a real figure is known, the result can be read off this table, or the sweep widened to reach it.
+Only that would finish feature 89.

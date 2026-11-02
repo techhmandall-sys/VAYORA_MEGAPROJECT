@@ -1,0 +1,18 @@
+# Does asking bookings to reconfirm pay when more or fewer people are searching?
+#
+# Corridor demand cannot be calibrated: no real figures for it exist (feature 89). This does not
+# calibrate it. It measures how much the conclusions depend on the figure the authors assumed, 60
+# searches a day, by halving and doubling it. A released seat is only worth something if somebody
+# is waiting to take it, so this is the assumption the project's central idea leans on hardest.
+# When a real figure is known, the answer can be read off here, or the sweep widened to reach it.
+#
+# Demand changes the baseline as well as the variant, so each cell gets its own.
+#
+# The model was trained at 60 searches a day. At 30 and 120 it is being used outside the world it
+# learnt from, as in the supply-density sweep.
+name: demand-density
+baseline: variants/B3.yaml
+variant: variants/B4.yaml
+baseline_per_cell: true
+parameters:
+  demand.searches_per_day: [30, 60, 120]

@@ -30,6 +30,10 @@ SWEEP_RUNS=(
   "oracle_response 5eeb0000-0000-4000-8000-000000000007"
   "flexible_booking 5eeb0000-0000-4000-8000-000000000008"
 )
+# Rebuilt with the rest, but not offered in the what-if explorer.
+REPORT_ONLY_SWEEP_RUNS=(
+  "demand_density 5eeb0000-0000-4000-8000-000000000010"
+)
 
 echo "== starting the database"
 docker compose up -d --wait postgres core-api
@@ -63,7 +67,7 @@ research python -m experiments.hotel.survival > /dev/null
 
 if $SWEEPS; then
   echo "== 4. the sweeps"
-  for entry in "${SWEEP_RUNS[@]}"; do
+  for entry in "${SWEEP_RUNS[@]}" "${REPORT_ONLY_SWEEP_RUNS[@]}"; do
     read -r name run_id <<< "$entry"
     forget "$run_id"
     research python -m experiments.sweep "experiments/configs/sweeps/$name.yaml" --run-id "$run_id" > /dev/null
