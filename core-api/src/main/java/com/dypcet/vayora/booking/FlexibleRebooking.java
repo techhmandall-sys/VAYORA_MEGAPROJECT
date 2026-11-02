@@ -4,7 +4,6 @@ import com.dypcet.vayora.booking.BookingService.Booking;
 import com.dypcet.vayora.notification.NotificationService;
 import com.dypcet.vayora.notification.NotificationService.Type;
 import com.dypcet.vayora.notification.Text;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.Candidate;
 import com.dypcet.vayora.routing.RouteService.Point;
@@ -29,10 +28,10 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * When a driver withdraws a ride, books each passenger who chose a flexible tier on the
  * closest other ride that fits, as they agreed to when booking. A new booking is like any
- * other: a fresh payment hold, and on a ride the driver approves, a request.
+ * other: paid for after that ride, and on a ride the driver approves, a request.
  *
  * <p>It runs after the withdrawal has committed, each passenger in a transaction of their
- * own, so a rebooking that fails never undoes the withdrawal or anyone else's refund.
+ * own, so a rebooking that fails never undoes the withdrawal.
  */
 @Service
 public class FlexibleRebooking {
@@ -43,8 +42,7 @@ public class FlexibleRebooking {
     private static final int TRIED = 5;
 
     /** What is needed after the commit, read while the booking was still locked. */
-    /** @param paymentMethod null for a booking paid after the ride, which is rebooked the same way */
-    record Withdrawn(long rideId, Booking booking, FlexTier tier, Point from, Point to, String paymentMethod) {
+    record Withdrawn(long rideId, Booking booking, FlexTier tier, Point from, Point to) {
     }
 
     private final BookingService bookings;
@@ -80,14 +78,11 @@ public class FlexibleRebooking {
                 FROM ride_stops WHERE ride_id = ? AND seq IN (?, ?) ORDER BY seq""",
                 (rs, n) -> new Point(rs.getDouble("lat"), rs.getDouble("lon")),
                 rideId, booking.fromSeq(), booking.toSeq());
-        List<String> method = jdbc.queryForList("SELECT method FROM payment_intents WHERE booking_id = ?",
-                String.class, booking.id());
         // A passenger picked up away from the stops is where the pickup was, not at the stop
         // before it, which may be far from them: that is why they were picked up.
         Point from = booking.pickupLat() != null && booking.pickupLon() != null
                 ? new Point(booking.pickupLat(), booking.pickupLon()) : ends.get(0);
-        Withdrawn withdrawn = new Withdrawn(rideId, booking, tier, from, ends.get(1),
-                booking.payAfterRide() ? null : method.isEmpty() ? PaymentChoice.Method.CARD.name() : method.get(0));
+        Withdrawn withdrawn = new Withdrawn(rideId, booking, tier, from, ends.get(1));
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
@@ -113,12 +108,9 @@ public class FlexibleRebooking {
         for (Candidate ride : fits) {
             // A ride that picks the passenger up at their own point is booked with that point.
             Point pickup = ride.detourMinutes() != null ? withdrawn.from() : null;
-            boolean payAfterRide = withdrawn.paymentMethod() == null;
             try {
                 Booking booked = ownTransaction.execute(status -> bookings.request(was.passengerId(), ride.rideId(),
-                        ride.fromSeq(), ride.toSeq(), was.seats(), payAfterRide ? null
-                                : new PaymentChoice(PaymentChoice.Method.valueOf(withdrawn.paymentMethod()), null), null,
-                        withdrawn.tier(), pickup, null, null, payAfterRide));
+                        ride.fromSeq(), ride.toSeq(), was.seats(), null, withdrawn.tier(), pickup, null, null));
                 boolean confirmed = booked.status() == BookingStatus.CONFIRMED;
                 tell(was, pickup != null
                         ? Text.of(confirmed

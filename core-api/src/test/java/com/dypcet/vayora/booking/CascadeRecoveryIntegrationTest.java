@@ -7,7 +7,6 @@ import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.UserRole;
 import com.dypcet.vayora.notification.NotificationService;
 import com.dypcet.vayora.notification.NotificationService.Type;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
@@ -61,7 +60,7 @@ class CascadeRecoveryIntegrationTest extends PostgresIntegrationTest {
     void aWithdrawnRideNamesOtherRidesNearTheSameTimeWithSeatsForTheParty() {
         long withdrawing = user(UserRole.DRIVER, "Ravi Jadhav");
         long withdrawn = ride(withdrawing, 9, 0, 3);
-        bookings.request(passenger, withdrawn, 0, 1, 2, PaymentChoice.card(), null);
+        bookings.request(passenger, withdrawn, 0, 1, 2, null);
         ride(user(UserRole.DRIVER, "Sunil Pawar"), 10, 30, 3);    // fits
         ride(user(UserRole.DRIVER, "Meera Kulkarni"), 7, 15, 3);  // fits
         ride(user(UserRole.DRIVER, "Too Late"), 13, 0, 3);        // more than 3 hours after
@@ -71,7 +70,7 @@ class CascadeRecoveryIntegrationTest extends PostgresIntegrationTest {
 
         String notice = notifications.forUser(passenger).stream()
                 .filter(n -> n.type() == Type.RIDE_CANCELLED).findFirst().orElseThrow().message();
-        assertThat(notice).contains("Everything you paid has been returned.")
+        assertThat(notice).contains("You owe nothing.")
                 .contains("Other rides that could take you: 07:15 from Kolhapur with Meera Kulkarni; "
                         + "10:30 from Kolhapur with Sunil Pawar.")
                 .doesNotContain("Too Late").doesNotContain("Too Small").doesNotContain("Ravi Jadhav");
@@ -84,7 +83,7 @@ class CascadeRecoveryIntegrationTest extends PostgresIntegrationTest {
     void withNothingElseThePassengerIsToldSo() {
         long driver = user(UserRole.DRIVER, "Ravi Jadhav");
         long withdrawn = ride(driver, 18, 0, 3);
-        bookings.request(passenger, withdrawn, 0, 1, 1, PaymentChoice.card(), null);
+        bookings.request(passenger, withdrawn, 0, 1, 1, null);
 
         trips.cancel(driver, withdrawn);
 

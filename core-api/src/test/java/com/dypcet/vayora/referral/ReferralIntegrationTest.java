@@ -12,8 +12,6 @@ import com.dypcet.vayora.booking.TripService;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.pass.PassProperties.Kind;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
@@ -74,7 +72,7 @@ class ReferralIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         long invited = jdbc.queryForObject("SELECT id FROM users WHERE email = ?", Long.class, email);
         assertThat(body).contains("Meera Kulkarni");
-        assertThat(referrals.summary(inviter)).isEqualTo(new ReferralService.Summary(code, 1, 0, Kind.WEEKLY));
+        assertThat(referrals.summary(inviter)).isEqualTo(new ReferralService.Summary(code, 1, 0));
 
         long driver = user(UserRole.DRIVER);
         long vehicleId = vehicles.create(driver, "Maruti", "Ertiga", 2022, "Silver", 7).id();
@@ -82,11 +80,11 @@ class ReferralIntegrationTest extends PostgresIntegrationTest {
                 3, true, List.of(new StopInput("Kolhapur", 16.7050, 74.2433, 0),
                         new StopInput("Pune", 18.5204, 73.8567, 270)),
                 List.of(new BigDecimal("450.00")))).id();
-        bookings.request(invited, rideId, 0, 1, 1, PaymentChoice.card(), null);
+        bookings.request(invited, rideId, 0, 1, 1, null);
         trips.start(driver, rideId);
         trips.complete(driver, rideId);
 
-        assertThat(referrals.summary(inviter)).isEqualTo(new ReferralService.Summary(code, 1, 1, Kind.WEEKLY));
+        assertThat(referrals.summary(inviter)).isEqualTo(new ReferralService.Summary(code, 1, 1));
         mvc.perform(get("/api/v1/me/referral").header("Authorization", "Bearer " + tokens.issue(inviter, UserRole.PASSENGER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(code))

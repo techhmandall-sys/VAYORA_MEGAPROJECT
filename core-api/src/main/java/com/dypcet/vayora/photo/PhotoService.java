@@ -80,6 +80,15 @@ public class PhotoService {
 
     /** The upload as a fresh JPEG, scaled down to fit, with nothing but its pixels. */
     byte[] clean(byte[] upload) {
+        return encoded(redrawn(upload, maxSidePixels), "jpg");
+    }
+
+    /** The same as a PNG, for a picture that must stay exact: a QR code has to scan. */
+    public byte[] cleanPng(byte[] upload, int maxSide) {
+        return encoded(redrawn(upload, maxSide), "png");
+    }
+
+    private BufferedImage redrawn(byte[] upload, int maxSide) {
         if (upload == null || upload.length == 0) {
             throw bad("Choose a photo");
         }
@@ -87,10 +96,10 @@ public class PhotoService {
             throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "That photo is too large");
         }
         BufferedImage source = decode(upload);
-        double scale = Math.min(1.0, (double) maxSidePixels / Math.max(source.getWidth(), source.getHeight()));
+        double scale = Math.min(1.0, (double) maxSide / Math.max(source.getWidth(), source.getHeight()));
         int width = Math.max(1, (int) Math.round(source.getWidth() * scale));
         int height = Math.max(1, (int) Math.round(source.getHeight() * scale));
-        // JPEG has no transparency: transparent areas become white rather than black.
+        // Neither output keeps transparency: transparent areas become white rather than black.
         BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = out.createGraphics();
         try {
@@ -101,11 +110,15 @@ public class PhotoService {
         } finally {
             g.dispose();
         }
+        return out;
+    }
+
+    private static byte[] encoded(BufferedImage image, String format) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try {
-            ImageIO.write(out, "jpg", bytes);
+            ImageIO.write(image, format, bytes);
         } catch (IOException e) {
-            throw new IllegalStateException("Could not write a JPEG", e);
+            throw new IllegalStateException("Could not write the image as " + format, e);
         }
         return bytes.toByteArray();
     }

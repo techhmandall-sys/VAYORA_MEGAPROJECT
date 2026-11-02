@@ -8,8 +8,7 @@ import com.dypcet.vayora.hold.SeatHolds;
 import com.dypcet.vayora.notification.NotificationService.Type;
 import com.dypcet.vayora.notification.NotificationService;
 import com.dypcet.vayora.notification.Text;
-import com.dypcet.vayora.payment.PaymentChoice;
-import com.dypcet.vayora.payment.PaymentService.RefundReason;
+import com.dypcet.vayora.audit.AuditService;
 import com.dypcet.vayora.payment.PaymentService;
 import com.dypcet.vayora.ride.DetourService;
 import com.dypcet.vayora.routing.RouteService.Point;
@@ -44,27 +43,22 @@ public class BookingService {
 
     /**
      * @param price        the fare: what the driver is owed if the trip runs
-     * @param serviceFee   the platform's fee on top of the fare; null if nothing was charged
-     * @param total        fare plus fee: what was held from the passenger; null as above
-     * @param refunded     what has been returned to the passenger; null if nothing
      * @param boardingTime   when the ride leaves the passenger's boarding stop
      * @param passengerRated whether the passenger has rated the driver for this trip
      * @param driverRated    whether the driver has rated the passenger for this trip
      * @param passengerConfirmed the passenger's answer to whether a completed trip
      *                           happened; null until they answer
-     * @param payAfterRide   nothing was taken at booking: the passenger pays once it ends
-     * @param paymentStatus  {@code HELD} or {@code SETTLED}; for a pay-after-ride booking
-     *                       {@code DEFERRED} while live, then {@code DUE}, {@code VOID} if it
-     *                       owed nothing, or {@code SETTLED} once paid. Null if nothing was charged
-     * @param amountDue      what a pay-after-ride booking owed when it ended; null until then
+     * @param paymentStatus  {@code DEFERRED} while live, then {@code DUE}, {@code VOID} if it
+     *                       owed nothing, or {@code SETTLED} once paid. Null for a free ride
+     * @param amountDue      what it owed the driver when it ended; null until then, and if nothing
+     * @param paymentMethod  how the driver says it was paid, {@code CASH} or {@code UPI}; null until then
      */
     public record Booking(long id, long rideId, long passengerId, String passengerName,
             int fromSeq, int toSeq, String fromStop, String toStop, int seats, BigDecimal price,
-            BigDecimal serviceFee, BigDecimal total, BigDecimal refunded,
             BookingStatus status, Instant boardingTime, Instant createdAt,
             boolean passengerRated, boolean driverRated, Boolean passengerConfirmed, FlexTier flexTier,
             long driverId, String driverName, String vehicle, Double pickupLat, Double pickupLon,
-            Integer detourMinutes, boolean payAfterRide, String paymentStatus, BigDecimal amountDue) {
+            Integer detourMinutes, String paymentStatus, BigDecimal amountDue, String paymentMethod) {
     }
 
     /**
@@ -108,12 +102,9 @@ public class BookingService {
      *                          when the search did not carry one
      * @param lastMileModeAvailable whether a non-walk access option (rickshaw or bus)
      *                              was shown for that candidate; null with the distance
-     * @param payAfterRide          whether nothing was taken at booking, so a late
-     *                              cancellation is owed rather than kept
      */
     record Requested(long bookingId, long rideId, long passengerId, int fromSeq, int toSeq,
-            int seats, Instant departureTime, Integer lastMileDistanceM, Boolean lastMileModeAvailable,
-            boolean payAfterRide)
+            int seats, Instant departureTime, Integer lastMileDistanceM, Boolean lastMileModeAvailable)
             implements HasActor {
         @Override
         public String actorType() {
@@ -158,7 +149,7 @@ public class BookingService {
     }
 
     record LockedRide(long driverId, boolean instantBooking, String status,
-            Instant departureTime, boolean womenOnly, int maxDetourMinutes, boolean payAfterRide) {
+            Instant departureTime, boolean womenOnly, int maxDetourMinutes) {
     }
 
     private static final String SELECT_BOOKING = """
@@ -169,8 +160,7 @@ public class BookingService {
                                                          + COALESCE(b.pickup_offset_minutes, 0)) AS boarding,
                    ST_Y(b.pickup_location::geometry) AS pickup_lat,
                    ST_X(b.pickup_location::geometry) AS pickup_lon,
-                   p.service_fee, p.amount AS total, f.amount AS refunded,
-                   COALESCE(p.deferred, false) AS pay_after_ride, p.status AS payment_status, p.amount_due,
+                   p.status AS payment_status, p.amount_due, p.method AS payment_method,
                    EXISTS (SELECT 1 FROM ratings g WHERE g.booking_id = b.id
                              AND g.rater_id = b.passenger_id) AS passenger_rated,
                    EXISTS (SELECT 1 FROM ratings g WHERE g.booking_id = b.id
@@ -183,15 +173,13 @@ public class BookingService {
             JOIN ride_stops s ON s.ride_id = b.ride_id AND s.seq = b.from_seq
             JOIN ride_stops t ON t.ride_id = b.ride_id AND t.seq = b.to_seq
             LEFT JOIN payment_intents p ON p.booking_id = b.id
-            LEFT JOIN refunds f ON f.booking_id = b.id
             """;
 
     private static final RowMapper<Booking> MAPPER = (rs, n) -> new Booking(
             rs.getLong("id"), rs.getLong("ride_id"), rs.getLong("passenger_id"),
             rs.getString("passenger_name"), rs.getInt("from_seq"), rs.getInt("to_seq"),
             rs.getString("from_stop"), rs.getString("to_stop"), rs.getInt("seats"),
-            rs.getBigDecimal("price"), rs.getBigDecimal("service_fee"),
-            rs.getBigDecimal("total"), rs.getBigDecimal("refunded"),
+            rs.getBigDecimal("price"),
             BookingStatus.valueOf(rs.getString("status")),
             rs.getObject("boarding", OffsetDateTime.class).toInstant(),
             rs.getObject("created_at", OffsetDateTime.class).toInstant(),
@@ -199,8 +187,8 @@ public class BookingService {
             (Boolean) rs.getObject("passenger_confirmed"), FlexTier.valueOf(rs.getString("flex_tier")),
             rs.getLong("driver_id"), rs.getString("driver_name"), rs.getString("vehicle"),
             (Double) rs.getObject("pickup_lat"), (Double) rs.getObject("pickup_lon"),
-            (Integer) rs.getObject("detour_minutes"), rs.getBoolean("pay_after_ride"),
-            rs.getString("payment_status"), rs.getBigDecimal("amount_due"));
+            (Integer) rs.getObject("detour_minutes"),
+            rs.getString("payment_status"), rs.getBigDecimal("amount_due"), rs.getString("payment_method"));
 
     private final JdbcTemplate jdbc;
     private final EventLogService events;
@@ -215,6 +203,7 @@ public class BookingService {
     private final Duration closeBeforeBoarding;
     private final Duration midRouteLead;
     private final DetourService detours;
+    private final AuditService audit;
 
     public BookingService(JdbcTemplate jdbc, EventLogService events,
             HazardFeatures hazardFeatures, PaymentService payments,
@@ -222,7 +211,9 @@ public class BookingService {
             SeatHolds holds, BoardingService boardingCodes,
             @Value("${vayora.booking.answer-within}") Duration answerWithin,
             @Value("${vayora.booking.close-before-boarding}") Duration closeBeforeBoarding,
-            @Value("${vayora.booking.mid-route-lead}") Duration midRouteLead, DetourService detours) {
+            @Value("${vayora.booking.mid-route-lead}") Duration midRouteLead, DetourService detours,
+            AuditService audit) {
+        this.audit = audit;
         this.detours = detours;
         this.answerWithin = answerWithin;
         this.closeBeforeBoarding = closeBeforeBoarding;
@@ -241,23 +232,21 @@ public class BookingService {
     /**
      * Takes seats on every leg from stop {@code fromSeq} to stop {@code toSeq}, or none.
      * Confirms at once on an instant-booking ride; otherwise the seats are held while the
-     * driver decides. The fare and fee are held in the same transaction: a declined
-     * payment leaves no booking and no seat taken.
+     * driver decides. Nothing is paid now: the passenger pays the driver once the booking ends.
      *
      * @param idempotencyKey if not null, a repeat of an earlier request with the same key
      *                       returns that booking instead of making another
      */
     @Transactional
-    public Booking request(long passengerId, long rideId, int fromSeq, int toSeq, int seats,
-            PaymentChoice payment, String idempotencyKey) {
-        return request(passengerId, rideId, fromSeq, toSeq, seats, payment, idempotencyKey, FlexTier.EXACT);
+    public Booking request(long passengerId, long rideId, int fromSeq, int toSeq, int seats, String idempotencyKey) {
+        return request(passengerId, rideId, fromSeq, toSeq, seats, idempotencyKey, FlexTier.EXACT);
     }
 
     /** @param tier what the passenger agrees to should the driver withdraw this ride */
     @Transactional
     public Booking request(long passengerId, long rideId, int fromSeq, int toSeq, int seats,
-            PaymentChoice payment, String idempotencyKey, FlexTier tier) {
-        return request(passengerId, rideId, fromSeq, toSeq, seats, payment, idempotencyKey, tier, null);
+            String idempotencyKey, FlexTier tier) {
+        return request(passengerId, rideId, fromSeq, toSeq, seats, idempotencyKey, tier, null);
     }
 
     /**
@@ -267,9 +256,8 @@ public class BookingService {
      */
     @Transactional
     public Booking request(long passengerId, long rideId, int fromSeq, int toSeq, int seats,
-            PaymentChoice payment, String idempotencyKey, FlexTier tier, Point pickup) {
-        return request(passengerId, rideId, fromSeq, toSeq, seats, payment, idempotencyKey, tier,
-                pickup, null, null);
+            String idempotencyKey, FlexTier tier, Point pickup) {
+        return request(passengerId, rideId, fromSeq, toSeq, seats, idempotencyKey, tier, pickup, null, null);
     }
 
     /**
@@ -281,30 +269,11 @@ public class BookingService {
      */
     @Transactional
     public Booking request(long passengerId, long rideId, int fromSeq, int toSeq, int seats,
-            PaymentChoice payment, String idempotencyKey, FlexTier tier, Point pickup,
+            String idempotencyKey, FlexTier tier, Point pickup,
             Integer lastMileDistanceM, String lastMileModeShown) {
-        return request(passengerId, rideId, fromSeq, toSeq, seats, payment, idempotencyKey, tier,
-                pickup, lastMileDistanceM, lastMileModeShown, false);
-    }
-
-    /**
-     * @param payAfterRide take nothing now: the passenger pays once the booking ends, on a
-     *                     ride whose driver accepts that. {@code payment} is then ignored
-     */
-    @Transactional
-    public Booking request(long passengerId, long rideId, int fromSeq, int toSeq, int seats,
-            PaymentChoice payment, String idempotencyKey, FlexTier tier, Point pickup,
-            Integer lastMileDistanceM, String lastMileModeShown, boolean payAfterRide) {
         if (toSeq <= fromSeq) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "toSeq must come after fromSeq");
-        }
-        // A flexible booking is rebooked, and paid again, while the passenger is away: not
-        // possible when only the passenger can pay, in a checkout. Paid after the ride, the
-        // rebooking takes nothing either.
-        if (tier != FlexTier.EXACT && !payAfterRide && payments.needsThePassengerToPay()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "A booking paid at checkout is for this ride only: a flexible one would need you to pay again while you are away");
         }
         // A pickup's cost is asked of the routing service before the ride is locked: a slow
         // routing service must not hold the lock. It depends on nothing the lock protects.
@@ -331,12 +300,9 @@ public class BookingService {
         if (!"SCHEDULED".equals(ride.status()) && !underWay) {
             throw conflict("This ride is not open for booking");
         }
-        // What an earlier pay-after-ride booking owes is settled before anything new is booked.
+        // What an earlier booking owes is settled before anything new is booked.
         if (payments.owes(passengerId)) {
-            throw conflict("You have a payment due from an earlier booking. Pay it in My bookings before booking again.");
-        }
-        if (payAfterRide && !ride.payAfterRide()) {
-            throw conflict("This driver takes payment when you book, not after the ride");
+            throw conflict("You still owe a driver for an earlier booking. You can book again once they mark it paid: see My bookings.");
         }
         // A driver at the wheel cannot answer a request.
         if (underWay && !ride.instantBooking()) {
@@ -444,11 +410,7 @@ public class BookingService {
         }
         BigDecimal fare = jdbc.queryForObject(
                 "SELECT price FROM bookings WHERE id = ?", BigDecimal.class, bookingId);
-        if (payAfterRide) {
-            payments.defer(bookingId, passengerId, ride.driverId(), fare);
-        } else {
-            payments.hold(bookingId, passengerId, ride.driverId(), fare, payment);
-        }
+        payments.open(bookingId, passengerId, fare);
         if (away != null) {
             jdbc.update("""
                     UPDATE bookings SET pickup_location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
@@ -464,7 +426,7 @@ public class BookingService {
         events.write(EventType.BOOKING_REQUESTED,
                 new Requested(bookingId, rideId, passengerId, fromSeq, toSeq, seats, boarding,
                         lastMileDistanceM,
-                        lastMileModeShown == null ? null : !"walk".equals(lastMileModeShown), payAfterRide));
+                        lastMileModeShown == null ? null : !"walk".equals(lastMileModeShown)));
         // Only a choice is logged: exact is what every booking was before tiers existed.
         if (tier != FlexTier.EXACT) {
             events.write(EventType.TIER_SELECTED,
@@ -509,42 +471,49 @@ public class BookingService {
         Booking booking = lockForDriver(driverId, bookingId);
         move(booking, BookingStatus.REJECTED);
         recordRejectedBy(bookingId, "driver");
-        payments.releaseInFull(bookingId, RefundReason.NOT_ACCEPTED);
+        payments.oweNothing(bookingId);
         events.write(EventType.BOOKING_REJECTED,
                 new Decided(bookingId, booking.rideId(), driverId, false));
         notifyDeclined(booking);
         return load(bookingId);
     }
 
-    /** The passenger pays, in the app, what their pay-after-ride booking owes now it has ended. */
+    /** The driver says the passenger paid them what the booking owes. Only they can know. */
     @Transactional
-    public Booking payDue(long passengerId, long bookingId, PaymentChoice payment) {
+    public Booking paymentReceived(long driverId, long bookingId, PaymentService.Method method) {
+        Booking booking = lockForDriver(driverId, bookingId);
+        BigDecimal amount = payments.due(bookingId).orElseThrow(() -> conflict("Nothing is due on this booking"));
+        payments.paid(bookingId, method);
+        notifications.send(booking.passengerId(), Type.PAYMENT_RECEIVED,
+                Text.of(method == PaymentService.Method.CASH
+                                ? "Your driver recorded Rs {amount} paid in cash for {seats}."
+                                : "Your driver recorded Rs {amount} paid by UPI for {seats}.",
+                        "amount", amount.toPlainString(), "seats", seatsText(booking)), bookingId);
+        return load(bookingId);
+    }
+
+    /**
+     * Staff let a passenger off what a booking owes: a driver who was paid and will not say so
+     * must not stop them booking for ever. The reason goes in the audit log, not to either side.
+     */
+    @Transactional
+    public Booking clearDue(long adminId, long bookingId, String reason) {
         Long rideId = rideOf(bookingId);
         if (rideId == null) {
             throw notFound("Booking not found");
         }
         LockedRide ride = lockRide(rideId);
         Booking booking = lockBooking(bookingId);
-        if (booking.passengerId() != passengerId) {
-            throw notFound("Booking not found");
-        }
         BigDecimal amount = payments.due(bookingId).orElseThrow(() -> conflict("Nothing is due on this booking"));
-        payments.payDue(bookingId, ride.driverId(), payment);
-        notifications.send(ride.driverId(), Type.PAYMENT_RECEIVED,
-                Text.of("{passenger} paid Rs {amount} in the app for {seats}.", "passenger", booking.passengerName(),
-                        "amount", amount.toPlainString(), "seats", seatsText(booking)), bookingId);
-        return load(bookingId);
-    }
-
-    /** The driver says the passenger paid what their pay-after-ride booking owes, in cash. */
-    @Transactional
-    public Booking paidInCash(long driverId, long bookingId) {
-        Booking booking = lockForDriver(driverId, bookingId);
-        BigDecimal amount = payments.due(bookingId).orElseThrow(() -> conflict("Nothing is due on this booking"));
-        payments.paidInCash(bookingId, driverId);
+        payments.clear(bookingId);
+        audit.record(adminId, "PAYMENT_DUE_CLEARED", "booking", bookingId,
+                Map.of("amount", amount.toPlainString(), "passenger_id", booking.passengerId(), "reason", reason));
         notifications.send(booking.passengerId(), Type.PAYMENT_RECEIVED,
-                Text.of("Your driver recorded Rs {amount} paid in cash for {seats}.",
-                        "amount", amount.toPlainString(), "seats", seatsText(booking)), bookingId);
+                Text.of("VAYORA staff cleared what you owed for {seats}, so you can book again.",
+                        "seats", seatsText(booking)), bookingId);
+        notifications.send(ride.driverId(), Type.PAYMENT_RECEIVED,
+                Text.of("VAYORA staff cleared what {passenger} owed you for {seats}.",
+                        "passenger", booking.passengerName(), "seats", seatsText(booking)), bookingId);
         return load(bookingId);
     }
 
@@ -568,9 +537,9 @@ public class BookingService {
     }
 
     /**
-     * Closes a request the driver has not answered in time: the seats go back and
-     * everything the passenger paid is returned. Checked again under the lock, so a
-     * request the driver answered a moment ago is left alone.
+     * Closes a request the driver has not answered in time: the seats go back and the
+     * passenger owes nothing. Checked again under the lock, so a request the driver
+     * answered a moment ago is left alone.
      *
      * @return whether the request was closed
      */
@@ -590,12 +559,12 @@ public class BookingService {
         }
         move(booking, BookingStatus.REJECTED);
         recordRejectedBy(bookingId, "platform");
-        payments.releaseInFull(bookingId, RefundReason.NOT_ACCEPTED);
+        payments.oweNothing(bookingId);
         events.write(EventType.BOOKING_REJECTED,
                 new Expired(bookingId, rideId, ride.driverId(), "not_answered_in_time"));
         notifications.send(booking.passengerId(), Type.REQUEST_EXPIRED,
                 Text.of("The driver did not answer your request for {seats} in time, so it has been closed."
-                        + " Everything you paid has been returned.", "seats", seatsText(booking)),
+                        + " You owe nothing.", "seats", seatsText(booking)),
                 bookingId);
         notifications.send(ride.driverId(), Type.REQUEST_EXPIRED,
                 Text.of("{passenger}'s request for {seats} was closed because it was not answered in time.",
@@ -621,13 +590,15 @@ public class BookingService {
         }
         move(booking, BookingStatus.CANCELLED);
         recordCancelledBy(bookingId, "passenger");
-        payments.settlePassengerCancellation(bookingId, ride.driverId(),
+        payments.settlePassengerCancellation(bookingId, booking.price(),
                 booking.status() == BookingStatus.CONFIRMED, booking.boardingTime(), now);
         events.write(EventType.BOOKING_CANCELLED, new Cancelled(bookingId, booking.rideId(),
                 passengerId, booking.seats(), booking.boardingTime(), "passenger", passengerId));
-        notifications.send(ride.driverId(), Type.BOOKING_CANCELLED,
-                Text.of("{passenger} cancelled {seats}.", "passenger", booking.passengerName(),
-                        "seats", seatsText(booking)), bookingId);
+        notifications.send(ride.driverId(), Type.BOOKING_CANCELLED, payments.due(bookingId)
+                .map(owed -> Text.of("{passenger} cancelled {seats}, late enough to owe you Rs {amount}.",
+                        "passenger", booking.passengerName(), "seats", seatsText(booking), "amount", owed.toPlainString()))
+                .orElseGet(() -> Text.of("{passenger} cancelled {seats}.", "passenger", booking.passengerName(),
+                        "seats", seatsText(booking))), bookingId);
         return load(bookingId);
     }
 
@@ -705,7 +676,7 @@ public class BookingService {
 
     void notifyDeclined(Booking booking) {
         notifications.send(booking.passengerId(), Type.BOOKING_DECLINED,
-                Text.of("The driver did not accept your request for {seats}. Everything you paid has been returned.",
+                Text.of("The driver did not accept your request for {seats}. You owe nothing.",
                         "seats", seatsText(booking)), booking.id());
     }
 
@@ -754,14 +725,12 @@ public class BookingService {
     /** Returns null when there is no such ride. */
     LockedRide lockRide(long rideId) {
         List<LockedRide> found = jdbc.query("""
-                SELECT driver_id, instant_booking, status, departure_time, women_only, max_detour_minutes,
-                       pay_after_ride
+                SELECT driver_id, instant_booking, status, departure_time, women_only, max_detour_minutes
                 FROM rides WHERE id = ? FOR UPDATE""",
                 (rs, n) -> new LockedRide(rs.getLong("driver_id"),
                         rs.getBoolean("instant_booking"), rs.getString("status"),
                         rs.getObject("departure_time", OffsetDateTime.class).toInstant(),
-                        rs.getBoolean("women_only"), rs.getInt("max_detour_minutes"),
-                        rs.getBoolean("pay_after_ride")),
+                        rs.getBoolean("women_only"), rs.getInt("max_detour_minutes")),
                 rideId);
         return found.isEmpty() ? null : found.get(0);
     }

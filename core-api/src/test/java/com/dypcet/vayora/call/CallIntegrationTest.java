@@ -15,7 +15,6 @@ import com.dypcet.vayora.identity.UserRole;
 import com.dypcet.vayora.notification.NotificationService;
 import com.dypcet.vayora.notification.NotificationService.Notification;
 import com.dypcet.vayora.notification.NotificationService.Type;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
@@ -147,7 +146,7 @@ class CallIntegrationTest extends PostgresIntegrationTest {
         long vehicleId = vehicles.create(driverId, "Maruti", "Ertiga", 2022, "Silver", 7).id();
         long rideId = rides.publish(driverId, new PublishRide(vehicleId, Instant.now().plus(untilDeparture), 3,
                 instantBooking, STOPS, List.of(new BigDecimal("400.00")))).id();
-        return bookings.request(passengerId, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        return bookings.request(passengerId, rideId, 0, 1, 1, null).id();
     }
 
     private long user(UserRole role, boolean confirmedPhone) {

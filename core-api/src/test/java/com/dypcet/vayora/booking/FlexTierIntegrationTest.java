@@ -7,7 +7,6 @@ import com.dypcet.vayora.booking.BookingService.Booking;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.UserRole;
 import com.dypcet.vayora.notification.NotificationService;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.Sort;
@@ -59,8 +58,8 @@ class FlexTierIntegrationTest extends PostgresIntegrationTest {
         ride(user(UserRole.DRIVER, "Later Driver"), day, 10, 45);
         long flexible = user(UserRole.PASSENGER, "Asha Patil");
         long exact = user(UserRole.PASSENGER, "Meera Kulkarni");
-        bookings.request(flexible, withdrawn, 0, 1, 1, PaymentChoice.card(), null, FlexTier.FLEXIBLE);
-        bookings.request(exact, withdrawn, 0, 1, 1, PaymentChoice.card(), null);
+        bookings.request(flexible, withdrawn, 0, 1, 1, null, FlexTier.FLEXIBLE);
+        bookings.request(exact, withdrawn, 0, 1, 1, null);
 
         trips.cancel(withdrawing, withdrawn);
 
@@ -86,8 +85,8 @@ class FlexTierIntegrationTest extends PostgresIntegrationTest {
         long evening = ride(user(UserRole.DRIVER, "Sunil Pawar"), day, 18, 0);
         long flexible = user(UserRole.PASSENGER, "Asha Patil");
         long anyTime = user(UserRole.PASSENGER, "Neha Joshi");
-        bookings.request(flexible, withdrawn, 0, 1, 1, PaymentChoice.card(), null, FlexTier.FLEXIBLE);
-        bookings.request(anyTime, withdrawn, 0, 1, 1, PaymentChoice.card(), null, FlexTier.ANY_TIME);
+        bookings.request(flexible, withdrawn, 0, 1, 1, null, FlexTier.FLEXIBLE);
+        bookings.request(anyTime, withdrawn, 0, 1, 1, null, FlexTier.ANY_TIME);
 
         trips.cancel(withdrawing, withdrawn);
 

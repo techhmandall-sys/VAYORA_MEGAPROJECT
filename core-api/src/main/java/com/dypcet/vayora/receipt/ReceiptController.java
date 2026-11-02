@@ -2,7 +2,6 @@ package com.dypcet.vayora.receipt;
 
 import com.dypcet.vayora.identity.CurrentUser;
 import com.dypcet.vayora.receipt.ReceiptService.BookingReceipt;
-import com.dypcet.vayora.receipt.ReceiptService.PassReceipt;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -31,20 +30,10 @@ public class ReceiptController {
         return pdf(receipts.forBooking(CurrentUser.id(jwt), id), "vayora-booking-" + id + ".pdf");
     }
 
-    @GetMapping("/passes/{id}/receipt")
-    public ResponseEntity<byte[]> pass(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {
-        return pdf(receipts.forPass(CurrentUser.id(jwt), id), "vayora-pass-" + id + ".pdf");
-    }
-
     /** The same receipt as facts, for the app to show in the member's language and script. */
     @GetMapping("/bookings/{id}/receipt-data")
     public BookingReceipt bookingData(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {
         return receipts.booking(CurrentUser.id(jwt), id);
-    }
-
-    @GetMapping("/passes/{id}/receipt-data")
-    public PassReceipt passData(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {
-        return receipts.pass(CurrentUser.id(jwt), id);
     }
 
     private static ResponseEntity<byte[]> pdf(byte[] body, String filename) {

@@ -13,7 +13,6 @@ import com.dypcet.vayora.booking.TripService;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
@@ -72,19 +71,18 @@ class BackOfficeBrowserIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
-    void aWholeSeriesStillToRunIsWithdrawnAndEveryPassengerRefunded() {
+    void aWholeSeriesStillToRunIsWithdrawnAndNoPassengerOwesAnything() {
         long first = rides.publish(driver, new PublishRide(vehicleId, Instant.now().plus(Duration.ofDays(2)), 3, true,
                 STOPS, List.of(new BigDecimal("400.00")), null, false, null, 2)).id();
         long passenger = user(UserRole.PASSENGER, "Asha Patil");
-        long booking = bookings.request(passenger, first, 0, 1, 1, PaymentChoice.card(), null).id();
+        long booking = bookings.request(passenger, first, 0, 1, 1, null).id();
 
         assertThat(trips.cancelSeries(driver, first)).isEqualTo(3);
 
         assertThat(jdbc.queryForList("SELECT status FROM rides WHERE series_id = (SELECT series_id FROM rides WHERE id = ?)",
                 String.class, first)).containsOnly("CANCELLED");
-        assertThat(jdbc.queryForObject("SELECT amount FROM refunds WHERE booking_id = ?", BigDecimal.class, booking))
-                .isEqualByComparingTo(jdbc.queryForObject(
-                        "SELECT amount FROM payment_intents WHERE booking_id = ?", BigDecimal.class, booking));
+        assertThat(jdbc.queryForObject("SELECT status FROM payment_intents WHERE booking_id = ?", String.class, booking))
+                .isEqualTo("VOID");
         // Nothing left to withdraw.
         assertThatThrownBy(() -> trips.cancelSeries(driver, first)).isInstanceOfSatisfying(ResponseStatusException.class,
                 e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
@@ -106,7 +104,7 @@ class BackOfficeBrowserIntegrationTest extends PostgresIntegrationTest {
         long rideId = rides.publish(driver, new PublishRide(vehicleId, Instant.now().plus(Duration.ofDays(2)), 3, true,
                 STOPS, List.of(new BigDecimal("400.00")))).id();
         long bookingId = bookings.request(user(UserRole.PASSENGER, "Asha Patil"), rideId, 0, 1, 1,
-                PaymentChoice.card(), null).id();
+                null).id();
         long admin = identity.authenticate("admin@example.test", "admin-test-password").id();
         String token = "Bearer " + tokens.issue(admin, UserRole.ADMIN);
 

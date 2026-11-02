@@ -179,13 +179,18 @@ public class ReleaseReminders {
 
     private void remind(Due booking, Instant now) {
         jdbc.update("UPDATE bookings SET release_reminded_at = ? WHERE id = ?", utc(now), booking.bookingId());
-        BigDecimal back = refunds.fareRefund(booking.fare(), Duration.between(now, booking.boarding()));
-        notifications.send(booking.passengerId(), Type.RELEASE_REMINDER, Text.of(
-                "Your seat from {from} to {to} leaves {when}. If your plans have changed, cancelling now lets "
-                        + "someone else take it, and Rs {refund} of your Rs {fare} fare comes back. "
+        BigDecimal owed = refunds.owedOnCancelling(booking.fare(), Duration.between(now, booking.boarding()));
+        String when = booking.boarding().truncatedTo(ChronoUnit.SECONDS).toString();
+        notifications.send(booking.passengerId(), Type.RELEASE_REMINDER, owed.signum() == 0
+                ? Text.of("Your seat from {from} to {to} leaves {when}. If your plans have changed, cancelling now lets "
+                        + "someone else take it, and you would owe nothing. "
                         + "If you are still travelling, there is nothing to do.",
-                "from", booking.fromStop(), "to", booking.toStop(), "when", booking.boarding().truncatedTo(ChronoUnit.SECONDS).toString(),
-                "refund", back.toPlainString(), "fare", booking.fare().toPlainString()),
+                        "from", booking.fromStop(), "to", booking.toStop(), "when", when)
+                : Text.of("Your seat from {from} to {to} leaves {when}. If your plans have changed, cancelling now lets "
+                        + "someone else take it, and you would owe your driver Rs {owed} of your Rs {fare} fare. "
+                        + "If you are still travelling, there is nothing to do.",
+                        "from", booking.fromStop(), "to", booking.toStop(), "when", when,
+                        "owed", owed.toPlainString(), "fare", booking.fare().toPlainString()),
                 booking.bookingId());
         events.write(EventType.INTERVENTION_ISSUED, new Issued(booking.bookingId(), booking.passengerId(),
                 "release_reminder", booking.survival(), targeting.enabled() ? "scheduler" : "everyone"));

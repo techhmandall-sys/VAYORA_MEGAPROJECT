@@ -14,7 +14,6 @@ import com.dypcet.vayora.booking.TripService;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.rating.RatingService.Profile;
 import com.dypcet.vayora.rating.RatingService.Unrated;
 import com.dypcet.vayora.ride.RideService;
@@ -105,7 +104,7 @@ class RatingFlowIntegrationTest extends PostgresIntegrationTest {
     @Test
     void onlyThePeopleOnTheBookingMayRateItAndOnlyOnceItIsCompleted() {
         long rideId = ride(Duration.ofMinutes(30));
-        Booking booking = bookings.request(passengerId, rideId, 0, 1, 1, PaymentChoice.card(), null);
+        Booking booking = bookings.request(passengerId, rideId, 0, 1, 1, null);
         long stranger = identity.register(email(), "correct-horse-battery", "Nosy Parker", UserRole.PASSENGER).id();
 
         assertStatus(HttpStatus.CONFLICT, () -> ratings.rate(passengerId, booking.id(), 5, null));
@@ -121,7 +120,7 @@ class RatingFlowIntegrationTest extends PostgresIntegrationTest {
     @Test
     void aNoShowOrCancelledBookingCannotBeRated() {
         long rideId = ride(Duration.ofMinutes(30));
-        Booking absent = bookings.request(passengerId, rideId, 0, 1, 1, PaymentChoice.card(), null);
+        Booking absent = bookings.request(passengerId, rideId, 0, 1, 1, null);
         trips.start(driverId, rideId);
         trips.noShow(driverId, absent.id());
         trips.complete(driverId, rideId);
@@ -228,7 +227,7 @@ class RatingFlowIntegrationTest extends PostgresIntegrationTest {
 
     private Booking completedTrip(long passenger) {
         long rideId = ride(Duration.ofMinutes(30));
-        Booking booking = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null);
+        Booking booking = bookings.request(passenger, rideId, 0, 1, 1, null);
         trips.start(driverId, rideId);
         trips.complete(driverId, rideId);
         return booking;

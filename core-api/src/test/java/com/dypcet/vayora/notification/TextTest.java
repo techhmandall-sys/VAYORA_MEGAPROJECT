@@ -12,14 +12,14 @@ class TextTest {
 
     @Test
     void rendersNestedTextsAndListsAsTheEnglishItReplaces() {
-        Text notice = Text.of("The driver cancelled the ride you booked for {seats}. Everything you paid has been"
-                        + " returned. {more}", "seats", SEATS,
+        Text notice = Text.of("The driver cancelled the ride you booked for {seats}. You owe nothing."
+                        + " {more}", "seats", SEATS,
                 "more", Text.of("Other rides that could take you: {rides}. Search again to book one.", "rides", List.of(
                         Text.of("{time} from {stop} with {driver}", "time", "07:15", "stop", "Kolhapur", "driver", "Meera"),
                         Text.of("{time} from {stop} with {driver}", "time", "10:30", "stop", "Kolhapur", "driver", "Sunil"))));
 
         assertThat(notice.render()).isEqualTo("The driver cancelled the ride you booked for 2 seats, Kolhapur to Pune."
-                + " Everything you paid has been returned. Other rides that could take you: 07:15 from Kolhapur with"
+                + " You owe nothing. Other rides that could take you: 07:15 from Kolhapur with"
                 + " Meera; 10:30 from Kolhapur with Sunil. Search again to book one.");
     }
 

@@ -15,7 +15,6 @@ import com.dypcet.vayora.identity.UserRole;
 import com.dypcet.vayora.notification.NotificationService;
 import com.dypcet.vayora.notification.NotificationService.Notification;
 import com.dypcet.vayora.notification.NotificationService.Type;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
@@ -135,7 +134,7 @@ class TargetedReminderIntegrationTest extends PostgresIntegrationTest {
         long vehicleId = vehicles.create(driverId, "Maruti", "Ertiga", 2022, "Silver", 7).id();
         long rideId = rides.publish(driverId, new PublishRide(vehicleId, Instant.now().plus(Duration.ofHours(40)), 3,
                 true, STOPS, List.of(new BigDecimal("400.00")))).id();
-        Booking booking = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null);
+        Booking booking = bookings.request(passenger, rideId, 0, 1, 1, null);
         jdbc.update("UPDATE bookings SET created_at = now() - interval '3 days' WHERE id = ?", booking.id());
         if (survival != null) {
             jdbc.update("""

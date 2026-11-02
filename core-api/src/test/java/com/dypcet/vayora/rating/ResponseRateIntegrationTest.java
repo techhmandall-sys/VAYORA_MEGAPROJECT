@@ -7,7 +7,6 @@ import com.dypcet.vayora.booking.BookingService;
 import com.dypcet.vayora.booking.TripService;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.rating.RatingService.Profile;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
@@ -105,7 +104,7 @@ class ResponseRateIntegrationTest extends PostgresIntegrationTest {
     }
 
     private long request(long rideId) {
-        return bookings.request(user(UserRole.PASSENGER), rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        return bookings.request(user(UserRole.PASSENGER), rideId, 0, 1, 1, null).id();
     }
 
     private long passengerOf(long bookingId) {

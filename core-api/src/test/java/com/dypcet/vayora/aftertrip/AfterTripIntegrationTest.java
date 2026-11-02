@@ -15,7 +15,7 @@ import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
 import com.dypcet.vayora.notification.NotificationService;
 import com.dypcet.vayora.notification.NotificationService.Type;
-import com.dypcet.vayora.payment.PaymentChoice;
+import com.dypcet.vayora.payment.PaymentService.Method;
 import com.dypcet.vayora.rating.RatingService;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
@@ -111,7 +111,7 @@ class AfterTripIntegrationTest extends PostgresIntegrationTest {
     void onlyTheTripsOwnPassengerCanAnswerAndOnlyOnceItIsCompleted() throws Exception {
         long completed = completedTrip();
         long stranger = user(UserRole.PASSENGER, "Stranger");
-        long upcoming = bookings.request(passenger, ride(Duration.ofDays(2)), 0, 1, 1, PaymentChoice.card(), null).id();
+        long upcoming = bookings.request(passenger, ride(Duration.ofDays(2)), 0, 1, 1, null).id();
 
         assertStatus(HttpStatus.NOT_FOUND, () -> afterTrip.confirm(stranger, completed, false));
         assertStatus(HttpStatus.CONFLICT, () -> afterTrip.confirm(passenger, upcoming, true));
@@ -150,9 +150,11 @@ class AfterTripIntegrationTest extends PostgresIntegrationTest {
 
     private long completedTrip() {
         long rideId = ride(Duration.ofMinutes(30));
-        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, null).id();
         trips.start(driver, rideId);
         trips.complete(driver, rideId);
+        // Or the passenger could not book the next one.
+        bookings.paymentReceived(driver, bookingId, Method.CASH);
         return bookingId;
     }
 

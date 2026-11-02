@@ -7,7 +7,6 @@ import com.dypcet.vayora.PostgresIntegrationTest;
 import com.dypcet.vayora.booking.BookingService.Booking;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.Sort;
@@ -68,9 +67,9 @@ class TripFlowIntegrationTest extends PostgresIntegrationTest {
     @Test
     void everyStartedTripEndsAsExactlyOneCompletionOrFailure() {
         long rideId = rideLeavingIn(Duration.ofMinutes(30), true);
-        Booking rides1 = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, PaymentChoice.card(), null);
-        Booking rides2 = bookings.request(user(UserRole.PASSENGER), rideId, 0, 1, 1, PaymentChoice.card(), null);
-        Booking absent = bookings.request(user(UserRole.PASSENGER), rideId, 1, 2, 1, PaymentChoice.card(), null);
+        Booking rides1 = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, null);
+        Booking rides2 = bookings.request(user(UserRole.PASSENGER), rideId, 0, 1, 1, null);
+        Booking absent = bookings.request(user(UserRole.PASSENGER), rideId, 1, 2, 1, null);
         jdbc.update("TRUNCATE events");
 
         assertThat(trips.start(driverId, rideId).status()).isEqualTo("IN_PROGRESS");
@@ -96,8 +95,8 @@ class TripFlowIntegrationTest extends PostgresIntegrationTest {
     @Test
     void startingRejectsUnansweredRequestsAndFreesTheirSeats() {
         long rideId = rideLeavingIn(Duration.ofMinutes(30), false);
-        Booking accepted = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, PaymentChoice.card(), null);
-        Booking unanswered = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, PaymentChoice.card(), null);
+        Booking accepted = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, null);
+        Booking unanswered = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, null);
         bookings.accept(driverId, accepted.id());
         jdbc.update("TRUNCATE events");
 
@@ -113,12 +112,12 @@ class TripFlowIntegrationTest extends PostgresIntegrationTest {
     void aStartedRideTakesNoCancellationsAndNoBookingsFromAStopItIsNear() {
         long rideId = rideLeavingIn(Duration.ofMinutes(30), true);
         long passenger = user(UserRole.PASSENGER);
-        Booking booking = bookings.request(passenger, rideId, 0, 2, 1, PaymentChoice.card(), null);
+        Booking booking = bookings.request(passenger, rideId, 0, 2, 1, null);
         trips.start(driverId, rideId);
 
         assertConflict(() -> bookings.cancel(passenger, booking.id()));
         // Kolhapur is where it is leaving from. Later stops: MidRouteIntegrationTest.
-        assertConflict(() -> bookings.request(user(UserRole.PASSENGER), rideId, 0, 1, 1, PaymentChoice.card(), null));
+        assertConflict(() -> bookings.request(user(UserRole.PASSENGER), rideId, 0, 1, 1, null));
         assertThat(rides.search(passenger, new Point(16.7050, 74.2433), new Point(18.5204, 73.8567), today(), 1,
                 Sort.TIME))
                 .noneMatch(c -> c.rideId() == rideId);
@@ -131,7 +130,7 @@ class TripFlowIntegrationTest extends PostgresIntegrationTest {
         assertConflict(() -> trips.complete(driverId, farOff));
 
         long rideId = rideLeavingIn(Duration.ofMinutes(30), true);
-        Booking booking = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, PaymentChoice.card(), null);
+        Booking booking = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, null);
         assertConflict(() -> trips.noShow(driverId, booking.id()));
         trips.start(driverId, rideId);
         assertConflict(() -> trips.start(driverId, rideId));
@@ -144,7 +143,7 @@ class TripFlowIntegrationTest extends PostgresIntegrationTest {
     @Test
     void onlyTheRidesOwnDriverMayRunIt() {
         long rideId = rideLeavingIn(Duration.ofMinutes(30), true);
-        Booking booking = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, PaymentChoice.card(), null);
+        Booking booking = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, null);
         long intruder = user(UserRole.DRIVER);
 
         assertNotFound(() -> trips.start(intruder, rideId));
@@ -161,9 +160,9 @@ class TripFlowIntegrationTest extends PostgresIntegrationTest {
         Instant departure = Instant.now().plus(untilDeparture);
         long rideId = rideLeavingAt(departure, false);
         long passenger = user(UserRole.PASSENGER);
-        Booking confirmed = bookings.request(passenger, rideId, 0, 2, 1, PaymentChoice.card(), null);
-        Booking pending = bookings.request(user(UserRole.PASSENGER), rideId, 1, 2, 1, PaymentChoice.card(), null);
-        Booking alreadyGone = bookings.request(user(UserRole.PASSENGER), rideId, 0, 1, 1, PaymentChoice.card(), null);
+        Booking confirmed = bookings.request(passenger, rideId, 0, 2, 1, null);
+        Booking pending = bookings.request(user(UserRole.PASSENGER), rideId, 1, 2, 1, null);
+        Booking alreadyGone = bookings.request(user(UserRole.PASSENGER), rideId, 0, 1, 1, null);
         bookings.accept(driverId, confirmed.id());
         bookings.reject(driverId, alreadyGone.id());
         jdbc.update("TRUNCATE events");
@@ -185,7 +184,7 @@ class TripFlowIntegrationTest extends PostgresIntegrationTest {
                 OffsetDateTime.class, pending.id()).toInstant())
                 .isCloseTo(departure.plus(Duration.ofMinutes(130)),
                         org.assertj.core.api.Assertions.within(1, ChronoUnit.MILLIS));
-        assertConflict(() -> bookings.request(passenger, rideId, 0, 2, 1, PaymentChoice.card(), null));
+        assertConflict(() -> bookings.request(passenger, rideId, 0, 2, 1, null));
         assertConflict(() -> trips.start(driverId, rideId));
     }
 

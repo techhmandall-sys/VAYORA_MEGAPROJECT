@@ -4,7 +4,7 @@ import com.dypcet.vayora.booking.BoardingService.BoardingPass;
 import com.dypcet.vayora.booking.BookingService.Booking;
 import com.dypcet.vayora.booking.BookingService.RequestTerms;
 import com.dypcet.vayora.identity.CurrentUser;
-import com.dypcet.vayora.payment.PaymentChoice;
+import com.dypcet.vayora.payment.PaymentService;
 import com.dypcet.vayora.routing.RouteService.Point;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
@@ -39,12 +39,6 @@ public class BookingController {
             @Min(0) int fromSeq,
             @Min(1) int toSeq,
             @Min(1) @Max(8) int seats,
-            // How to pay; may be left out when a checkout has paid, as Razorpay says how.
-            PaymentChoice.Method paymentMethod,
-            // Mock provider only: "DECLINE" makes the payment fail.
-            @Size(max = 20) String mockOutcome,
-            // What Razorpay's checkout handed back once the passenger paid (feature 46).
-            @Valid PaymentChoice.Checkout razorpay,
             // What happens if the driver withdraws; left out, this ride only.
             FlexTier tier,
             // To be picked up at this point rather than at stop fromSeq (feature 28); both or neither.
@@ -53,17 +47,15 @@ public class BookingController {
             // The last-mile gap and access option shown on the candidate booked (feature 91);
             // null when the client sent none. Both or neither.
             @Min(0) Integer lastMileDistanceM,
-            @Pattern(regexp = "walk|rickshaw|bus") String lastMileModeShown,
-            // Pay once the booking ends, on a ride whose driver accepts that; then nothing above
-            // about paying is needed.
-            boolean payAfterRide) {
+            @Pattern(regexp = "walk|rickshaw|bus") String lastMileModeShown) {
     }
 
-    /** How a passenger pays what a pay-after-ride booking owes: as when booking, or a checkout. */
-    public record PayDueRequest(
-            PaymentChoice.Method paymentMethod,
-            @Size(max = 20) String mockOutcome,
-            @Valid PaymentChoice.Checkout razorpay) {
+    /** How the passenger paid the driver, as the driver says. */
+    public record PaymentReceived(@NotNull PaymentService.Method method) {
+    }
+
+    /** Why staff are letting a passenger off what they owe; kept in the audit log. */
+    public record ClearDue(@NotBlank @Size(max = 300) String reason) {
     }
 
     private static final int MAX_IDEMPOTENCY_KEY_LENGTH = 100;
@@ -109,29 +101,27 @@ public class BookingController {
                     "Idempotency-Key must be 1 to " + MAX_IDEMPOTENCY_KEY_LENGTH + " characters");
         }
         return bookings.request(CurrentUser.id(jwt), request.rideId(), request.fromSeq(),
-                request.toSeq(), request.seats(), request.payAfterRide() ? null
-                        : PaymentChoice.of(request.paymentMethod(), request.mockOutcome(), request.razorpay()),
-                idempotencyKey,
+                request.toSeq(), request.seats(), idempotencyKey,
                 request.tier() == null ? FlexTier.EXACT : request.tier(),
                 request.pickupLat() == null || request.pickupLon() == null ? null
                         : new Point(request.pickupLat(), request.pickupLon()),
-                request.lastMileDistanceM(), request.lastMileModeShown(), request.payAfterRide());
+                request.lastMileDistanceM(), request.lastMileModeShown());
     }
 
-    /** The passenger pays, in the app, what their pay-after-ride booking owes. */
-    @PostMapping("/bookings/{id}/pay")
-    @PreAuthorize("hasRole('PASSENGER')")
-    public Booking pay(@AuthenticationPrincipal Jwt jwt, @PathVariable long id,
-            @Valid @RequestBody PayDueRequest request) {
-        return bookings.payDue(CurrentUser.id(jwt), id,
-                PaymentChoice.of(request.paymentMethod(), request.mockOutcome(), request.razorpay()));
-    }
-
-    /** The driver says the passenger paid what their pay-after-ride booking owes, in cash. */
-    @PostMapping("/bookings/{id}/cash-received")
+    /** The driver says the passenger paid them what the booking owes, in cash or by UPI. */
+    @PostMapping("/bookings/{id}/payment-received")
     @PreAuthorize("hasRole('DRIVER')")
-    public Booking cashReceived(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {
-        return bookings.paidInCash(CurrentUser.id(jwt), id);
+    public Booking paymentReceived(@AuthenticationPrincipal Jwt jwt, @PathVariable long id,
+            @Valid @RequestBody PaymentReceived request) {
+        return bookings.paymentReceived(CurrentUser.id(jwt), id, request.method());
+    }
+
+    /** Staff let a passenger off what a booking owes, when the driver will not mark it paid. */
+    @PostMapping("/admin/bookings/{id}/clear-due")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Booking clearDue(@AuthenticationPrincipal Jwt jwt, @PathVariable long id,
+            @Valid @RequestBody ClearDue request) {
+        return bookings.clearDue(CurrentUser.id(jwt), id, request.reason().strip());
     }
 
     /** How long a driver has to answer a request. The same for everyone, so open to all. */

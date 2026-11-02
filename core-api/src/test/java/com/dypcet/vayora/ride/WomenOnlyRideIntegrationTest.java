@@ -15,7 +15,6 @@ import com.dypcet.vayora.booking.BookingStatus;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService.Candidate;
 import com.dypcet.vayora.ride.RideService.Filters;
 import com.dypcet.vayora.ride.RideService.PublishRide;
@@ -127,7 +126,7 @@ class WomenOnlyRideIntegrationTest extends PostgresIntegrationTest {
         long womenOnly = rides.publish(driver, ride(driver, 9, true)).id();
 
         for (long passenger : List.of(man, unsaid)) {
-            assertThatThrownBy(() -> bookings.request(passenger, womenOnly, 0, 1, 1, PaymentChoice.card(), null))
+            assertThatThrownBy(() -> bookings.request(passenger, womenOnly, 0, 1, 1, null))
                     .isInstanceOfSatisfying(ResponseStatusException.class, e -> {
                         assertThat(e.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
                         assertThat(e.getReason()).isEqualTo("This ride is for women only");
@@ -135,7 +134,7 @@ class WomenOnlyRideIntegrationTest extends PostgresIntegrationTest {
         }
         assertThat(jdbc.queryForObject("SELECT seats_available FROM ride_segments WHERE ride_id = ?",
                 Integer.class, womenOnly)).isEqualTo(3);
-        assertThat(bookings.request(woman, womenOnly, 0, 1, 1, PaymentChoice.card(), null).status())
+        assertThat(bookings.request(woman, womenOnly, 0, 1, 1, null).status())
                 .isEqualTo(BookingStatus.CONFIRMED);
 
         String hold = "{\"rideId\": " + womenOnly + ", \"fromSeq\": 0, \"toSeq\": 1, \"seats\": 1}";

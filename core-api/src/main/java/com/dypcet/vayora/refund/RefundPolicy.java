@@ -8,11 +8,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component;
 
 /**
- * How much of the fare a passenger gets back for cancelling a booking a driver had
- * accepted. The earlier the cancellation, the more: an early release can be refilled.
+ * How much of the fare a passenger owes the driver for cancelling a booking the driver had
+ * accepted. The earlier the cancellation, the less: an early release can be refilled.
  *
- * <p>This is a fixed policy that depends only on timing. It never looks at a predicted
- * risk, and the service fee is outside it.
+ * <p>This is a fixed policy that depends only on timing. It never looks at a predicted risk.
  */
 @Component
 @EnableConfigurationProperties(RefundProperties.class)
@@ -24,9 +23,9 @@ public class RefundPolicy {
         this.properties = properties;
     }
 
-    /** The part of {@code fare} returned when cancelling {@code beforeBoarding} ahead. */
-    public BigDecimal fareRefund(BigDecimal fare, Duration beforeBoarding) {
-        return fare.multiply(fareShare(beforeBoarding)).setScale(2, RoundingMode.HALF_UP);
+    /** The part of {@code fare} owed when cancelling {@code beforeBoarding} ahead. */
+    public BigDecimal owedOnCancelling(BigDecimal fare, Duration beforeBoarding) {
+        return fare.subtract(fare.multiply(fareShare(beforeBoarding)).setScale(2, RoundingMode.HALF_UP));
     }
 
     BigDecimal fareShare(Duration beforeBoarding) {

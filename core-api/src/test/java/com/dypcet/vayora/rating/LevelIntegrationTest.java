@@ -11,7 +11,6 @@ import com.dypcet.vayora.booking.TripService;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.rating.RatingService.Reliability;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
@@ -88,13 +87,13 @@ class LevelIntegrationTest extends PostgresIntegrationTest {
         long vehicleId = vehicles.create(driver, "Maruti", "Ertiga", 2022, "Silver", 7).id();
         long completed = ride(vehicleId, Duration.ofMinutes(30));
         long passenger = passenger();
-        bookings.request(passenger, completed, 0, 1, 1, PaymentChoice.card(), null);
-        long noShow = bookings.request(passenger(), completed, 0, 1, 1, PaymentChoice.card(), null).id();
+        bookings.request(passenger, completed, 0, 1, 1, null);
+        long noShow = bookings.request(passenger(), completed, 0, 1, 1, null).id();
         trips.start(driver, completed);
         trips.noShow(driver, noShow);
         trips.complete(driver, completed);
         long withdrawn = ride(vehicleId, Duration.ofDays(2));
-        bookings.request(passenger(), withdrawn, 0, 1, 1, PaymentChoice.card(), null);
+        bookings.request(passenger(), withdrawn, 0, 1, 1, null);
         trips.cancel(driver, withdrawn);
 
         Reliability record = ratings.reliability(driver);

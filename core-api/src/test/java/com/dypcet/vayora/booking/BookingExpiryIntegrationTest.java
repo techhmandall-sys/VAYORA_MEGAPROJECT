@@ -13,7 +13,6 @@ import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
 import com.dypcet.vayora.notification.NotificationService;
 import com.dypcet.vayora.notification.NotificationService.Type;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
@@ -93,11 +92,11 @@ class BookingExpiryIntegrationTest extends PostgresIntegrationTest {
 
         Booking closed = bookings.load(pending.id());
         assertThat(closed.status()).isEqualTo(BookingStatus.REJECTED);
-        assertThat(closed.refunded()).isEqualByComparingTo(closed.total()); // fee included
+        assertThat(closed.paymentStatus()).isEqualTo("VOID");
         assertThat(seatsAvailable(rideId)).isEqualTo(1);
         assertThat(notifications.forUser(passengerId)).first().satisfies(notice -> {
             assertThat(notice.type()).isEqualTo(Type.REQUEST_EXPIRED);
-            assertThat(notice.message()).contains("did not answer").contains("has been returned");
+            assertThat(notice.message()).contains("did not answer").contains("You owe nothing");
         });
         assertThat(notifications.forUser(driverId)).first().satisfies(notice -> {
             assertThat(notice.type()).isEqualTo(Type.REQUEST_EXPIRED);
@@ -174,7 +173,7 @@ class BookingExpiryIntegrationTest extends PostgresIntegrationTest {
     }
 
     private Booking request(long rideId) {
-        return bookings.request(passengerId, rideId, 0, 1, 1, PaymentChoice.card(), null);
+        return bookings.request(passengerId, rideId, 0, 1, 1, null);
     }
 
     /** Makes the request look as if it was made this long ago. */

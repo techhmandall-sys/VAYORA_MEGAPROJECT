@@ -21,7 +21,6 @@ import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
 import com.dypcet.vayora.notification.NotificationService.Notification;
 import com.dypcet.vayora.notification.NotificationService.Type;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
@@ -90,7 +89,7 @@ class NotificationIntegrationTest extends PostgresIntegrationTest {
     @Test
     void eachStepOfABookingTellsTheOtherParty() {
         long rideId = ride(Duration.ofMinutes(30), false);
-        Booking booking = bookings.request(passengerId, rideId, 0, 1, 2, PaymentChoice.card(), null);
+        Booking booking = bookings.request(passengerId, rideId, 0, 1, 2, null);
 
         assertThat(messages(driverId)).containsExactly(
                 "BOOKING_REQUESTED: Asha Patil asked for 2 seats, Kolhapur to Pune.");
@@ -102,7 +101,7 @@ class NotificationIntegrationTest extends PostgresIntegrationTest {
 
         assertThat(messages(passengerId)).containsExactly(
                 "TRIP_COMPLETED: Your trip from Kolhapur to Pune is complete. "
-                        + "You can rate your driver in My bookings.",
+                        + "Pay your driver Rs 1040.00, in cash or by UPI: see My bookings.",
                 "BOOKING_CONFIRMED: The driver accepted your booking for 2 seats, Kolhapur to Pune.");
         assertThat(notifications.forUser(passengerId)).extracting(Notification::bookingId)
                 .containsOnly(booking.id());
@@ -111,15 +110,15 @@ class NotificationIntegrationTest extends PostgresIntegrationTest {
     @Test
     void decliningCancellingAndWithdrawingEachSayWhatHappenedToTheMoney() {
         long declinedRide = ride(Duration.ofDays(2), false);
-        Booking declined = bookings.request(passengerId, declinedRide, 0, 1, 1, PaymentChoice.card(), null);
+        Booking declined = bookings.request(passengerId, declinedRide, 0, 1, 1, null);
         bookings.reject(driverId, declined.id());
 
         long withdrawnRide = ride(Duration.ofDays(2), true);
-        bookings.request(passengerId, withdrawnRide, 0, 1, 1, PaymentChoice.card(), null);
+        bookings.request(passengerId, withdrawnRide, 0, 1, 1, null);
         trips.cancel(driverId, withdrawnRide);
 
-        long cancelledRide = ride(Duration.ofDays(2), true);
-        Booking cancelled = bookings.request(passengerId, cancelledRide, 0, 1, 1, PaymentChoice.card(), null);
+        long cancelledRide = ride(Duration.ofDays(3), true);
+        Booking cancelled = bookings.request(passengerId, cancelledRide, 0, 1, 1, null);
         bookings.cancel(passengerId, cancelled.id());
 
         assertThat(messages(passengerId)).hasSize(2);
@@ -127,21 +126,31 @@ class NotificationIntegrationTest extends PostgresIntegrationTest {
         // includes the first ride, still scheduled with a seat free.
         assertThat(messages(passengerId).get(0)).startsWith(
                 "RIDE_CANCELLED: The driver cancelled the ride you booked for 1 seat, Kolhapur to Pune. "
-                        + "Everything you paid has been returned. Other rides that could take you: ")
+                        + "You owe nothing. Other rides that could take you: ")
                 .endsWith(" from Kolhapur with Ravi Jadhav. Search again to book one.");
         assertThat(messages(passengerId).get(1)).isEqualTo(
                 "BOOKING_DECLINED: The driver did not accept your request for 1 seat, Kolhapur to Pune. "
-                        + "Everything you paid has been returned.");
+                        + "You owe nothing.");
         assertThat(messages(driverId)).first().isEqualTo(
                 "BOOKING_CANCELLED: Asha Patil cancelled 1 seat, Kolhapur to Pune.");
     }
 
     @Test
+    void aDriverIsToldWhatALateCancellationOwesThem() {
+        Booking late = bookings.request(passengerId, ride(Duration.ofHours(3), true), 0, 1, 1, null);
+
+        bookings.cancel(passengerId, late.id());
+
+        assertThat(messages(driverId)).first().isEqualTo(
+                "BOOKING_CANCELLED: Asha Patil cancelled 1 seat, Kolhapur to Pune, late enough to owe you Rs 520.00.");
+    }
+
+    @Test
     void aNoShowAndAnUnansweredRequestAreToldToThePassenger() {
         long rideId = ride(Duration.ofMinutes(30), false);
-        Booking accepted = bookings.request(passengerId, rideId, 0, 1, 1, PaymentChoice.card(), null);
+        Booking accepted = bookings.request(passengerId, rideId, 0, 1, 1, null);
         long ignored = identity.register(email(), "correct-horse-battery", "Ignored Rider", UserRole.PASSENGER).id();
-        bookings.request(ignored, rideId, 0, 1, 1, PaymentChoice.card(), null);
+        bookings.request(ignored, rideId, 0, 1, 1, null);
         bookings.accept(driverId, accepted.id());
 
         trips.start(driverId, rideId);
@@ -149,18 +158,13 @@ class NotificationIntegrationTest extends PostgresIntegrationTest {
 
         assertThat(messages(ignored)).containsExactly(
                 "BOOKING_DECLINED: The driver did not accept your request for 1 seat, Kolhapur to Pune. "
-                        + "Everything you paid has been returned.");
+                        + "You owe nothing.");
         assertThat(messages(passengerId)).first().asString().startsWith(
                 "MARKED_NO_SHOW: The driver reported that you did not board");
     }
 
     @Test
     void nothingIsSentForABookingThatWasRolledBack() {
-        long rideId = ride(Duration.ofDays(2), true);
-
-        assertThatThrownBy(() -> bookings.request(passengerId, rideId, 0, 1, 1,
-                new PaymentChoice(PaymentChoice.Method.CARD, "DECLINE"), null))
-                .isInstanceOf(ResponseStatusException.class);
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             notifications.send(driverId, Type.BOOKING_REQUESTED, Text.of("never happened"), null);
             status.setRollbackOnly();
@@ -172,8 +176,8 @@ class NotificationIntegrationTest extends PostgresIntegrationTest {
     @Test
     void readingIsPerMemberAndNobodyCanTouchAnotherMembersNotifications() throws Exception {
         long rideId = ride(Duration.ofDays(2), true);
-        bookings.request(passengerId, rideId, 0, 1, 1, PaymentChoice.card(), null);
-        bookings.request(passengerId, rideId, 0, 1, 1, PaymentChoice.card(), null);
+        bookings.request(passengerId, rideId, 0, 1, 1, null);
+        bookings.request(passengerId, rideId, 0, 1, 1, null);
         String driver = "Bearer " + tokens.issue(driverId, UserRole.DRIVER);
         String passenger = "Bearer " + tokens.issue(passengerId, UserRole.PASSENGER);
         String id = notifications.forUser(driverId).get(0).id();

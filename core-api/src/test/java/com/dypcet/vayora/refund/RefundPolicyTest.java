@@ -19,30 +19,30 @@ class RefundPolicyTest {
     private final BigDecimal fare = new BigDecimal("520.00");
 
     @Test
-    void anEarlyCancellationRefundsTheWholeFare() {
-        assertThat(policy.fareRefund(fare, Duration.ofDays(5))).isEqualByComparingTo("520.00");
+    void anEarlyCancellationOwesNothing() {
+        assertThat(policy.owedOnCancelling(fare, Duration.ofDays(5))).isEqualByComparingTo("0.00");
     }
 
     @Test
     void theTierBoundaryItselfEarnsTheTier() {
-        assertThat(policy.fareRefund(fare, Duration.ofHours(48))).isEqualByComparingTo("520.00");
-        assertThat(policy.fareRefund(fare, Duration.ofHours(48).minusSeconds(1)))
+        assertThat(policy.owedOnCancelling(fare, Duration.ofHours(48))).isEqualByComparingTo("0.00");
+        assertThat(policy.owedOnCancelling(fare, Duration.ofHours(48).minusSeconds(1)))
                 .isEqualByComparingTo("260.00");
-        assertThat(policy.fareRefund(fare, Duration.ofHours(24))).isEqualByComparingTo("260.00");
+        assertThat(policy.owedOnCancelling(fare, Duration.ofHours(24))).isEqualByComparingTo("260.00");
     }
 
     @Test
-    void aLateCancellationRefundsNothing() {
-        assertThat(policy.fareRefund(fare, Duration.ofHours(24).minusSeconds(1)))
-                .isEqualByComparingTo("0.00");
-        assertThat(policy.fareRefund(fare, Duration.ZERO)).isEqualByComparingTo("0.00");
+    void aLateCancellationOwesTheWholeFare() {
+        assertThat(policy.owedOnCancelling(fare, Duration.ofHours(24).minusSeconds(1)))
+                .isEqualByComparingTo("520.00");
+        assertThat(policy.owedOnCancelling(fare, Duration.ZERO)).isEqualByComparingTo("520.00");
     }
 
     @Test
-    void aRefundIsRoundedToTheNearestPaisa() {
-        assertThat(policy.fareRefund(new BigDecimal("333.33"), Duration.ofHours(30)))
-                .isEqualByComparingTo("166.67"); // 166.665 rounds half up
-        assertThat(policy.fareRefund(new BigDecimal("333.33"), Duration.ofHours(30)).scale())
+    void whatIsOwedIsRoundedToTheNearestPaisa() {
+        assertThat(policy.owedOnCancelling(new BigDecimal("333.33"), Duration.ofHours(30)))
+                .isEqualByComparingTo("166.66"); // let off 166.665, rounded half up
+        assertThat(policy.owedOnCancelling(new BigDecimal("333.33"), Duration.ofHours(30)).scale())
                 .isEqualTo(2);
     }
 

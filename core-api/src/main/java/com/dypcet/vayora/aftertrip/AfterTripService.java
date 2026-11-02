@@ -25,7 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
  *
  * <p>A trip is completed on the driver's word. The passenger may confirm it or say it did
  * not happen; the second flags the booking for an administrator. Nothing is reversed
- * automatically: payments are simulated and settled, and a dispute is for a person to judge.
+ * automatically: the money went directly to the driver, and a dispute is for a person to judge.
  */
 @Service
 public class AfterTripService {

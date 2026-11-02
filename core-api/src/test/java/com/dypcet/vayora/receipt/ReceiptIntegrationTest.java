@@ -9,14 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.dypcet.vayora.PostgresIntegrationTest;
 import com.dypcet.vayora.booking.BookingService;
+import com.dypcet.vayora.booking.TripService;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.pass.PassProperties.Kind;
-import com.dypcet.vayora.pass.PassService;
-import com.dypcet.vayora.payment.PaymentChoice;
-import com.dypcet.vayora.receipt.ReceiptService.PassReceipt;
-import com.dypcet.vayora.referral.ReferralService;
+import com.dypcet.vayora.payment.PaymentService.Method;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
@@ -57,13 +54,10 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
     private BookingService bookings;
 
     @Autowired
-    private PassService passes;
+    private TripService trips;
 
     @Autowired
     private ReceiptService receipts;
-
-    @Autowired
-    private ReferralService referrals;
 
     @Autowired
     private TokenService tokens;
@@ -73,63 +67,62 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
 
     private long driver;
     private long passenger;
-    private long rideId;
+    private long vehicleId;
 
     @BeforeEach
     void setUp() {
         driver = user(UserRole.DRIVER, "Ravi Jadhav");
         passenger = user(UserRole.PASSENGER, "Asha Patil");
-        long vehicleId = vehicles.create(driver, "Maruti", "Ertiga", 2022, "Silver", 7).id();
-        rideId = rides.publish(driver, new PublishRide(vehicleId, Instant.now().plus(Duration.ofDays(3)), 3, true,
-                List.of(new StopInput("Kolhapur", 16.7050, 74.2433, 0),
-                        new StopInput("Pune", 18.5204, 73.8567, 270)),
-                List.of(new BigDecimal("450.00")))).id();
+        vehicleId = vehicles.create(driver, "Maruti", "Ertiga", 2022, "Silver", 7).id();
     }
 
     @Test
-    void aBookingReceiptSaysWhatWasPaidAndThatNoMoneyMoved() throws IOException {
-        long bookingId = bookings.request(passenger, rideId, 0, 1, 2, PaymentChoice.card(), null).id();
+    void aReceiptSaysWhatWasPaidToTheDriverAndOnWhoseWord() throws IOException {
+        long bookingId = paid(passenger, 2, Method.UPI);
 
         String text = text(receipts.forBooking(passenger, bookingId));
 
         assertThat(text).contains("Receipt for booking " + bookingId)
                 .contains("Passenger: Asha Patil").contains("Driver: Ravi Jadhav")
                 .contains("Trip: Kolhapur to Pune, 2 seats")
-                .contains("Fare: Rs 900.00").contains("Service fee: Rs 90.00").contains("Total: Rs 990.00")
-                .contains("by CARD").contains("Payment provider: MOCK")
-                .contains("SIMULATED PAYMENT: no money was taken or paid")
+                .contains("by UPI").contains("For: the trip")
+                .contains("Fare: Rs 900.00").contains("Paid to the driver: Rs 900.00")
+                .contains("as the driver recorded it").contains("VAYORA took no part of it")
                 .contains("This is not a tax invoice")
-                .doesNotContain("Refunded");
+                .doesNotContain("Service fee");
     }
 
     @Test
-    void aReceiptAfterACancellationShowsWhatCameBack() throws IOException {
-        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+    void aReceiptAfterALateCancellationShowsThePartPaid() throws IOException {
+        // Thirty hours ahead: half the fare is owed.
+        long bookingId = bookings.request(passenger, ride(Duration.ofHours(30)), 0, 1, 1, null).id();
         bookings.cancel(passenger, bookingId);
+        bookings.paymentReceived(driver, bookingId, Method.CASH);
 
-        // Three days ahead: the whole fare comes back, the fee does not.
         assertThat(text(receipts.forBooking(passenger, bookingId)))
-                .contains("Booking status: CANCELLED").contains("Refunded: Rs 450.00 (passenger cancelled)");
+                .contains("Booking status: CANCELLED").contains("in cash").contains("For: cancelling late")
+                .contains("Fare: Rs 450.00").contains("Paid to the driver: Rs 225.00");
     }
 
     @Test
-    void aPassReceiptSaysWhatThePassCovers() throws IOException {
-        long passId = passes.buy(passenger, Kind.MONTHLY, PaymentChoice.card()).id();
+    void thereIsNoReceiptUntilTheDriverSaysTheyWerePaid() {
+        long rideId = ride(Duration.ofMinutes(30));
+        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, null).id();
+        trips.start(driver, rideId);
+        trips.complete(driver, rideId);
 
-        assertThat(text(receipts.forPass(passenger, passId)))
-                .contains("Receipt for travel pass " + passId).contains("Pass: monthly")
-                .contains("Total: Rs 299.00").contains("No service fee is charged")
-                .contains("SIMULATED PAYMENT");
+        assertThatThrownBy(() -> receipts.booking(passenger, bookingId))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
 
     @Test
     void nobodyGetsAnotherPersonsReceipt() {
-        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
-        long passId = passes.buy(passenger, Kind.WEEKLY, PaymentChoice.card()).id();
+        long bookingId = paid(passenger, 1, Method.CASH);
         long stranger = user(UserRole.PASSENGER, "Stranger");
 
         for (Runnable attempt : List.<Runnable>of(() -> receipts.forBooking(stranger, bookingId),
-                () -> receipts.forPass(stranger, passId), () -> receipts.forBooking(passenger, Long.MAX_VALUE))) {
+                () -> receipts.forBooking(passenger, Long.MAX_VALUE))) {
             assertThatThrownBy(attempt::run).isInstanceOfSatisfying(ResponseStatusException.class,
                     e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
         }
@@ -164,7 +157,7 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void theEndpointsServeAPdfToItsOwnerOnly() throws Exception {
-        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        long bookingId = paid(passenger, 1, Method.CASH);
         String owner = "Bearer " + tokens.issue(passenger, UserRole.PASSENGER);
 
         byte[] body = mvc.perform(get("/api/v1/bookings/" + bookingId + "/receipt").header("Authorization", owner))
@@ -184,8 +177,7 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
     @Test
     void theAppsReceiptIsTheSameFactsInTheirOwnScriptForItsOwnerOnly() throws Exception {
         long devanagari = user(UserRole.PASSENGER, "आशा पाटील");
-        long bookingId = bookings.request(devanagari, rideId, 0, 1, 2, PaymentChoice.card(), null).id();
-        bookings.cancel(devanagari, bookingId);
+        long bookingId = paid(devanagari, 2, Method.UPI);
 
         mvc.perform(get("/api/v1/bookings/" + bookingId + "/receipt-data")
                         .header("Authorization", "Bearer " + tokens.issue(devanagari, UserRole.PASSENGER)))
@@ -195,17 +187,15 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.passenger").value("आशा पाटील"))
                 .andExpect(jsonPath("$.driver").value("Ravi Jadhav"))
                 .andExpect(jsonPath("$.fromStop").value("Kolhapur")).andExpect(jsonPath("$.toStop").value("Pune"))
-                .andExpect(jsonPath("$.seats").value(2)).andExpect(jsonPath("$.status").value("CANCELLED"))
-                .andExpect(jsonPath("$.method").value("CARD")).andExpect(jsonPath("$.provider").value("MOCK"))
-                .andExpect(jsonPath("$.fare").value(900.0)).andExpect(jsonPath("$.serviceFee").value(90.0))
-                .andExpect(jsonPath("$.total").value(990.0))
-                .andExpect(jsonPath("$.refunded").value(900.0))
-                .andExpect(jsonPath("$.refundReason").value("PASSENGER_CANCELLED"));
+                .andExpect(jsonPath("$.seats").value(2)).andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.method").value("UPI"))
+                .andExpect(jsonPath("$.fare").value(900.0)).andExpect(jsonPath("$.paid").value(900.0))
+                .andExpect(jsonPath("$.reason").value("TRIP_COMPLETED"));
         // Drawn as shapes, so not "???", and not text either.
         assertThat(text(receipts.forBooking(devanagari, bookingId))).contains("Passenger:").doesNotContain("???");
         // A script with no font here still prints, as "?", and does not fail.
         long urdu = user(UserRole.PASSENGER, "آشا Patil");
-        long urduBooking = bookings.request(urdu, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        long urduBooking = paid(urdu, 1, Method.CASH);
         assertThat(text(receipts.forBooking(urdu, urduBooking))).contains("Passenger: ??? Patil");
 
         mvc.perform(get("/api/v1/bookings/" + bookingId + "/receipt-data")
@@ -216,28 +206,21 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    @Test
-    void aPassReceiptSaysWhatWasPaidOrThatItWasAReward() throws Exception {
-        long bought = passes.buy(passenger, Kind.MONTHLY, PaymentChoice.card()).id();
-        long invited = user(UserRole.PASSENGER, "Invited");
-        referrals.recordSignUp(passenger, invited);
-        passes.reward(passenger, Kind.WEEKLY, invited);
-        long reward = passes.of(passenger).stream().filter(p -> p.reward()).findFirst().orElseThrow().id();
+    /** A trip that ran and the driver marked paid: its booking. */
+    private long paid(long who, int seats, Method method) {
+        long rideId = ride(Duration.ofMinutes(30));
+        long bookingId = bookings.request(who, rideId, 0, 1, seats, null).id();
+        trips.start(driver, rideId);
+        trips.complete(driver, rideId);
+        bookings.paymentReceived(driver, bookingId, method);
+        return bookingId;
+    }
 
-        mvc.perform(get("/api/v1/passes/" + bought + "/receipt-data")
-                        .header("Authorization", "Bearer " + tokens.issue(passenger, UserRole.PASSENGER)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.passId").value(bought)).andExpect(jsonPath("$.passenger").value("Asha Patil"))
-                .andExpect(jsonPath("$.kind").value("MONTHLY")).andExpect(jsonPath("$.price").value(299.0))
-                .andExpect(jsonPath("$.method").value("CARD")).andExpect(jsonPath("$.provider").value("MOCK"))
-                .andExpect(jsonPath("$.reward").value(false));
-
-        PassReceipt free = receipts.pass(passenger, reward);
-        assertThat(free.reward()).isTrue();
-        assertThat(free.method()).isNull();
-        assertThat(free.price()).isEqualByComparingTo("0");
-        // It starts when the bought one ends.
-        assertThat(free.startsAt()).isEqualTo(receipts.pass(passenger, bought).endsAt());
+    private long ride(Duration untilDeparture) {
+        return rides.publish(driver, new PublishRide(vehicleId, Instant.now().plus(untilDeparture), 3, true,
+                List.of(new StopInput("Kolhapur", 16.7050, 74.2433, 0),
+                        new StopInput("Pune", 18.5204, 73.8567, 270)),
+                List.of(new BigDecimal("450.00")))).id();
     }
 
     /** How many dark pixels the first page draws. */

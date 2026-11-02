@@ -27,7 +27,7 @@ public class ApiDocsConfig {
                         .description("Transactions and truth for VAYORA, intercity ride-sharing in India: "
                                 + "accounts, rides, bookings, payments, trips and the event log. "
                                 + "Sign in with POST /api/v1/auth/login, then authorize with the token it returns. "
-                                + "Payments are simulated unless a payment provider is configured.")
+                                + "Passengers pay their driver directly, in cash or by UPI: VAYORA moves no money.")
                         .license(new License().name("Final-year project, DYPCET Kolhapur")))
                 .components(new Components().addSecuritySchemes(BEARER, new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)

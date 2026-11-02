@@ -12,7 +12,6 @@ import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.UserRole;
 import com.dypcet.vayora.notification.NotificationService;
 import com.dypcet.vayora.notification.NotificationService.Type;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService.Candidate;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.Sort;
@@ -155,7 +154,7 @@ class DetourIntegrationTest extends PostgresIntegrationTest {
         long withdrawing = user(UserRole.DRIVER);
         long first = rideBy(withdrawing, departure, 15);
         long passenger = user(UserRole.PASSENGER);
-        bookings.request(passenger, first, 0, 2, 1, PaymentChoice.card(), null, FlexTier.FLEXIBLE, NEAR_KARAD);
+        bookings.request(passenger, first, 0, 2, 1, null, FlexTier.FLEXIBLE, NEAR_KARAD);
         // Leaves from Kolhapur 20 minutes before the other: closer in time from the stop, but
         // the passenger is not at the stop.
         rideBy(user(UserRole.DRIVER), departure.plus(Duration.ofMinutes(40)), 0);
@@ -221,7 +220,7 @@ class DetourIntegrationTest extends PostgresIntegrationTest {
     }
 
     private Booking book(long passenger, long rideId, Point pickup) {
-        return bookings.request(passenger, rideId, 0, 2, 1, PaymentChoice.card(), null, FlexTier.EXACT, pickup);
+        return bookings.request(passenger, rideId, 0, 2, 1, null, FlexTier.EXACT, pickup);
     }
 
     private long user(UserRole role) {

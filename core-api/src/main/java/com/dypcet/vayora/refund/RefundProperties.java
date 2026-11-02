@@ -6,16 +6,16 @@ import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * The fixed refund policy for a passenger cancelling an accepted booking.
+ * The fixed policy for a passenger cancelling an accepted booking.
  *
- * @param tiers most generous first; a cancellation later than the last tier refunds nothing
+ * @param tiers most generous first; a cancellation later than the last tier owes the whole fare
  */
 @ConfigurationProperties("vayora.refund")
 public record RefundProperties(List<Tier> tiers) {
 
     /**
      * @param atLeastBefore cancelling this long before boarding, or earlier, earns this tier
-     * @param fareShare     fraction of the fare returned, 0 to 1
+     * @param fareShare     fraction of the fare the passenger is let off, 0 to 1
      */
     public record Tier(Duration atLeastBefore, BigDecimal fareShare) {
     }

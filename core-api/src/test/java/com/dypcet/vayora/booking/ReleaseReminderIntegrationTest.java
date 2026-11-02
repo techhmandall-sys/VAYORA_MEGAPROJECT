@@ -9,7 +9,6 @@ import com.dypcet.vayora.identity.UserRole;
 import com.dypcet.vayora.notification.NotificationService;
 import com.dypcet.vayora.notification.NotificationService.Notification;
 import com.dypcet.vayora.notification.NotificationService.Type;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
@@ -80,7 +79,7 @@ class ReleaseReminderIntegrationTest extends PostgresIntegrationTest {
         assertThat(notifications.forUser(passenger)).filteredOn(n -> n.type() == Type.RELEASE_REMINDER)
                 .singleElement().extracting(Notification::message).asString()
                 .startsWith("Your seat from Kolhapur to Pune leaves ")
-                .contains("Rs 200.00 of your Rs 400.00 fare comes back")
+                .contains("you would owe your driver Rs 200.00 of your Rs 400.00 fare")
                 .endsWith("If you are still travelling, there is nothing to do.");
         assertThat(jdbc.queryForObject("""
                 SELECT payload->>'action' FROM events
@@ -99,7 +98,7 @@ class ReleaseReminderIntegrationTest extends PostgresIntegrationTest {
     void notBeforeTheWindowNorForABookingMadeInsideIt() {
         bookedDaysAgo(user(UserRole.PASSENGER), Duration.ofHours(50), true);
         long rideId = ride(Duration.ofHours(30), true);
-        bookings.request(user(UserRole.PASSENGER), rideId, 0, 1, 1, PaymentChoice.card(), null);
+        bookings.request(user(UserRole.PASSENGER), rideId, 0, 1, 1, null);
 
         assertThat(reminders.remindDue()).isZero();
     }
@@ -131,7 +130,7 @@ class ReleaseReminderIntegrationTest extends PostgresIntegrationTest {
     /** A booking on a ride leaving in {@code untilBoarding}, made three days ago. */
     private Booking bookedDaysAgo(long passenger, Duration untilBoarding, boolean instantBooking) {
         long rideId = ride(untilBoarding, instantBooking);
-        Booking booking = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null);
+        Booking booking = bookings.request(passenger, rideId, 0, 1, 1, null);
         jdbc.update("UPDATE bookings SET created_at = now() - interval '3 days' WHERE id = ?", booking.id());
         return booking;
     }

@@ -2,6 +2,7 @@ package com.dypcet.vayora.admin;
 
 import com.dypcet.vayora.audit.AuditService;
 import com.dypcet.vayora.audit.AuditService.Entry;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -75,9 +76,15 @@ public class AdminController {
             int seatsOffered, int bookings, String fromStop, String toStop) {
     }
 
-    /** One booking as the back office lists it. */
+    /**
+     * One booking as the back office lists it.
+     *
+     * @param paymentStatus where what it owes stands; null on a free ride
+     * @param amountDue     what it owes the driver; null until it ended owing something
+     */
     public record BookingRow(long id, long rideId, String passengerName, long passengerId, String driverName,
-            String fromStop, String toStop, int seats, String status, Instant createdAt) {
+            String fromStop, String toStop, int seats, String status, Instant createdAt, String paymentStatus,
+            BigDecimal amountDue) {
     }
 
     /** The newest rides, optionally of one status. */
@@ -99,27 +106,30 @@ public class AdminController {
                 status, status, LISTED);
     }
 
-    /** The newest bookings, optionally of one status. */
+    /** The newest bookings, optionally of one status, or only those still owing a driver. */
     @GetMapping("/bookings")
     public List<BookingRow> bookings(@RequestParam(required = false)
             @jakarta.validation.constraints.Pattern(regexp = "PENDING|CONFIRMED|REJECTED|CANCELLED|COMPLETED|NO_SHOW")
-            String status) {
+            String status, @RequestParam(defaultValue = "false") boolean owing) {
         return jdbc.query("""
                 SELECT b.id, b.ride_id, p.full_name AS passenger, b.passenger_id, d.full_name AS driver,
-                       s.name AS from_stop, t.name AS to_stop, b.seats, b.status, b.created_at
+                       s.name AS from_stop, t.name AS to_stop, b.seats, b.status, b.created_at,
+                       i.status AS payment_status, i.amount_due
                 FROM bookings b
                 JOIN users p ON p.id = b.passenger_id
                 JOIN rides r ON r.id = b.ride_id
                 JOIN users d ON d.id = r.driver_id
                 JOIN ride_stops s ON s.ride_id = b.ride_id AND s.seq = b.from_seq
                 JOIN ride_stops t ON t.ride_id = b.ride_id AND t.seq = b.to_seq
-                WHERE ?::text IS NULL OR b.status = ?
+                LEFT JOIN payment_intents i ON i.booking_id = b.id
+                WHERE (?::text IS NULL OR b.status = ?) AND (NOT ? OR i.status = 'DUE')
                 ORDER BY b.id DESC LIMIT ?""",
                 (rs, n) -> new BookingRow(rs.getLong("id"), rs.getLong("ride_id"), rs.getString("passenger"),
                         rs.getLong("passenger_id"), rs.getString("driver"), rs.getString("from_stop"),
                         rs.getString("to_stop"), rs.getInt("seats"), rs.getString("status"),
-                        rs.getObject("created_at", OffsetDateTime.class).toInstant()),
-                status, status, LISTED);
+                        rs.getObject("created_at", OffsetDateTime.class).toInstant(),
+                        rs.getString("payment_status"), rs.getBigDecimal("amount_due")),
+                status, status, owing, LISTED);
     }
 
     @GetMapping("/audit")

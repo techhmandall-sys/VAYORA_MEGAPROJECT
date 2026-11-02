@@ -12,7 +12,6 @@ import com.dypcet.vayora.hold.SeatHolds;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService.Availability;
 import com.dypcet.vayora.ride.RideService.Candidate;
 import com.dypcet.vayora.ride.RideService.PublishRide;
@@ -108,7 +107,7 @@ class RideAvailabilityIntegrationTest extends PostgresIntegrationTest {
     void itFollowsBookingsCancellationsAndTheRidesOwnStatus() {
         assertThat(seats(ravi, 0, 2)).isEqualTo(3);
 
-        long booking = bookings.request(asha, rideId, 0, 2, 2, PaymentChoice.card(), null).id();
+        long booking = bookings.request(asha, rideId, 0, 2, 2, null).id();
         assertThat(seats(ravi, 0, 2)).isEqualTo(1);
 
         bookings.cancel(asha, booking);

@@ -14,7 +14,6 @@ import com.dypcet.vayora.hold.SeatHolds.Hold;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.Candidate;
 import com.dypcet.vayora.ride.RideService.PublishRide;
@@ -130,16 +129,16 @@ class SeatHoldIntegrationTest extends PostgresIntegrationTest {
         assertThat(holds.place(asha, rideId, 0, 2, 2, List.of(2, 2))).isPresent();
 
         // Kolhapur to Satara is spoken for; Satara to Pune is not.
-        assertThatThrownBy(() -> bookings.request(ravi, rideId, 0, 3, 1, PaymentChoice.card(), null))
+        assertThatThrownBy(() -> bookings.request(ravi, rideId, 0, 3, 1, null))
                 .isInstanceOfSatisfying(ResponseStatusException.class, e -> {
                     assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
                     assertThat(e.getReason()).contains("held for another passenger");
                 });
         assertThat(seatsAvailable()).containsExactly(2, 2, 2); // a hold takes nothing from PostgreSQL
-        bookings.request(ravi, rideId, 2, 3, 1, PaymentChoice.card(), null);
+        bookings.request(ravi, rideId, 2, 3, 1, null);
 
         // The holder books what they held, and the hold has then done its job.
-        bookings.request(asha, rideId, 0, 2, 2, PaymentChoice.card(), null);
+        bookings.request(asha, rideId, 0, 2, 2, null);
         assertThat(seatsAvailable()).containsExactly(0, 0, 1);
         assertThat(holds.of(asha)).isEmpty();
         assertThat(holds.heldByOthers(rideId, ravi)).isEmpty();

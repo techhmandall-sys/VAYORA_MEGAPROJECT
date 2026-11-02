@@ -10,7 +10,6 @@ import com.dypcet.vayora.PostgresIntegrationTest;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
@@ -67,7 +66,7 @@ class BoardingIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void thePassengerSeesTheirCodeAndTheDriverCanOnlyCheckIt() throws Exception {
-        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, null).id();
         String passengerToken = "Bearer " + tokens.issue(passenger, UserRole.PASSENGER);
         String driverToken = "Bearer " + tokens.issue(driver, UserRole.DRIVER);
 
@@ -99,7 +98,7 @@ class BoardingIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void nobodyElseGetsThePassOrTheCheck() throws Exception {
-        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, null).id();
         long otherDriver = user(UserRole.DRIVER);
         long otherPassenger = user(UserRole.PASSENGER);
 
@@ -114,7 +113,7 @@ class BoardingIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void aCancelledBookingHasNoPass() throws Exception {
-        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        long bookingId = bookings.request(passenger, rideId, 0, 1, 1, null).id();
         bookings.cancel(passenger, bookingId);
 
         mvc.perform(get("/api/v1/bookings/" + bookingId + "/boarding-pass")

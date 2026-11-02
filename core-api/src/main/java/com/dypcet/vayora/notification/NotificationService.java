@@ -54,6 +54,7 @@ public class NotificationService {
         RATING_REMINDER,
         SUPPLY_NUDGE,
         CALL_REQUESTED,
+        // No longer sent; notifications already stored still carry it.
         REFERRAL_REWARD,
         RELEASE_REMINDER,
         PAYMENT_RECEIVED

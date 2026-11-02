@@ -18,7 +18,6 @@ import com.dypcet.vayora.moderation.ModerationService.Outcome;
 import com.dypcet.vayora.moderation.ModerationService.Reason;
 import com.dypcet.vayora.moderation.ModerationService.Report;
 import com.dypcet.vayora.notification.NotificationService;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.PublishRide;
 import com.dypcet.vayora.ride.RideService.StopInput;
@@ -92,7 +91,7 @@ class ModerationIntegrationTest extends PostgresIntegrationTest {
         long rideId = rides.publish(driverId, new PublishRide(vehicleId,
                 Instant.now().plus(Duration.ofDays(2)), 3, true, STOPS,
                 List.of(new BigDecimal("520.00")))).id();
-        bookingId = bookings.request(passengerId, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        bookingId = bookings.request(passengerId, rideId, 0, 1, 1, null).id();
     }
 
     @Test

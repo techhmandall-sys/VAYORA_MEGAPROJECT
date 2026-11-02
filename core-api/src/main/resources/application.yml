@@ -48,49 +48,12 @@ vayora:
     # When confirmed bookings are re-scored (India time). "-" turns it off.
     scoring-cron: ${HAZARD_SCORING_CRON:0 0 6 * * *}
   payment:
-    # The platform's fee, as a fraction of the fare, charged on top of it.
-    service-fee-rate: 0.10
-    # A lower fee on rides by a driver who keeps their rides (feature 94): at least
-    # min-completed rides completed, and none withdrawn among those due to leave within the
-    # window before now, or later. From the record alone, never from a prediction, and
-    # never above the standard rate. The values are the authors' assumptions.
-    kept-rides:
-      fee-rate: 0.07
-      min-completed: 10
-      window: P90D
-    # Razorpay (feature 46). With both keys, passengers pay in Razorpay's checkout and are
-    # refunded through it; without them, the simulated provider as before. A key starting
-    # rzp_test_ is Razorpay's test mode: no real money moves, and every record says so.
-    razorpay:
-      key-id: ${RAZORPAY_KEY_ID:}
-      key-secret: ${RAZORPAY_KEY_SECRET:}
-      base-url: https://api.razorpay.com
-      timeout: PT10S
-  invoice:
-    # A tax invoice for what VAYORA itself charges, on real payments only: off until all three
-    # are set. The rate and the SAC code are the authors' reading, for a tax adviser to confirm
-    # before real use. GST is taken out of the amount charged, so no price changes.
-    gstin: ${VAYORA_GSTIN:}
-    legal-name: ${VAYORA_LEGAL_NAME:}
-    address: ${VAYORA_LEGAL_ADDRESS:}
-    gst-rate: 0.18
-    sac-code: "9985"
-  pass:
-    # On sale to passengers. A pass waives the service fee on bookings requested while it
-    # runs. Prices are the authors' assumptions, not market research.
-    offers:
-      - kind: WEEKLY
-        days: 7
-        price: 99
-      - kind: MONTHLY
-        days: 30
-        price: 299
-      - kind: ANNUAL
-        days: 365
-        price: 2499
+    # The longest side of a driver's stored UPI QR code. Larger than a photo, so that it scans.
+    qr-max-side-pixels: 1200
   refund:
-    # A passenger cancelling a booking the driver had accepted gets this share of the
-    # fare back, by how long before boarding they cancel. Later than the last tier: none.
+    # A passenger cancelling a booking the driver had accepted is let off this share of the
+    # fare, by how long before boarding they cancel, and owes the driver the rest. Later than
+    # the last tier: none, so the whole fare is owed.
     tiers:
       - at-least-before: PT48H
         fare-share: 1.0
@@ -239,11 +202,6 @@ vayora:
       seats-per-departure-day: 4
       refill-horizon-hours: 168
       solver-time-limit-seconds: 5
-  referral:
-    # What each side of a referral who is a passenger gets once the invited member completes a
-    # first trip (feature 72): a free pass of this kind (WEEKLY, MONTHLY or ANNUAL), or NONE.
-    # Drivers get nothing: a pass only waives the fee a passenger pays. An assumption.
-    reward-pass: WEEKLY
   calling:
     # Masked calls (simulated, feature 61) between the two sides of a confirmed booking
     # open this long before boarding.

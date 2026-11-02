@@ -10,7 +10,6 @@ import com.dypcet.vayora.booking.BookingService.Booking;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.Candidate;
 import com.dypcet.vayora.ride.RideService.PublishRide;
@@ -96,7 +95,7 @@ class MidRouteIntegrationTest extends PostgresIntegrationTest {
         assertThat(offered.underWay()).isTrue();
         assertThat(offered.fromStop()).isEqualTo("Satara");
 
-        Booking booking = bookings.request(passenger, rideId, 1, 2, 1, PaymentChoice.card(), null);
+        Booking booking = bookings.request(passenger, rideId, 1, 2, 1, null);
 
         assertThat(booking.status()).isEqualTo(BookingStatus.CONFIRMED);
         // Its trip has begun with the ride's, so its ending is counted like the others'.
@@ -113,7 +112,7 @@ class MidRouteIntegrationTest extends PostgresIntegrationTest {
         long passenger = user(UserRole.PASSENGER);
 
         assertThat(found(passenger, KOLHAPUR, rideId)).isEmpty();
-        assertThatThrownBy(() -> bookings.request(passenger, rideId, 0, 2, 1, PaymentChoice.card(), null))
+        assertThatThrownBy(() -> bookings.request(passenger, rideId, 0, 2, 1, null))
                 .isInstanceOfSatisfying(ResponseStatusException.class, e -> {
                     assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
                     assertThat(e.getReason()).isEqualTo(TOO_SOON);
@@ -140,7 +139,7 @@ class MidRouteIntegrationTest extends PostgresIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT started_at IS NOT NULL FROM rides WHERE id = ?",
                 Boolean.class, rideId)).isTrue();
         assertThat(found(passenger, shiroli, rideId)).isEmpty();
-        assertThatThrownBy(() -> bookings.request(passenger, rideId, 1, 2, 1, PaymentChoice.card(), null))
+        assertThatThrownBy(() -> bookings.request(passenger, rideId, 1, 2, 1, null))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         e -> assertThat(e.getReason()).isEqualTo(TOO_SOON));
     }
@@ -151,7 +150,7 @@ class MidRouteIntegrationTest extends PostgresIntegrationTest {
         long passenger = user(UserRole.PASSENGER);
 
         assertThat(found(passenger, SATARA, rideId)).isEmpty();
-        assertThatThrownBy(() -> bookings.request(passenger, rideId, 1, 2, 1, PaymentChoice.card(), null))
+        assertThatThrownBy(() -> bookings.request(passenger, rideId, 1, 2, 1, null))
                 .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getReason())
                         .isEqualTo("This ride is already on the road, and its driver approves each request"));
     }
@@ -159,8 +158,8 @@ class MidRouteIntegrationTest extends PostgresIntegrationTest {
     @Test
     void aSeatLeftByANoShowIsSoldAgainFromALaterStop() {
         long rideId = rideLeavingIn(Duration.ofMinutes(30), 2, true);
-        Booking stays = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, PaymentChoice.card(), null);
-        Booking absent = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, PaymentChoice.card(), null);
+        Booking stays = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, null);
+        Booking absent = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, null);
         trips.start(driverId, rideId);
         long late = user(UserRole.PASSENGER);
         assertThat(found(late, SATARA, rideId)).isEmpty(); // full
@@ -169,7 +168,7 @@ class MidRouteIntegrationTest extends PostgresIntegrationTest {
 
         assertThat(seatsAvailable(rideId)).containsExactly(1, 1);
         assertThat(found(late, SATARA, rideId)).hasValueSatisfying(c -> assertThat(c.seatsAvailable()).isEqualTo(1));
-        Booking refill = bookings.request(late, rideId, 1, 2, 1, PaymentChoice.card(), null);
+        Booking refill = bookings.request(late, rideId, 1, 2, 1, null);
         assertThat(refill.status()).isEqualTo(BookingStatus.CONFIRMED);
         assertThat(seatsAvailable(rideId)).containsExactly(1, 0);
 

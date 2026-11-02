@@ -15,8 +15,7 @@ import com.dypcet.vayora.eventlog.HasActor;
 import com.dypcet.vayora.notification.NotificationService.Type;
 import com.dypcet.vayora.notification.NotificationService;
 import com.dypcet.vayora.notification.Text;
-import com.dypcet.vayora.payment.PaymentService.RefundReason;
-import com.dypcet.vayora.payment.PaymentService.SettlementReason;
+import com.dypcet.vayora.payment.PaymentService.DueReason;
 import com.dypcet.vayora.payment.PaymentService;
 import com.dypcet.vayora.referral.ReferralService;
 import com.dypcet.vayora.ride.RideService.Candidate;
@@ -129,7 +128,7 @@ public class TripService {
             bookings.move(unanswered, BookingStatus.REJECTED);
             // Never answered: not the driver's decision, whoever started the ride.
             bookings.recordRejectedBy(unanswered.id(), "platform");
-            payments.releaseInFull(unanswered.id(), RefundReason.NOT_ACCEPTED);
+            payments.oweNothing(unanswered.id());
             bookings.notifyDeclined(unanswered);
             events.write(EventType.BOOKING_REJECTED,
                     new Decided(unanswered.id(), rideId, driverId, false));
@@ -157,13 +156,13 @@ public class TripService {
         }
         Booking booking = bookings.lockBooking(bookingId);
         bookings.move(booking, BookingStatus.NO_SHOW);
-        payments.captureInFull(bookingId, driverId, SettlementReason.PASSENGER_NO_SHOW);
+        payments.oweInFull(bookingId, DueReason.PASSENGER_NO_SHOW);
         notifications.send(booking.passengerId(), Type.MARKED_NO_SHOW, payments.due(bookingId)
-                .map(due -> Text.of("The driver reported that you did not board for {seats}. As for a seat paid when"
-                        + " booking, the full Rs {amount} is due: pay it in My bookings.",
+                .map(due -> Text.of("The driver reported that you did not board for {seats}. The full Rs {amount}"
+                        + " is owed to them: see My bookings.",
                         "seats", BookingService.seatsText(booking), "amount", due.toPlainString()))
-                .orElseGet(() -> Text.of("The driver reported that you did not board for {seats}. Nothing is refunded"
-                        + " for a missed ride.", "seats", BookingService.seatsText(booking))), bookingId);
+                .orElseGet(() -> Text.of("The driver reported that you did not board for {seats}.",
+                        "seats", BookingService.seatsText(booking))), bookingId);
         events.write(EventType.TRIP_FAILED, new TripFailed(bookingId, rideId,
                 booking.passengerId(), driverId, "passenger_no_show"));
         return bookings.load(bookingId);
@@ -180,10 +179,10 @@ public class TripService {
         List<Long> travelled = new ArrayList<>();
         for (Booking booking : bookings.lockAll(rideId, BookingStatus.CONFIRMED)) {
             bookings.move(booking, BookingStatus.COMPLETED);
-            payments.captureInFull(booking.id(), driverId, SettlementReason.TRIP_COMPLETED);
+            payments.oweInFull(booking.id(), DueReason.TRIP_COMPLETED);
             notifications.send(booking.passengerId(), Type.TRIP_COMPLETED, payments.due(booking.id())
-                    .map(due -> Text.of("Your trip from {from} to {to} is complete. Rs {amount} is due: pay it in"
-                            + " My bookings, or in cash to your driver.",
+                    .map(due -> Text.of("Your trip from {from} to {to} is complete. Pay your driver Rs {amount}, in"
+                            + " cash or by UPI: see My bookings.",
                             "from", booking.fromStop(), "to", booking.toStop(), "amount", due.toPlainString()))
                     .orElseGet(() -> Text.of("Your trip from {from} to {to} is complete. You can rate your driver in"
                             + " My bookings.", "from", booking.fromStop(), "to", booking.toStop())), booking.id());
@@ -199,7 +198,7 @@ public class TripService {
 
     /**
      * Withdraws every ride of this ride's series that has not yet run, each exactly as if
-     * withdrawn on its own: every passenger refunded in full and told of other rides.
+     * withdrawn on its own: every passenger owes nothing and is told of other rides.
      *
      * @return how many rides were withdrawn
      */
@@ -278,11 +277,11 @@ public class TripService {
             for (Booking booking : bookings.lockAll(rideId, live)) {
                 bookings.move(booking, BookingStatus.CANCELLED);
                 bookings.recordCancelledBy(booking.id(), "driver");
-                payments.releaseInFull(booking.id(), RefundReason.DRIVER_CANCELLED);
+                payments.oweNothing(booking.id());
                 flexible.afterWithdrawal(rideId, booking);
                 notifications.send(booking.passengerId(), Type.RIDE_CANCELLED,
-                        Text.of("The driver cancelled the ride you booked for {seats}. Everything you paid has been"
-                                + " returned. {more}", "seats", BookingService.seatsText(booking),
+                        Text.of("The driver cancelled the ride you booked for {seats}. You owe nothing."
+                                + " {more}", "seats", BookingService.seatsText(booking),
                                 "more", otherRides(rideId, booking)),
                         booking.id());
                 events.write(EventType.BOOKING_CANCELLED, new Cancelled(booking.id(), rideId,

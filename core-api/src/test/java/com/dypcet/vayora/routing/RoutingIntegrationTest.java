@@ -13,7 +13,6 @@ import com.dypcet.vayora.booking.TripService;
 import com.dypcet.vayora.identity.IdentityService;
 import com.dypcet.vayora.identity.TokenService;
 import com.dypcet.vayora.identity.UserRole;
-import com.dypcet.vayora.payment.PaymentChoice;
 import com.dypcet.vayora.rating.RatingService;
 import com.dypcet.vayora.ride.RideService;
 import com.dypcet.vayora.ride.RideService.Candidate;
@@ -432,7 +431,7 @@ class RoutingIntegrationTest extends PostgresIntegrationTest {
     private void rate(long driverId, int stars) {
         long rideId = ride(driverId, Instant.now().plus(Duration.ofMinutes(30)), "100.00", KOLHAPUR, PUNE);
         long rater = user(UserRole.PASSENGER);
-        long bookingId = bookings.request(rater, rideId, 0, 1, 1, PaymentChoice.card(), null).id();
+        long bookingId = bookings.request(rater, rideId, 0, 1, 1, null).id();
         trips.start(driverId, rideId);
         trips.complete(driverId, rideId);
         ratings.rate(rater, bookingId, stars, null);
