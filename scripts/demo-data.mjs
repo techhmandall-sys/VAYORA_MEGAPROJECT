@@ -111,6 +111,10 @@ async function main() {
     const session = await account(driver, 'DRIVER');
     const vehicleId = await vehicle(session, driver.vehicle);
     drivers.push({ ...driver, session, vehicleId });
+    // The handle belongs to no bank, so nobody could pay into it by mistake. The last driver takes cash.
+    if (driver !== DRIVERS[DRIVERS.length - 1]) {
+      await call('PUT', '/api/v1/me/payment-details', { upiId: `${driver.key}.demo@vayoratest` }, session.token);
+    }
     const upcoming = (await call('GET', '/api/v1/rides/mine', null, session.token))
       .filter((ride) => new Date(ride.departureTime) > new Date());
     if (upcoming.length > 0) {
@@ -201,7 +205,7 @@ async function bookings(sessions, rides) {
     for (const ride of [instant[2 + index * 3], instant[9 + index * 3]].filter(Boolean)) {
       try {
         await call('POST', '/api/v1/bookings', {
-          rideId: ride.id, fromSeq: 0, toSeq: ride.stops.length - 1, seats: 1, paymentMethod: 'UPI',
+          rideId: ride.id, fromSeq: 0, toSeq: ride.stops.length - 1, seats: 1,
         }, session.token);
         booked++;
       } catch (error) {
@@ -226,7 +230,7 @@ async function history(drivers, passengers, rides) {
     return 0;
   }
   const book = (who, ride) => call('POST', '/api/v1/bookings', {
-    rideId: ride.id, fromSeq: 0, toSeq: ride.stops.length - 1, seats: 1, paymentMethod: 'UPI',
+    rideId: ride.id, fromSeq: 0, toSeq: ride.stops.length - 1, seats: 1,
   }, who.token);
   // A ride may start up to an hour early, so these can be driven and finished now.
   const soon = (driver, minutes) => call('POST', '/api/v1/rides', {
@@ -246,6 +250,10 @@ async function history(drivers, passengers, rides) {
       const missed = index === drivers.length - 1 ? aboard.pop() : null;
       if (missed) await call('POST', `/api/v1/bookings/${missed.id}/no-show`, null, token);
       await call('POST', `/api/v1/rides/${ride.id}/complete`, null, token);
+      // Each passenger pays the driver, one way and the other; nobody can book again until then.
+      for (const [seat, booking] of [...aboard, ...(missed ? [missed] : [])].entries()) {
+        await call('POST', `/api/v1/bookings/${booking.id}/payment-received`, { method: seat % 2 === 0 ? 'UPI' : 'CASH' }, token);
+      }
       const stars = STARS[index % STARS.length];
       for (const [seat, booking] of aboard.entries()) {
         const passenger = passengers[seat];
@@ -255,15 +263,15 @@ async function history(drivers, passengers, rides) {
       }
       completed++;
     }
-    console.log(`  ${completed} trips driven, rated and paid out, with one no-show.`);
+    console.log(`  ${completed} trips driven, rated and paid, with one no-show.`);
 
-    // Given back days ahead, all of it comes back. Hours ahead, the driver keeps the fare.
+    // Given back days ahead, nothing is owed. Hours ahead, the whole fare is.
     const later = rides.filter((ride) => ride.instantBooking).sort((a, b) => b.departureTime.localeCompare(a.departureTime));
     const early = await book(asha, later[0]);
     await call('POST', `/api/v1/bookings/${early.id}/cancel`, null, asha.token);
     const late = await book(kiran, await soon(drivers[1], 180));
     await call('POST', `/api/v1/bookings/${late.id}/cancel`, null, kiran.token);
-    console.log('  An early and a late cancellation.');
+    console.log(`  An early and a late cancellation. ${PASSENGERS[1].fullName} owes the late one, and cannot book until ${drivers[1].fullName} marks it paid.`);
 
     const needsAnswer = rides.find((ride) => !ride.instantBooking);
     if (needsAnswer) {
