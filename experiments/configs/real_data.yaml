@@ -1,0 +1,32 @@
+# When the platform's own event log holds enough real data to act on, and what counts as real.
+#
+# These are the authors' judgement, not rules from anywhere. They exist so that a calibration or a
+# model cannot quietly be made from a handful of bookings, or from data somebody made up.
+
+# Whose activity is not real: scripts/demo-data.mjs, the test scripts and old local accounts. People
+# testing with their own addresses cannot be told apart from anybody else, which is one reason the
+# thresholds below ask for many people over many days.
+excluded_email_domains: [demo.vayora.test, example.test, journex.local]
+
+corridor:
+  # A search counts towards the corridor's demand when both its ends are this near a town on it.
+  radius_km: 15
+  # In the simulator's direction of travel: its demand runs from Kolhapur towards Pune.
+  towns:
+    - {name: Kolhapur, lat: 16.705, lon: 74.2433}
+    - {name: Karad, lat: 17.289, lon: 74.1818}
+    - {name: Satara, lat: 17.6805, lon: 74.0183}
+    - {name: Pune, lat: 18.5204, lon: 73.8567}
+
+demand:
+  # Four whole weeks, so that the days of the week count alike.
+  min_days: 28
+  min_passengers: 30
+
+model:
+  min_accepted_bookings: 500
+  # About ten cancellations for each of the 11 features, a common rule of thumb for a Cox model.
+  min_passenger_cancellations: 110
+  # Earlier outcomes train, later ones validate.
+  train_share: 0.8
+  version: real-1

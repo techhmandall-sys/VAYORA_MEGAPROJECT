@@ -74,15 +74,18 @@ def fit_kaplan_meier(train: pd.DataFrame, version: str) -> HazardModel:
 
 
 def fit_cox(train: pd.DataFrame, version: str, penalizer: float) -> tuple[HazardModel, CoxPHFitter]:
+    # A feature that never varies says nothing and stops the fit converging: on real bookings
+    # desired_gap_hours is always 0. It keeps a coefficient of 0, so the model reads as any other.
+    varying = [name for name in FEATURES if train[name].nunique() > 1]
     cox = CoxPHFitter(penalizer=penalizer)
-    cox.fit(train[[*FEATURES, "duration_hours", "cancelled"]],
+    cox.fit(train[[*varying, "duration_hours", "cancelled"]],
             duration_col="duration_hours", event_col="cancelled")
     baseline = cox.baseline_cumulative_hazard_.iloc[:, 0]
     model = HazardModel(
         version=f"{version}-cox", feature_version=FEATURE_VERSION, kind="cox_ph",
         features=FEATURES,
-        coef=tuple(float(cox.params_[name]) for name in FEATURES),
-        mean=tuple(float(cox._norm_mean[name]) for name in FEATURES),
+        coef=tuple(float(cox.params_[name]) if name in varying else 0.0 for name in FEATURES),
+        mean=tuple(float(cox._norm_mean[name]) if name in varying else float(train[name].iloc[0]) for name in FEATURES),
         **_steps(baseline.index, baseline.to_numpy()))
     return model, cox
 
