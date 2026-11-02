@@ -39,11 +39,14 @@ territory.
 | `POST /api/v1/auth/google` | public | `idToken` from Google, and `role` only to create an account; returns a token. 409 when no account exists and no role was given |
 | `POST /api/v1/auth/login` | public | Exactly one of `email` or `phone`, with `password`. Returns a token valid for 12 hours. After 5 wrong passwords for one address in 15 minutes, 429 until the window ends, even with the right password |
 | `GET /api/v1/me` | any | The signed-in account |
-| `GET /api/v1/me/referral` | any | Own invitation code, how many used it, and `rewardPass`: the pass a qualified referral earns each passenger (null if none) |
+| `GET /api/v1/me/referral` | any | Own invitation code, how many used it, and how many of them have completed a trip |
 | `GET /api/v1/bus-alternatives?from=&to=&after=HH:mm` | any | Up to five administrator-entered buses between two towns, earliest first; not checked against the operator |
 | `GET/POST /api/v1/admin/bus-services`, `DELETE /api/v1/admin/bus-services/{id}` | ADMIN | List, add and remove bus services; adding and removing are audited |
 | `GET/POST /api/v1/admin/stopovers`, `DELETE /api/v1/admin/stopovers/{id}` | ADMIN | Rest stops and chargers; audited. The route preview (`POST /api/v1/rides/route-preview`) now also returns `alongRoute`: those near the route, in order, with `kmAlong`, `kmOffRoute` and `suggestedBreak` |
 | `GET /api/v1/users/{id}/photo`, `GET /api/v1/vehicles/{id}/photo` | any | The photo as `image/jpeg`, or 404 |
+| `GET /api/v1/me/payment-details` | D | Own `{upiId, hasQr}` |
+| `PUT /api/v1/me/payment-details` | D | `{upiId}`: as name@bank; blank removes it, 400 if it does not look like one, an email address included |
+| `GET`, `PUT`, `DELETE /api/v1/me/payment-details/qr` | D | Own UPI QR code. The body is the image itself (JPEG or PNG, up to 5 MB); kept as a PNG |
 | `PUT /api/v1/me/photo`, `DELETE /api/v1/me/photo` | any | Own photo. The body is the image itself (JPEG or PNG, up to 5 MB) |
 | `PUT/DELETE /api/v1/vehicles/{id}/photo` | DRIVER, owner | A vehicle's photo; someone else's vehicle is a 404 |
 | `POST /api/v1/me/document-checks`, `GET /api/v1/me/document-checks` | D | `{kind, vehicleId}`: ask VAYORA staff to see the identity document declared (`IDENTITY`) or a car's declared insurance (`INSURANCE`, with its `vehicleId`); the current check of each. 409 when nothing is declared or one is already waiting or checked |
@@ -69,12 +72,12 @@ territory.
 | `PUT /api/v1/vehicles/{id}/insurance` | D | Declare the insurer and `insuredUntil` (not checked, no policy number) |
 | `DELETE /api/v1/vehicles/{id}/insurance` | D | Remove the declaration |
 | `POST /api/v1/rides/route-preview` | D | Road route through some stops, with a suggested price per leg |
-| `POST /api/v1/rides` | D | Publish a ride; optionally its return and up to 8 weekly repeats, all or nothing. An electric car is refused (400) if a stretch between two stops is longer than its stated range. `payAfterRide: true` lets passengers pay once their booking ends |
+| `POST /api/v1/rides` | D | Publish a ride; optionally its return and up to 8 weekly repeats, all or nothing. An electric car is refused (400) if a stretch between two stops is longer than its stated range. |
 | `GET /api/v1/rides/mine` | D | Own rides |
 | `GET /api/v1/rides/{id}` | any | A ride with its stops, legs, route and notes |
 | `GET /api/v1/rides/{id}/membership` | any | Whether the caller is on the ride. Used by the gateway |
 | `GET /api/v1/bookings` | P | Own bookings, each with the driver's `driverId`, `driverName` and the car (`vehicle`: make, model and colour as entered) |
-| `GET /api/v1/rides/search` | any | Rides with a stop near each end on a day. `sort` is `TIME` (default), `PRICE`, `RATING`, `PROXIMITY` or `BEST_MATCH`; every result carries `matchScore` (0 to 100) and `matchReasons` (codes such as `SAME_CONVERSATION` or `DIFFERENT_SMOKING`). `walkOnFootpaths` says whether `pickupWalkMinutes` and `dropoffWalkMinutes` were worked out on footpaths or are straight-line estimates. `pickupRickshaw` and `dropoffRickshaw`, where the walk is a kilometre or more, estimate an auto-rickshaw: `minutes` and `km` (`byRoad` false when they are straight lines), and `fare` in rupees with `fareTown`, `fareSource` and `fareSince` where a published meter fare is known, else null. A result with `detourMinutes` set picks the passenger up at their start: `boardingTime` is the pickup's, and `detourMinutes` is what it costs the driver. Each result also carries the driver's `driverRidesCompleted` and `driverRidesWithdrawn`, a rough `pickupWalkMinutes` and `dropoffWalkMinutes`, `suggestFlexible`, `keptRides` when the driver's record earns the lower service fee (already applied to `serviceFee`), `insurer` and `insuredUntil` as the driver declared them, only while they cover the trip's date, and `underWay` for a ride already on the road (offered only from a stop it is due at 30 minutes or more ahead, and only if it confirms instantly) |
+| `GET /api/v1/rides/search` | any | Rides with a stop near each end on a day. `sort` is `TIME` (default), `PRICE`, `RATING`, `PROXIMITY` or `BEST_MATCH`; every result carries `matchScore` (0 to 100) and `matchReasons` (codes such as `SAME_CONVERSATION` or `DIFFERENT_SMOKING`). `walkOnFootpaths` says whether `pickupWalkMinutes` and `dropoffWalkMinutes` were worked out on footpaths or are straight-line estimates. `pickupRickshaw` and `dropoffRickshaw`, where the walk is a kilometre or more, estimate an auto-rickshaw: `minutes` and `km` (`byRoad` false when they are straight lines), and `fare` in rupees with `fareTown`, `fareSource` and `fareSince` where a published meter fare is known, else null. A result with `detourMinutes` set picks the passenger up at their start: `boardingTime` is the pickup's, and `detourMinutes` is what it costs the driver. Each result also carries the driver's `driverRidesCompleted` and `driverRidesWithdrawn`, a rough `pickupWalkMinutes` and `dropoffWalkMinutes`, `suggestFlexible`, `insurer` and `insuredUntil` as the driver declared them, only while they cover the trip's date, and `underWay` for a ride already on the road (offered only from a stop it is due at 30 minutes or more ahead, and only if it confirms instantly) |
 | `GET /api/v1/rides/availability` | any | Seats left now on up to 30 stretches, each `stretch=rideId:fromSeq:toSeq`, counted as a search counts them, with the ride's `status`. For a screen keeping its results current: unlike a search it writes nothing to the event log, so it does not bend completed rides per 100 searches |
 
 Search takes `originLat`, `originLon`, `destLat`, `destLon`, `date`, and optionally
@@ -93,11 +96,10 @@ woman, filter or no filter.
 | `POST /api/v1/holds` | P | Hold seats for 5 minutes. Not a booking |
 | `GET /api/v1/holds/mine` | P | Own hold, or 204 |
 | `DELETE /api/v1/holds/mine` | P | Give the hold up |
-| `POST /api/v1/bookings` | P | Request seats on a stretch of a ride; the payment hold is placed in the same step. With Razorpay, `razorpay: {orderId, paymentId, signature}` from its checkout in place of `paymentMethod`: checked, and refunded in full if the booking fails. Optional `tier`: `EXACT` (default), `FLEXIBLE` or `ANY_TIME`, what happens if the driver withdraws. Optional `pickupLat` and `pickupLon`: be picked up there, on the leg after `fromSeq`, if the ride offers detours; its cost is worked out again here. `payAfterRide: true` takes nothing now, on a ride whose driver allows it (409 otherwise), and needs no payment fields. 409 while the passenger owes anything on an earlier booking |
-| `POST /api/v1/bookings/{id}/pay` | P | Pay what own pay-after-ride booking owes now it has ended: `paymentMethod`, or `razorpay` from a checkout. 409 if nothing is due, 402 if declined |
-| `POST /api/v1/bookings/{id}/cash-received` | D | Record that the passenger paid what is due in cash; nothing is paid out |
+| `POST /api/v1/bookings` | P | Request seats on a stretch of a ride; nothing is paid now. Optional `tier`: `EXACT` (default), `FLEXIBLE` or `ANY_TIME`, what happens if the driver withdraws. Optional `pickupLat` and `pickupLon`: be picked up there, on the leg after `fromSeq`, if the ride offers detours; its cost is worked out again here. 409 while the passenger owes a driver for an earlier booking |
+| `POST /api/v1/bookings/{id}/payment-received` | D | `{method}`, `CASH` or `UPI`: the driver says the passenger paid them what is due. 409 if nothing is due |
 | `GET /api/v1/bookings` | P | Own bookings |
-| `POST /api/v1/bookings/{id}/cancel` | P | Cancel; the refund follows the published tiers |
+| `POST /api/v1/bookings/{id}/cancel` | P | Cancel; what is then owed to the driver follows the published tiers |
 | `GET /api/v1/rides/{rideId}/bookings` | D | Bookings on own ride |
 | `POST /api/v1/bookings/{id}/accept` | D | Accept a pending request |
 | `POST /api/v1/bookings/{id}/reject` | D | Decline it; everything is returned |
@@ -115,27 +117,20 @@ returns the booking the first request made instead of making another.
 | `POST /api/v1/bookings/{id}/call` | P, D | A masked call to the other side of a confirmed booking, from 24 hours before boarding, between confirmed phone numbers: bridged through Twilio when an account is configured (`provider: "twilio"`; 503 if Twilio refuses), simulated otherwise (`provider: "mock"`). Returns `{provider, calleeName}` and never a number; the other side is notified |
 | `POST /api/v1/bookings/{id}/no-show` | D | Mark a passenger who did not board; their seat goes back on sale for later stops |
 | `POST /api/v1/rides/{id}/complete` | D | Complete the ride and pay out |
-| `POST /api/v1/rides/{id}/cancel` | D | Withdraw the ride; passengers are refunded in full and told of other rides |
+| `POST /api/v1/rides/{id}/cancel` | D | Withdraw the ride; passengers owe nothing and are told of other rides |
 | `POST /api/v1/rides/{id}/cancel-series` | D | Withdraw every ride still to run in this ride's series |
 
 ### Money
 
 | Method and path | Who | What |
 |---|---|---|
-| `GET /api/v1/payment-terms` | any | The provider (`MOCK`, `RAZORPAY_TEST` or `RAZORPAY`), the service fee rate, the refund tiers, `checkout` (the passenger pays in Razorpay's checkout first) and `flexibleTiers` (false with Razorpay) |
-| `POST /api/v1/bookings/checkout` | P | `{rideId, fromSeq, toSeq, seats}`: opens a Razorpay order for what booking them would take now, worked out by the server. Answers `{orderId, keyId, amount (paise), currency, testMode}`; 409 when payments are simulated |
-| `POST /api/v1/passes/checkout` | P | `{kind}`: the same for a pass |
-| `POST /api/v1/bookings/{id}/checkout` | P | The same for what own pay-after-ride booking owes now it has ended; 409 if nothing is due |
-| `GET /api/v1/payments` | P | Own payments; `payAfterRide` and `amountDue` on those paid after the ride |
-| `GET /api/v1/settlements` | D | Own payouts; `provider: "CASH"` for what a passenger paid in cash |
-| `GET /api/v1/settlements/cash-fees` | D | `{held}`: the platform's fees inside cash the driver took |
-| `GET /api/v1/passes/offers` | any | Passes on sale |
-| `GET /api/v1/passes` | P | Own passes; `reward` marks one given free for an invitation |
-| `POST /api/v1/passes` | P | Buy a pass; one bought while another runs starts when it ends. With Razorpay, `razorpay: {orderId, paymentId, signature}` from its checkout in place of `paymentMethod` |
-| `GET /api/v1/bookings/{id}/receipt` | P | PDF receipt for the payment on own booking |
-| `GET /api/v1/passes/{id}/receipt` | P | PDF receipt for own pass |
-| `GET /api/v1/bookings/{id}/receipt-data` | P | Carries `taxInvoice` once one is due (see DEPLOYMENT.md). The same receipt as JSON, names and stops as written, for the app to show in the reader's language: `{bookingId, passenger, driver, fromStop, toStop, seats, boarding, status, paidAt, method, fare, serviceFee, total, refunded, refundReason, provider}` |
-| `GET /api/v1/passes/{id}/receipt-data` | P | The same for own pass: `{passId, passenger, kind, price, startsAt, endsAt, paidAt, method, provider, reward}`; `method` is null for a reward |
+| `GET /api/v1/payment-terms` | any | `cancellationTiers`: `{atLeastHoursBefore, owedShare}`, earliest first; later than the last, the whole fare is owed |
+| `GET /api/v1/bookings/{id}/pay-driver` | P | `{driverName, upiId, hasQr}` for own booking, once it is confirmed or while it owes something; 404 otherwise |
+| `GET /api/v1/bookings/{id}/pay-driver/qr` | P | The driver's QR code under the same rule; never cached |
+| `GET /api/v1/payments` | P | Own bookings as what each costs and owes: `{status, amountDue, dueReason, method, paidAt}`. `status` is `DEFERRED`, `DUE`, `SETTLED` or `VOID` |
+| `GET /api/v1/earnings` | D | What passengers owe the driver (`status: "DUE"`) and what the driver said they paid (`SETTLED`, with `method`) |
+| `GET /api/v1/bookings/{id}/receipt` | P | PDF receipt once the driver says they were paid |
+| `GET /api/v1/bookings/{id}/receipt-data` | P | The same receipt as JSON, names and stops as written, for the app to show in the reader's language: `{bookingId, passenger, driver, fromStop, toStop, seats, boarding, status, paidAt, method, fare, paid, reason}` |
 
 ### After the trip, and safety
 
@@ -178,7 +173,8 @@ returns the booking the first request made instead of making another.
 | `GET /api/v1/admin/hazard/scores` | A | The newest durability estimate of each live booking |
 | `GET /api/v1/admin/audit` | A | The newest 100 administrative actions |
 | `GET /api/v1/admin/rides?status=` | A | The newest 100 rides |
-| `GET /api/v1/admin/bookings?status=` | A | The newest 100 bookings |
+| `GET /api/v1/admin/bookings?status=&owing=` | A | The newest 100 bookings, with `paymentStatus` and `amountDue`; `owing=true` for those still owing a driver |
+| `POST /api/v1/admin/bookings/{id}/clear-due` | A | `{reason}`: lets the passenger off what is owed, when a driver who was paid will not mark it. The reason goes in the audit log; both sides are told it was cleared |
 
 ### Health
 

@@ -21,10 +21,10 @@ more bookings and still move fewer people.
 
 | | |
 |---|---|
-| Features | 88 of 95 verified, 7 partial: about 96% counting a partial feature as half. The seven need accounts, a native speaker or real data, not more code ([feature matrix](docs/FEATURE_MATRIX.md)) |
+| Features | 84 verified and 5 partial of the 89 still in scope, the team having removed 6 of the original 95 on 2026-11-02: about 97% counting a partial feature as half. The five need accounts, a native speaker or real data, not more code ([feature matrix](docs/FEATURE_MATRIX.md)) |
 | Routes | Any route in India in the app, from 126 listed cities or a point on the map. Road distances between Kolhapur and Pune; elsewhere a labelled straight line until a bigger map is built ([how](docs/DEPLOYMENT.md#road-routes-across-india)) |
 | Interface | A side bar, or tabs on a phone, in light and dark, each role with its own tint. Screens keep themselves current without a reload |
-| Tests | 349 Java, 296 web, 224 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
+| Tests | 310 Java, 287 web, 224 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
 | Languages | English, Hindi and Marathi, on every screen, notification and error message |
 | Research | On Kolhapur to Pune alone. A SimPy simulator of the corridor: 60 simulated days, 30 seeds per variant, train and validation on disjoint seeds |
 | Data | All synthetic, plus one public dataset of real hotel cancellations used as a check |
@@ -81,13 +81,13 @@ They can hold seats for five minutes while deciding, book or request, choose wha
 if the driver withdraws (this ride only, or rebook automatically), be picked up off the
 stops where the driver allows a detour, chat with the driver, follow the driver's live
 position, call through a masked number, show a boarding code, confirm the trip happened,
-rate it, and keep receipts in their own language. Travel passes waive the service fee.
+rate it, and keep receipts in their own language. They pay the driver directly after the ride, in cash or by UPI: VAYORA charges nothing.
 
 **Drivers** add vehicles (electric ones with their range, which publishing respects),
 publish rides with intermediate stops, per-stretch prices from the road route, a return
 trip and weekly repeats, set how far they will go out of their way, accept or decline
 requests, start the ride, check boarding codes, mark no-shows, complete, and see earnings
-and their own reliability record. They are told when passengers searched a stretch they
+and their own reliability record. They put a UPI ID or QR code on their account, keep the whole fare, and mark each passenger paid. They are told when passengers searched a stretch they
 drive and found nothing.
 
 **Every member** has a profile with photo and preferences, confirms an email or phone by
@@ -196,15 +196,14 @@ certificate, not yet on a real server.
 
 ## Real services, off until you switch them on
 
-Out of the box nothing leaves the platform: payments are simulated and no money moves,
+Out of the box nothing leaves the platform: VAYORA moves no money, since passengers pay their driver directly,
 codes and messages go to a simulated outbox an administrator can read, and calls are
 simulated. Each real service below turns on when its settings are in `.env`. Each is
-tested against a stand-in; none has yet been tried against the real service.
+tested against a stand-in; only Google has been tried against the real service.
 
 | Service | What it switches on | Settings |
 |---|---|---|
 | Google | "Sign in with Google" | `GOOGLE_CLIENT_ID` |
-| Razorpay, test mode | Paying by card, UPI or wallet in Razorpay's checkout, refunds through Razorpay | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` |
 | Twilio | Codes, notification copies and emergency texts by SMS; masked calls bridged through the platform's number | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` |
 | Any SMTP server | Codes and notification copies by email | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `VAYORA_MAIL_FROM` |
 | Web Push | Push notifications in the browser | `VAYORA_PUSH_PUBLIC_KEY`, `VAYORA_PUSH_PRIVATE_KEY` (`node scripts/vapid-keys.mjs` makes a pair) |

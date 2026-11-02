@@ -113,9 +113,8 @@ mistake for more. Updated 2026-11-01.
 - Photos are not moderated: nothing checks what a photo shows.
 - **Real email has never been sent through a real provider.** It is tested against an
   SMTP server inside the tests. Messages are plain text, in English.
-- A flexible rebooking is a new booking with its own payment hold, made without the
-  passenger present. On a ride the driver approves it is a request the driver may decline.
-  With Razorpay no booking can be flexible: only the passenger can pay, at the checkout.
+- A flexible rebooking is a new booking made without the passenger present. On a ride the driver
+  approves it is a request the driver may decline.
 - **Google sign-in has been tried with Google once**, on 2026-11-02, by a real Gmail account linking
   to its existing VAYORA account. Creating a new account through Google has only met a stand-in that
   signs tokens the way Google does. While the Google project is in testing, only its listed test users
@@ -125,25 +124,23 @@ mistake for more. Updated 2026-11-01.
   nudge cannot be dismissed, and a search's ends are named by the nearest ride stop within
   5 km, so a stretch nobody has ever driven is never a gap.
 
-- **Payments are simulated by default.** The mock approves every hold unless told to
-  decline. No money moves and nothing is verified with any bank, card network or UPI.
-- **Razorpay has never been tried with Razorpay.** With its keys set, passengers pay in
-  its checkout and are refunded through it; this is tested against a stand-in only. There
-  is no webhook: a payment is checked when the booking presents it, so one completed in
-  the checkout but never presented (the browser closed at the wrong moment) is captured
-  by nobody and left for Razorpay to return. Drivers are never paid through Razorpay,
-  which would need its separate payouts product: a payout is recorded, not sent.
-- **Paying after the ride rests on the driver's word and on blocking.** Nothing is held,
-  so a passenger who never pays loses nothing but the right to book again; there is no
-  collection, reminder or write-off. Cash is recorded by the driver alone, and a driver
-  who forgets leaves the passenger unable to book until they do. The platform's fee inside
-  cash is shown to the driver as held for the platform; nothing collects it. A passenger
-  who disputes a completed trip still owes it until an administrator acts, and the dispute
-  page does not show what is owed. The simulator does not model paying later, so whether
-  it changes when people cancel is not known.
-- Receipts are not tax invoices unless a GST registration is configured, and none has been, so tax invoices have never been used for real. They cover only what VAYORA itself charges, on real payments. The rate, the SAC code and leaving the fare out are the authors' reading, for a tax adviser to confirm. So are credit notes, which reverse a fee returned after it was invoiced, and taking Maharashtra as where the service is supplied, which decides CGST and SGST or IGST whichever state the ride is in. The PDF is in English only; the receipt page is in the reader's language.
-- A payout is recorded the moment a trip completes. There is no settlement delay,
-  dispute window or bank detail.
+- **VAYORA cannot see a payment.** Passengers pay their driver directly, so whether money moved
+  rests wholly on the driver's word. A driver who forgets or refuses to mark it paid leaves the
+  passenger unable to book until staff clear it, and staff cannot see a UPI payment either: they
+  judge what they are shown, and nothing ties a report to a booking. A passenger who never pays
+  loses nothing but the right to book again; there is no collection, reminder or write-off. A
+  passenger who disputes a completed trip still owes it until an administrator acts, and the
+  dispute page does not show what is owed. Money sent to the wrong person cannot be got back
+  through VAYORA. The simulator does not model paying at all, so whether paying after the ride
+  changes when people cancel is not known.
+- **UPI has never been tried with a real UPI app or real money.** A UPI ID is checked only by
+  its shape, so one that does not exist is accepted, and a QR code is not read, so a driver can
+  upload any picture. A passenger is told to check the name their own app shows. On a phone the
+  app offers a link that opens a UPI app with the amount filled in: it follows the UPI link
+  format, but has never been opened on a phone, and UPI apps may refuse such a link to a personal
+  ID, so the ID and the QR code are the ways that matter.
+- Receipts are never tax invoices: VAYORA charges nothing, and has nothing to invoice. The PDF is in
+  English only; the receipt page is in the reader's language.
 - **A seat hold is a courtesy, not a guarantee.** It lives only in Redis. If Redis is
   down, holds are neither placed nor honoured and anyone may book the seats. A hold and
   another passenger's booking arriving in the same instant are not ordered against each
@@ -233,12 +230,11 @@ mistake for more. Updated 2026-11-01.
   it. `vayora.reminders.targeting.enabled: false` asks everyone alike.
 - **The seat-release reminder is untested as an incentive.** Nothing measures whether
   anyone releases a seat because of it, and the simulator suggests releases come earlier
-  but add no rides. Sent at 48 hours, it lands where the whole-fare refund ends, so most
-  who act on it get half the fare back; it says so. There is no way to turn it off
+  but add no rides. Sent at 48 hours, it lands where free cancelling ends, so most
+  who act on it owe half the fare; it says so. There is no way to turn it off
   for oneself.
-- **A referral earns a driver nothing.** The reward is a pass, which only waives a
-  passenger's fee; nothing has been decided for drivers. The weekly pass itself is an
-  assumption.
+- **A referral earns nobody anything.** It is only counted: the reward was a free pass, and passes
+  are gone.
 - **Calling is a labelled mock by default, and insurance is checked only by a person.** A
   driver's insurance is their own declaration unless staff have seen the policy, and is never
   checked with an insurer. A policy cancelled after staff saw it would still show as checked.
@@ -248,22 +244,13 @@ mistake for more. Updated 2026-11-01.
   been tried: each call is two paid legs, and calls to Indian numbers from a Twilio number
   are international and may need registration. **Nothing limits how often someone calls**:
   with Twilio on, each press rings the other person's phone again and costs two more legs.
-- **The lower fee for drivers who keep their rides is an untested incentive.** Its
-  thresholds (10 completed rides, 90 days) and rate (7%) are assumptions, and nothing
-  measures whether drivers withdraw less because of it. A driver with fewer than 10
-  completed rides cannot earn it, however reliable.
-- **Travel passes only waive the service fee**, because that is the only part of a price
-  the platform owns. Pass prices are assumptions. A pass cannot be cancelled or
-  refunded, and a pass purchase is not in the money ledger, which records booking
-  payments only.
 - **The PDF receipt is in English, with names in Latin or India's nine main scripts only.** Those are
   drawn as shapes, so they read correctly but cannot be selected or searched in the PDF, and no native
   reader has checked them. Any other script, Urdu's among them, prints as "?". The receipt page shows
   the same receipt in the reader's language with names as written, and the browser prints
   it or saves it as PDF. That was printed to PDF by headless Microsoft Edge, never on
   paper or through a person's own print dialog, and its Hindi and Marathi have had no
-  native review. Neither is a tax invoice unless a GST registration is configured. Drivers get
-  no payout statement.
+  native review. Drivers get no statement of what they were paid beyond the earnings page.
 - **Women-only rides rest on what members say about themselves.** Anyone can choose
   "Woman" on their profile, and nothing checks it. Changing the profile later changes
   what they can see and book, but does not touch a booking already made.

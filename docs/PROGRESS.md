@@ -1,5 +1,37 @@
 # Progress
 
+## 2026-11-02 (last) — passengers pay the driver directly, in cash or by UPI
+
+- **As the team decided:** VAYORA no longer takes, holds or charges any money. A passenger pays
+  their driver after the ride, in cash or by UPI, and the driver marks it paid, saying which. Gone:
+  Razorpay, the simulated provider, card and wallet, the hold and the ledger, the service fee,
+  travel passes, the lower fee for drivers who keep their rides, tax invoices and credit notes, and
+  the free pass for an invitation (invitations are still counted).
+- **A driver's UPI ID and QR code** go on My account. A passenger sees them only for their own
+  booking, once it is confirmed or while it owes something; they can copy the ID or, on a phone,
+  open their UPI app with the amount filled in. An ID that looks like an email address is refused;
+  a QR code is kept as a PNG, pixel for pixel, so that it scans.
+- **Cancelling** follows the same timing tiers, now as what is owed: nothing two days ahead, half
+  the fare one to two days ahead, the whole fare later or for not turning up. Nothing when the
+  driver cancels, declines or never answers. Nobody who owes a driver books again until the driver
+  marks it paid, and **staff can clear it**, with a reason kept in the audit log, for a driver who
+  was paid and will not say so.
+- **Migration V40** drops the money tables and `rides.pay_after_ride`. Before it touched the real
+  database the old tables were dumped to `backups/before-direct-payment-2026-11-02/`, and the
+  migration was rehearsed there inside a transaction and rolled back: it deletes the 3 settled
+  simulated payments (all test accounts on the mock provider) and moves the 12 simulated holds to
+  paying after the ride. The git tag `before-direct-payment` marks the code before this change.
+- **Seen in a real browser** (headless Microsoft Edge) against a throwaway copy with its own
+  in-memory databases, 23 checks: the driver's UPI ID and QR code, a booking with nothing to pay,
+  the details shown once confirmed, copy to the clipboard, booking refused while owing, the driver
+  marking it paid, the receipt and its PDF, a late cancellation owing the fare, another passenger
+  refused the details, staff clearing it, the UPI app link on a phone, and five pages in Marathi at
+  phone width with nothing wider than the screen. The QR code read back was identical to the upload.
+- Features: 6 removed (42, 43, 44, 45, 85, 94); of the 89 left, 84 verified and 5 partial: about 97%
+  counting a partial as half, or 91% of the original 95.
+- Tests: 310 Java and 287 web, all passing. Python and the gateway were not rerun: nothing in them
+  changed.
+
 ## 2026-11-02 (later) — Google sign-in works with Google itself
 
 - **Feature 2 is verified.** With a real client ID in `.env`, a real Gmail account signed in and was

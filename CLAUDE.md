@@ -41,7 +41,7 @@ nothing about the research, which stays on this corridor.
 ## Data placement
 
 - **PostgreSQL + PostGIS**: users, vehicles, rides, route geometry, bookings, payments,
-  passes, trips, and the event log.
+  trips, and the event log.
 - **MongoDB**: chat, GPS traces, notifications.
 - **Redis**: seat holds, OSRM cache, sessions.
 

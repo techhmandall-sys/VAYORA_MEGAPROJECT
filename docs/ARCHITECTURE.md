@@ -84,8 +84,8 @@ Locks are always taken in the order ride, booking, segments, so two operations o
 same ride cannot deadlock. Eight simultaneous requests for one last seat produce exactly
 one booking; a test does this on every run.
 
-Money follows the same discipline: a hold when the booking is requested, one settlement
-when it ends, and a ledger that a database trigger makes append-only.
+Money is simpler still, because none passes through the platform: passengers pay their driver
+directly, and each booking records only what it owes when it ends and whether the driver says it was paid.
 
 ## The event log
 
@@ -131,7 +131,6 @@ Nothing in this list touches the outside world, and every screen that shows one 
 
 | What | How it is simulated |
 |---|---|
-| Payments | A mock provider that approves holds; no money moves |
 | Email and SMS | A mock sender that writes to the server log and an administrator-only outbox |
 | SOS messages to emergency contacts | The same mock sender; nobody is contacted |
 | Identity checks | None exist. "Confirmed" means a code from the mock sender was typed in |

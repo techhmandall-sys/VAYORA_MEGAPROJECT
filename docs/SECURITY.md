@@ -43,10 +43,12 @@ test. It must not be put on the public internet as it stands; the last section s
 
 | Control | Detail | Checked by |
 |---|---|---|
-| The money ledger cannot be rewritten | A trigger refuses update and delete | `PaymentFlowIntegrationTest` |
 | The audit log cannot be rewritten | The same | `ModerationIntegrationTest` |
 | Every administrative action is audited | Report decisions, reinstatements, SOS acknowledgements | Same |
-| A retried booking cannot charge twice | Idempotency key with a unique index | `PaymentFlowIntegrationTest` |
+| A retried booking cannot book twice | Idempotency key with a unique index | `DirectPaymentIntegrationTest` |
+| A driver's UPI details reach only their own passengers | Only for the passenger's own booking, once confirmed or while it owes something; someone else's looks like none. The QR code is never cached | `DirectPaymentIntegrationTest` |
+| No payment credentials are held | A UPI ID is an address to pay into, not a secret. There are no cards, PINs or provider keys, and VAYORA never touches the money | There is nothing to test |
+| A QR code is only ever pixels | Decoded and written again as a PNG, with the same limits as a photo, so nothing else in the file is kept | `DirectPaymentIntegrationTest` |
 | Seats cannot be oversold | Row lock and a conditional update | 8-way concurrency test |
 
 ### Input and output

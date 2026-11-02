@@ -55,8 +55,6 @@ Every setting has a working default in `docker-compose.yml`. To change one, copy
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | unset | An SMTP server for real email. Unset: nothing is emailed. Add them to the core-api service's environment |
 | `VAYORA_MAIL_FROM` | empty | The sender address. Required once an SMTP server is set; core-api will not start without it |
 | `VAYORA_PUSH_SUBJECT` | `mailto:vayora@example.invalid` | A contact push services can use about this server's messages. Set a real one before turning push on |
-| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | empty | Payments through Razorpay. Both or neither; neither is the simulated provider. A test key (`rzp_test_...`) is Razorpay's test mode, where no real money moves; get one from the Razorpay dashboard in Test Mode, under API Keys. Keep the secret out of git |
-| `VAYORA_GSTIN`, `VAYORA_LEGAL_NAME`, `VAYORA_LEGAL_ADDRESS` | empty | Tax invoices for what VAYORA itself charges, on real payments only. All three or none; none means receipts say they are not one. Needs a real GST registration, and a tax adviser to confirm the rate and SAC code in `application.yml` first. core-api will not start on half of them or on a GSTIN of the wrong form |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | empty | Text messages and masked calls through Twilio. All three or none; none sends texts to the simulated outbox and simulates calls. `TWILIO_FROM` must be able to text and call. Twilio's test credentials with `TWILIO_FROM=+15005550006` are answered as if sent and send nothing. Real texts to Indian numbers need DLT registration |
 
 The web app's addresses for core-api, the gateway and intel are fixed when its image is
@@ -67,7 +65,7 @@ intel's image is built from the repository root, as it carries the simulator and
 configurations for live what-if runs: `docker compose up -d --build intel` after changing
 `sim/` or `experiments/configs/`.
 
-Application settings that are not secrets (refund tiers, service fee, hold length, code
+Application settings that are not secrets (cancellation tiers, hold length, code
 expiry, search radius) are in `core-api/src/main/resources/application.yml`. Research
 settings are in `experiments/configs/`.
 
@@ -178,13 +176,9 @@ the real service. Each needs an account of your own, and turns on when its setti
 The web server sends `Referrer-Policy: no-referrer-when-downgrade` on `localhost` only, which Google
 asks for when testing over http, and the stricter policy it recommends everywhere else.
 
-**Payments (feature 46), free in test mode, where no real money moves**
+**Payments need no setup.** Passengers pay their driver directly, in cash or by UPI: a driver adds
+their UPI ID or QR code on My account, and VAYORA holds no keys and moves no money.
 
-1. Sign up at razorpay.com and stay in Test Mode.
-2. Under Account & Settings, API Keys, generate a test key.
-3. Put both in `.env`: `RAZORPAY_KEY_ID=rzp_test_...` and `RAZORPAY_KEY_SECRET=...`.
-4. Book a ride: Razorpay's checkout opens. Pay with one of its published test cards or test UPI
-   IDs. Every screen and receipt says test mode.
 
 **Texts and masked calls (features 64 and 61)**
 
@@ -226,7 +220,7 @@ sh scripts/deploy.sh       # the first run downloads the road map and takes a wh
 Then open `https://<your address>` and sign in as the administrator you set in `.env`. To update
 later: `git pull && sh scripts/deploy.sh`.
 
-Before others use it: payments, texts and calls stay simulated until switched on, and the screens
+Before others use it: texts and calls stay simulated until switched on, and the screens
 say so. Administrators can read every confirmation code in the simulated outbox. Do not run
 `scripts/demo-data.mjs` against a public server: its accounts share one password.
 
