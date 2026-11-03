@@ -5,6 +5,7 @@ import { forwardRef, useId, useState, type ButtonHTMLAttributes, type InputHTMLA
 import { msg, useT } from '../lib/i18n';
 import { translateServerMessage } from '../lib/serverMessages';
 import type { BookingStatus, RideStatus } from '../lib/types';
+import { useLargeTitle } from './pageTitle';
 import { Sheet } from './sheet';
 
 // Fields as iOS draws them: rounded, quiet until touched, a soft glow of the tint when focused.
@@ -419,10 +420,11 @@ export function Detail({ icon: Icon, tone = 'text-slate-600', children }: { icon
  * @param aside beside the title: how current the screen is, or its main action
  */
 export function Page({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
+  const heading = useLargeTitle(title);
   return (
     <section className="stagger space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h1 className="text-[28px] font-bold leading-tight tracking-tight text-slate-900 sm:text-[34px]">{title}</h1>
+        <h1 ref={heading} className="text-[28px] font-bold leading-tight tracking-tight text-slate-900 sm:text-[34px]">{title}</h1>
         {aside}
       </div>
       {children}

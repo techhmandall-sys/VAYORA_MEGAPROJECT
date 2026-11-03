@@ -26,11 +26,15 @@ export default {
         accent: { DEFAULT: token('accent'), strong: token('accent-strong') },
         danger: { DEFAULT: token('danger'), strong: token('danger-strong') },
       },
+      // Apple's San Francisco where the device has it (iPhone, iPad, Mac); everywhere else Inter,
+      // which was drawn to the same brief and is the usual open stand-in for it. San Francisco
+      // itself may only be used on Apple's own systems. Devanagari falls through to the system's.
       fontFamily: {
         sans: [
           '-apple-system',
           'BlinkMacSystemFont',
           '"SF Pro Text"',
+          '"Inter Variable"',
           '"Segoe UI Variable Text"',
           '"Segoe UI"',
           'Roboto',

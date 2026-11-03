@@ -39,6 +39,7 @@ import { LANGUAGES, msg, useLanguage, useT, type Language } from '../lib/i18n';
 import { PHONE, useMediaQuery } from '../lib/media';
 import { themeLabels, useTheme, type ThemeChoice } from '../lib/theme';
 import { preload } from '../pageLoaders';
+import { BarTitle, BarTitleContext, useScrolled } from './pageTitle';
 import type { Role } from '../lib/types';
 import { NotificationBell } from './bell';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -378,6 +379,10 @@ export function Layout() {
   const member = user && user.role !== 'ADMIN';
   const side = user && !phone;
 
+  const scrolled = useScrolled();
+  // A screen's title once its large title has scrolled under the bar.
+  const [barTitle, setBarTitle] = useState<string | null>(null);
+
   // Each role has its own tint (index.css): the whole app takes it on.
   useEffect(() => {
     const root = document.documentElement;
@@ -397,10 +402,16 @@ export function Layout() {
       {side && <Sidebar role={user.role} name={user.fullName} onSignOut={logout} />}
       <div className={side ? 'pl-[4.75rem] lg:pl-64 print:pl-0' : ''}>
         <OfflineBanner />
-        <header className="glass sticky top-0 z-30 border-b border-slate-900/[0.07] print:hidden">
+        {/* As on iOS: clear at the top of a screen, frosted once something scrolls under it. */}
+        <header
+          className={`sticky top-0 z-30 border-b transition-[background-color,border-color,backdrop-filter] duration-300 print:hidden ${
+            scrolled ? 'glass border-slate-900/[0.07]' : 'border-transparent'
+          }`}
+        >
           <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4 sm:px-6">
-            {!side && <Brand />}
+            {!side && <Brand compact={Boolean(barTitle)} />}
             {user && <MemberPalette role={user.role} emergency={member ? () => setEmergency(true) : undefined} signOut={logout} />}
+            <BarTitle title={barTitle} />
             <div className="ml-auto flex items-center gap-2 text-sm text-slate-600">
               {/* On a phone a signed-in member finds these in the More sheet: the bar has room for little. */}
               {(!user || !phone) && <LanguageSwitcher />}
@@ -429,9 +440,11 @@ export function Layout() {
           className={`mx-auto max-w-5xl animate-page-in px-4 pt-6 sm:px-6 sm:pt-8 print:p-0 ${user && phone ? 'pb-28' : 'pb-20'}`}
         >
           <ErrorBoundary>
-            <Suspense fallback={<PageSkeleton />}>
-              <Outlet />
-            </Suspense>
+            <BarTitleContext.Provider value={setBarTitle}>
+              <Suspense fallback={<PageSkeleton />}>
+                <Outlet />
+              </Suspense>
+            </BarTitleContext.Provider>
           </ErrorBoundary>
         </main>
       </div>

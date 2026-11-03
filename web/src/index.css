@@ -3,6 +3,22 @@
 @tailwind utilities;
 
 /*
+ * Inter, for devices without Apple's San Francisco (tailwind.config.js), served with the app.
+ * Latin only: the Latin-extended file would be fetched for the rupee sign alone, which the
+ * system font draws instead. "optional": a slow first visit keeps the system font rather than
+ * repainting every line when Inter arrives; from then on it comes from the cache.
+ */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: optional;
+  src: url('../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
  * The VAYORA theme: iOS's grouped greys and system colours, with VAYORA teal as the tint.
  * Every colour class in the app reads one of these variables (tailwind.config.js), so the
  * dark values below restyle every screen at once. Values are "r g b" for Tailwind's opacity
@@ -163,6 +179,8 @@
   body {
     @apply bg-canvas font-sans text-slate-900;
     -webkit-tap-highlight-color: transparent;
+    /* The tight tracking iOS sets at body size; headings set their own with tracking-tight. */
+    letter-spacing: -0.011em;
   }
 
   ::selection {
