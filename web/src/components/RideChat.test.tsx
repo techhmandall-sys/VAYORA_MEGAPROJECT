@@ -195,7 +195,7 @@ describe('live position', () => {
     act(() => gateway.push('location', { rideId: 12, lat: 17.289, lon: 74.1818, at: '2026-11-02T02:45:00Z' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent("The driver's position at 8:15 am");
-    expect(screen.getByRole('img', { name: "Map showing the driver's last known position" })).toBeInTheDocument();
+    expect(await screen.findByRole('img', { name: "Map showing the driver's last known position" })).toBeInTheDocument();
   });
 
   it('moves the driver on the map as positions come in, drawing where they have been', async () => {

@@ -23,6 +23,7 @@ import { CountUp } from '../components/countup';
 import { PlaceField } from '../components/places';
 import { useT } from '../lib/i18n';
 import { PLACES } from '../lib/places';
+import { preload } from '../pageLoaders';
 import { wantRoute } from '../lib/recent';
 import { formatOneDecimal, formatRupees, formatTime, formatWeekday } from '../lib/format';
 
@@ -521,6 +522,11 @@ function TwoSides() {
 /** What a signed-out visitor sees first: what VAYORA is, and the ways in. */
 export function LandingPage() {
   const t = useT();
+  // Signing in is the likely next step: its code is fetched while the reader is reading.
+  useEffect(() => {
+    const idle = window.requestIdleCallback ?? ((run: () => void) => window.setTimeout(run, 1500));
+    idle(() => preload('/login'));
+  }, []);
   return (
     <div className="space-y-10 sm:space-y-14">
       <Hero />

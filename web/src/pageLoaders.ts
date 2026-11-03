@@ -1,6 +1,7 @@
 // Where each screen's code comes from. The routes load a screen when it is opened; the
 // navigation fetches it a moment earlier, when the reader points at or focuses its link.
 export const load = {
+  auth: () => import('./pages/AuthPages'),
   passenger: () => import('./pages/PassengerPages'),
   driver: () => import('./pages/DriverPages'),
   backOffice: () => import('./pages/BackOfficePages'),
@@ -16,6 +17,8 @@ export const load = {
 };
 
 const byPath: Record<string, () => Promise<unknown>> = {
+  '/login': load.auth,
+  '/register': load.auth,
   '/search': load.passenger,
   '/bookings': load.passenger,
   '/payments': load.payments,

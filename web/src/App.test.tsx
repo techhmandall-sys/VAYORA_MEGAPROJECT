@@ -623,7 +623,8 @@ describe('maps, routes and location search', () => {
     open('/search');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Choose exact points on a map' }));
-    await userEvent.click(screen.getByRole('button', { name: 'click the map' }));
+    // The map's code arrives when it is first shown.
+    await userEvent.click(await screen.findByRole('button', { name: 'click the map' }));
     expect(screen.getByText(/a point you chose \(17\.3070, 74\.1900\)/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Search' }));
 
@@ -713,7 +714,8 @@ describe('maps, routes and location search', () => {
     expect(summary.getAllByText('Not chosen yet')).toHaveLength(1);
 
     // Moving a pin invalidates the route that was shown.
-    await userEvent.click(screen.getByRole('button', { name: 'click the map' }));
+    // The map's code arrives when it is first shown.
+    await userEvent.click(await screen.findByRole('button', { name: 'click the map' }));
     expect(screen.queryByText(/230 km by road/)).not.toBeInTheDocument();
   });
 });

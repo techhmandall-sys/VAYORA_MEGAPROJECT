@@ -8,8 +8,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { distanceParts, durationParts, setFormatLanguage } from './format';
-import { hi } from './locales/hi';
-import { mr } from './locales/mr';
 
 export type Language = 'en' | 'hi' | 'mr';
 
@@ -20,7 +18,22 @@ export const LANGUAGES: { code: Language; name: string }[] = [
   { code: 'mr', name: 'मराठी' },
 ];
 
-export const TABLES: Record<Exclude<Language, 'en'>, Record<string, string>> = { hi, mr };
+/**
+ * The Hindi and Marathi tables. Each is fetched only when someone reads that language, so an
+ * English reader downloads neither; until a table arrives, its language reads as English.
+ */
+export const TABLES: Partial<Record<Exclude<Language, 'en'>, Record<string, string>>> = {};
+
+const LOADERS: Record<Exclude<Language, 'en'>, () => Promise<Record<string, string>>> = {
+  hi: () => import('./locales/hi').then((module) => module.hi),
+  mr: () => import('./locales/mr').then((module) => module.mr),
+};
+
+/** Fetches a language's table, once. Resolves when that language can be shown. */
+export async function loadLanguage(language: Language): Promise<void> {
+  if (language === 'en' || TABLES[language]) return;
+  TABLES[language] = await LOADERS[language]();
+}
 
 const STORAGE_KEY = 'vayora.language';
 
@@ -33,7 +46,7 @@ export type Translate = (text: string, values?: Record<string, string | number>)
 export const msg = (text: string): string => text;
 
 export function translate(language: Language, text: string, values?: Record<string, string | number>): string {
-  const template = language === 'en' ? text : (TABLES[language][text] ?? text);
+  const template = language === 'en' ? text : (TABLES[language]?.[text] ?? text);
   if (!values) return template;
   return template.replace(/\{(\w+)\}/g, (whole, name: string) => (name in values ? String(values[name]) : whole));
 }
@@ -46,7 +59,8 @@ interface LanguageContextValue {
 // English with a no-op setter, so a component rendered outside a provider still works.
 const LanguageContext = createContext<LanguageContextValue>({ language: 'en', setLanguage: () => {} });
 
-function stored(): Language {
+/** The language chosen on this device before, or English. */
+export function storedLanguage(): Language {
   try {
     const value = localStorage.getItem(STORAGE_KEY);
     return value === 'hi' || value === 'mr' ? value : 'en';
@@ -57,20 +71,28 @@ function stored(): Language {
 
 export function LanguageProvider({ children, initial }: { children: ReactNode; initial?: Language }) {
   const [language, setLanguageState] = useState<Language>(() => {
-    const first = initial ?? stored();
+    const first = initial ?? storedLanguage();
     // Before the first render, so the first dates and prices are already in the language.
     setFormatLanguage(first);
     return first;
   });
 
+  // Switches once the table is here, so the screen never shows half of each language.
   const setLanguage = useCallback((next: Language) => {
-    setFormatLanguage(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      // The choice simply will not survive a reload.
-    }
-    setLanguageState(next);
+    loadLanguage(next).then(
+      () => {
+        setFormatLanguage(next);
+        try {
+          localStorage.setItem(STORAGE_KEY, next);
+        } catch {
+          // The choice simply will not survive a reload.
+        }
+        setLanguageState(next);
+      },
+      () => {
+        // Offline with the table never fetched: it stays in the language it was in.
+      },
+    );
   }, []);
 
   // Tells browsers and screen readers what language the page is in.

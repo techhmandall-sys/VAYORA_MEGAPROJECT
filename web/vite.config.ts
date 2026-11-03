@@ -7,13 +7,14 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // Libraries and the translation tables change less often than the app: separate files
-        // download in parallel and stay cached across releases.
+        // Libraries change less often than the app: separate files download in parallel and stay
+        // cached across releases. Each translation table and the map are fetched only when used.
         manualChunks(id) {
-          if (id.includes('/src/lib/locales/')) return 'locales';
           if (/node_modules\/(react|react-dom|react-router|react-router-dom|scheduler)\//.test(id)) return 'react';
           if (id.includes('node_modules/framer-motion/')) return 'motion';
-          if (/node_modules\/(@tanstack|zod|react-hook-form|@hookform)\//.test(id)) return 'data';
+          if (id.includes('node_modules/@tanstack/')) return 'data';
+          // Forms are on a few screens only, so the front page does without them.
+          if (/node_modules\/(zod|react-hook-form|@hookform)\//.test(id)) return 'forms';
           return undefined;
         },
       },

@@ -8,7 +8,7 @@ import { useNow } from '../lib/live';
 import { useRideChannel, type RealtimeError, type RidePosition } from '../lib/realtime';
 import type { RideStatus } from '../lib/types';
 import { LiveDot } from './live';
-import { RouteMap } from './RouteMap';
+import { RouteMap } from './LazyRouteMap';
 import { Button, Notice } from './ui';
 
 const MAX_LENGTH = 500;

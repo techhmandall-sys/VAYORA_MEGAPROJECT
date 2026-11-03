@@ -7,6 +7,11 @@ import { afterEach, beforeEach, vi } from 'vitest';
 import { MotionGlobalConfig } from 'framer-motion';
 
 import { setToken } from '../lib/api';
+import { loadLanguage } from '../lib/i18n';
+
+// The app fetches a language's table when it is chosen; tests switch languages at once.
+await loadLanguage('hi');
+await loadLanguage('mr');
 
 // Animations finish at once in tests, so an element leaving the page is gone when asserted.
 MotionGlobalConfig.skipAnimations = true;

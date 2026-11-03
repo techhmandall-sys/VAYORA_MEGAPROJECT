@@ -46,7 +46,8 @@ afterEach(() => {
 });
 
 describe.each(['hi', 'mr'] as const)('the %s table', (language) => {
-  const table = TABLES[language];
+  // Loaded by the test setup; the app fetches each only when it is chosen.
+  const table = TABLES[language]!;
   const marked = markedStrings();
 
   it('has an entry for every string the app can show', () => {

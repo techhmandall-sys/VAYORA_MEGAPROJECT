@@ -13,7 +13,7 @@ import { CallButton } from '../components/call';
 import { InsuranceEditor } from '../components/insurance';
 import { RideChat } from '../components/RideChat';
 import { initialsOf, PhotoEditor } from '../components/photo';
-import { RouteMap } from '../components/RouteMap';
+import { RouteMap } from '../components/LazyRouteMap';
 import { WeeklyPayoutChart } from '../components/charts';
 import { Collapse } from '../components/collapse';
 import { CountUp } from '../components/countup';

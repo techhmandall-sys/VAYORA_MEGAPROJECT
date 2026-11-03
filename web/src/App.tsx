@@ -10,15 +10,17 @@ import { AuthProvider, useAuth } from './lib/auth';
 import { LanguageProvider, useT } from './lib/i18n';
 import { ThemeProvider } from './lib/theme';
 import { load } from './pageLoaders';
-import { LoginPage, RegisterPage } from './pages/AuthPages';
 import { LandingPage } from './pages/LandingPage';
 
 // Each screen is its own chunk, fetched when first opened, so the first page arrives sooner.
-// The front page and signing in are the first things anyone sees, so they stay in the main bundle.
+// The front page is the first thing anyone sees, so it stays in the main bundle. Signing in
+// brings the form libraries, which the front page fetches once it is idle (LandingPage).
 function page<K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) {
   return lazy(() => load().then((module) => ({ default: module[name] })));
 }
 const { passenger, driver, backOffice, receipts } = load;
+const LoginPage = page(load.auth, 'LoginPage');
+const RegisterPage = page(load.auth, 'RegisterPage');
 const SearchPage = page(passenger, 'SearchPage');
 const BookingsPage = page(passenger, 'BookingsPage');
 const PaymentsPage = page(load.payments, 'PaymentsPage');
