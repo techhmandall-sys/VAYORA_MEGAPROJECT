@@ -3701,3 +3701,60 @@ describe('a driver\'s rides at a glance', () => {
     expect(screen.queryByText('Rides ahead')).not.toBeInTheDocument();
   });
 });
+
+describe('getting set up as a driver', () => {
+  const profile = { email: 'driver@example.test', emailVerified: false, phone: null, phoneVerified: false,
+    bio: null, birthYear: null, gender: null, smoking: null, pets: null, music: null, chattiness: null };
+  const ride = { ...rideWithRoute, status: 'SCHEDULED', notes: null, maxTwoInBack: false, seriesSize: 1 };
+
+  it('lists what is left in order, each step a link to where it is done', async () => {
+    signIn('DRIVER');
+    serve({
+      'GET /rides/mine': () => json([]),
+      'GET /vehicles': () => json([]),
+      'GET /me/payment-details': () => json({ upiId: null, hasQr: false }),
+      'GET /me/profile': () => json(profile),
+    });
+    open('/rides');
+
+    expect(await screen.findByRole('heading', { name: 'Get set up' })).toBeInTheDocument();
+    expect(screen.getByText('0 of 4 done')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Add your car' })).toHaveAttribute('href', '/vehicles');
+    expect(screen.getByRole('link', { name: 'Add your UPI ID or QR code, so passengers can pay you' })).toHaveAttribute('href', '/account');
+    expect(screen.getByRole('link', { name: 'Confirm your email or phone' })).toHaveAttribute('href', '/account');
+    expect(screen.getByRole('link', { name: 'Publish your first ride' })).toHaveAttribute('href', '/rides/new');
+  });
+
+  it('marks what is done and counts it', async () => {
+    signIn('DRIVER');
+    serve({
+      'GET /rides/mine': () => json([]),
+      'GET /vehicles': () => json([{ id: 4 }]),
+      'GET /me/payment-details': () => json({ upiId: null, hasQr: true }),
+      'GET /me/profile': () => json(profile),
+    });
+    open('/rides');
+
+    expect(await screen.findByText('2 of 4 done')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Add your car: done' })).toBeInTheDocument();
+    expect(screen.getByRole('meter', { name: 'Get set up' })).toHaveAttribute('aria-valuenow', '50');
+  });
+
+  it('is gone once everything is done', async () => {
+    signIn('DRIVER');
+    const fetchMock = serve({
+      'GET /rides/mine': () => json([ride]),
+      'GET /vehicles': () => json([{ id: 4 }]),
+      'GET /me/payment-details': () => json({ upiId: 'ravi@okaxis', hasQr: false }),
+      'GET /me/profile': () => json({ ...profile, phoneVerified: true }),
+    });
+    open('/rides');
+
+    expect(await screen.findByText('Rides ahead')).toBeInTheDocument();
+    // Every answer it depends on has come back, so its absence is a decision, not a wait.
+    const asked = (path: string) => fetchMock.mock.calls.some(([url]) => new URL(String(url)).pathname.endsWith(path));
+    await waitFor(() => expect(['/vehicles', '/me/payment-details', '/me/profile'].every(asked)).toBe(true));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByRole('heading', { name: 'Get set up' })).not.toBeInTheDocument();
+  });
+});

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Car, CarFront, IndianRupee, MessagesSquare, Users } from 'lucide-react';
+import { Car, CarFront, Check, ChevronRight, IndianRupee, MessagesSquare, Users } from 'lucide-react';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
@@ -27,7 +27,7 @@ import { methodLabels } from '../lib/payments';
 import { LIVE_MS, useNow } from '../lib/live';
 import { rideSchema, toPublishRequest, vehicleSchema, type RideForm, type VehicleForm, MAX_DETOUR_MINUTES, MAX_REPEAT_WEEKS, ridesPublished, toVehicleRequest } from '../lib/schemas';
 import { comfortLabels, luggageLabels, vehiclePhrases } from '../lib/vehicle';
-import type { Booking, Comfort, DueReason, Earning, Luggage, MyProfile, Ride, RoutePreview, Vehicle } from '../lib/types';
+import type { Booking, Comfort, DriverPaymentDetails, DueReason, Earning, Luggage, MyProfile, Ride, RoutePreview, Vehicle } from '../lib/types';
 
 const useVehicles = () => useQuery({ queryKey: ['vehicles'], queryFn: () => api<Vehicle[]>('/vehicles') });
 
@@ -658,6 +658,55 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 /** The most seats taken at once on a ride: its fullest stretch. */
 const seatsTaken = (ride: Ride) => Math.max(0, ...ride.segments.map((segment) => segment.seatsTotal - segment.seatsAvailable));
 
+/**
+ * What a new driver still has to do before passengers can find, trust and pay them, in order,
+ * each a tap away. Gone once everything is done; nothing here is required by the server.
+ */
+function GettingStarted({ rides }: { rides: Ride[] }) {
+  const t = useT();
+  const vehicles = useVehicles();
+  const paying = useQuery({ queryKey: ['me', 'payment-details'], queryFn: () => api<DriverPaymentDetails>('/me/payment-details') });
+  const me = useQuery({ queryKey: ['me', 'profile'], queryFn: () => api<MyProfile>('/me/profile') });
+  if (!vehicles.data || !paying.data || !me.data) return null;
+  const steps = [
+    { done: vehicles.data.length > 0, label: t('Add your car'), to: '/vehicles' },
+    { done: Boolean(paying.data.upiId || paying.data.hasQr), label: t('Add your UPI ID or QR code, so passengers can pay you'), to: '/account' },
+    { done: me.data.emailVerified || me.data.phoneVerified, label: t('Confirm your email or phone'), to: '/account' },
+    { done: rides.length > 0, label: t('Publish your first ride'), to: '/rides/new' },
+  ];
+  const left = steps.filter((step) => !step.done).length;
+  if (left === 0) return null;
+  return (
+    <Card>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-lg font-bold tracking-tight text-slate-900">{t('Get set up')}</h2>
+        <p className="text-sm text-slate-600">{t('{done} of {all} done', { done: steps.length - left, all: steps.length })}</p>
+      </div>
+      <Meter fraction={(steps.length - left) / steps.length} label={t('Get set up')} />
+      <ol className="mt-3 divide-y divide-slate-100">
+        {steps.map((step) => (
+          <li key={step.label}>
+            <Link
+              to={step.to}
+              className="flex min-h-[44px] items-center gap-3 py-2 text-[15px] text-slate-900 hover:text-teal-800"
+              aria-label={step.done ? t('{step}: done', { step: step.label }) : step.label}
+            >
+              <span
+                aria-hidden="true"
+                className={`flex h-6 w-6 flex-none items-center justify-center rounded-full ${step.done ? 'bg-emerald-500 text-white' : 'ring-2 ring-slate-300'}`}
+              >
+                {step.done && <Check className="h-4 w-4" strokeWidth={3} />}
+              </span>
+              <span className={step.done ? 'text-slate-500 line-through decoration-slate-300' : 'font-medium'}>{step.label}</span>
+              <ChevronRight aria-hidden="true" className="ml-auto h-4 w-4 text-slate-400" />
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </Card>
+  );
+}
+
 export function RidesPage() {
   const t = useT();
   const units = useUnits();
@@ -677,6 +726,7 @@ export function RidesPage() {
 
   return (
     <Page title={t('My rides')} aside={rides.data && rides.data.length > 0 ? <LiveStatus query={rides} /> : undefined}>
+      {rides.data && <GettingStarted rides={rides.data} />}
       {ahead.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat icon={Car} label={t('Rides ahead')}>

@@ -2195,4 +2195,19 @@ export const mr: Record<string, string> = {
     'निर्णय घेताना तुमची सीट राखून ठेवली जाते. बरेच चालक लगेच निश्चित करतात; बाकीचे तुमच्या विनंतीला उत्तर देतात. तुम्ही प्रवासानंतर तुमच्या चालकाला पैसे देता.',
   '{n} rides cancelled. Every passenger has been told, and owes nothing.':
     '{n} राइड रद्द केल्या. प्रत्येक प्रवाशाला कळवले आहे, आणि त्यांना काहीही द्यायचे नाही.',
+  // Getting started, for a new driver
+  'Get set up':
+    'सुरुवात करा',
+  '{done} of {all} done':
+    '{all} पैकी {done} पूर्ण',
+  'Add your car':
+    'तुमची कार जोडा',
+  'Add your UPI ID or QR code, so passengers can pay you':
+    'तुमचा UPI आयडी किंवा QR कोड जोडा, म्हणजे प्रवासी तुम्हाला पैसे देऊ शकतील',
+  'Confirm your email or phone':
+    'तुमचा ईमेल किंवा फोन निश्चित करा',
+  'Publish your first ride':
+    'तुमचा पहिला प्रवास प्रकाशित करा',
+  '{step}: done':
+    '{step}: पूर्ण',
 };

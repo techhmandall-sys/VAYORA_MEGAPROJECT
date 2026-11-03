@@ -2195,4 +2195,19 @@ export const hi: Record<string, string> = {
     'निर्णय लेते समय आपकी सीट रोकी रहती है। कई चालक तुरंत पक्का करते हैं; बाकी आपके अनुरोध का उत्तर देते हैं। आप सवारी के बाद अपने चालक को भुगतान करते हैं।',
   '{n} rides cancelled. Every passenger has been told, and owes nothing.':
     '{n} सवारियाँ रद्द की गईं। हर यात्री को बता दिया गया है, और उन्हें कुछ नहीं देना।',
+  // Getting started, for a new driver
+  'Get set up':
+    'शुरुआत करें',
+  '{done} of {all} done':
+    '{all} में से {done} पूरे',
+  'Add your car':
+    'अपनी कार जोड़ें',
+  'Add your UPI ID or QR code, so passengers can pay you':
+    'अपनी UPI आईडी या QR कोड जोड़ें, ताकि यात्री आपको भुगतान कर सकें',
+  'Confirm your email or phone':
+    'अपना ईमेल या फ़ोन पक्का करें',
+  'Publish your first ride':
+    'अपनी पहली सवारी प्रकाशित करें',
+  '{step}: done':
+    '{step}: पूरा',
 };
