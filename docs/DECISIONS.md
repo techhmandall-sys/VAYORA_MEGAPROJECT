@@ -159,6 +159,10 @@ was decided while building within them.
 | Installable, with an offline page and no other caching (from 2026-10-24) | A phone can keep VAYORA on its home screen; a page that cannot load says so in all three languages instead of the browser's error. Caching the app itself would risk serving a stale build against a newer API | Nothing works offline beyond that one page |
 | A command palette (Ctrl+K) beside the navigation, not instead of it (from 2026-10-24) | Fast for anyone at a keyboard, and invisible to everyone else | |
 | Dark maps are OpenStreetMap's tiles inverted and hue-rotated, not a dark tile provider (from 2026-10-24) | No second map provider to agree terms with or send readers' addresses to | Colours are approximate: parks and water keep their hue only roughly |
+| Text is Apple's San Francisco where the device has it, otherwise Inter, served with the app, Latin only, shown only once cached (from 2026-11-03) | The team asked for an iOS look; San Francisco may only be used on Apple systems, and Inter is the usual open stand-in drawn to the same brief | A first visit on a slow phone shows the system font, which keeps the first paint from waiting; the rupee sign is always the system font's |
+| Hindi and Marathi tables, the map and the sign-in screen load only when used (from 2026-11-03) | They were 72, 63 and 39 KB of compressed code every reader downloaded first, for screens most never open | A Hindi or Marathi reader's first screen waits for their table; sign-in is fetched while the front page is idle |
+| Large titles that move into the bar once scrolled away, and a bar that is clear at the top and frosted once content is under it, as on iOS (from 2026-11-03) | The screen's name stays in sight without taking room | On a phone the small title sits beside the logo, not centred, so it never runs under the emergency button |
+| A new driver sees a checklist of what is left, until it is all done (from 2026-11-03) | A car, a way to be paid, a confirmed contact and a first ride, in that order, each one tap away | Drawn from what the app already knows; nothing on the server requires it |
 | The what-if page shows saved sweeps; it runs nothing | Running the simulator from a screen needs a service to run it: intel holds no state and core-api owns transactions, and a fourth runtime is ruled out. The web image is built from `web/` alone, so `export_web.py` copies the sweep figures into `web/src/data/whatif.json`, and `reproduce.sh` and a test fail if the copy drifts | Only settings already swept can be chosen; a new question needs a sweep run by hand |
 
 ## Dependencies
@@ -176,6 +180,7 @@ Each was justified in one sentence when it was added, as CLAUDE.md requires.
 | matplotlib | research only | Draws the report's figures from the committed results |
 | SimPy, PyYAML | intel (already research) | Run the simulator and read its configurations for a live what-if run |
 | PyJWT | intel, research | intel checks an administrator's token for a live what-if run, as the gateway does; the tests sign the tokens they present |
+| @fontsource-variable/inter | web | Inter's font files, served by the app itself, for devices without San Francisco |
 | framer-motion, lucide-react | web | Exits, height changes and swipes that CSS cannot animate; one consistent icon set (see Interface) |
 | ESLint, typescript-eslint, eslint-plugin-react-hooks, eslint-plugin-jsx-a11y | web, gateway (development only) | Catch misused hooks, unused code and accessibility faults that the type checker and the tests do not |
 | Caddy | online setup only | Gets and renews HTTPS certificates by itself, from one small file |

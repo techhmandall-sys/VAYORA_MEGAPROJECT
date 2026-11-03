@@ -1,5 +1,38 @@
 # Progress
 
+## 2026-11-03 — faster first screens, iOS type and titles, and a driver's checklist
+
+- **Measured first, on a phone profile** (390 px, a slow 4G link, a CPU four times slower), against
+  the production build served gzipped. Lighthouse could not be installed: npm's registry was too
+  slow to answer. Compressed code each screen downloads before it shows:
+
+  | Screen | Before | After |
+  |---|---|---|
+  | Front page | 261 KB | 190 KB, of which 39 KB is sign-in, fetched once idle |
+  | Sign in | 261 KB | 190 KB |
+  | Find a ride, My bookings | 339 KB | 221 KB |
+
+  First paint moved from 2.1-2.6 s to 1.4-2.0 s in English; paint times vary by a few hundred
+  milliseconds between runs, the sizes do not. No screen shifts its layout, before or after.
+- **How:** the Hindi and Marathi tables load only for a reader of that language (72 KB that every
+  reader fetched first); the map's library only when a map is first shown (63 KB); sign-in and its
+  form libraries only when signing in, fetched while the front page is idle (39 KB).
+- **iOS type:** Apple's San Francisco on iPhone, iPad and Mac; elsewhere Inter, served with the app
+  (47 KB, Latin only), with iOS's tight tracking. It is shown only once cached, so a first visit on
+  a slow phone keeps the system font rather than repainting every line. Seen loaded on Windows.
+- **iOS bars:** a screen's large title moves into the bar once it scrolls away, and the bar is clear
+  at the top and frosted once content is under it. On a phone the small title sits beside the logo,
+  where it cannot run under the emergency button: centred, it did, as a screenshot showed.
+  Installed to a home screen, it opens full screen.
+- **A new driver's checklist** on My rides: add a car, add a UPI ID or QR code, confirm an email or
+  phone, publish a first ride, each one tap away, counted, and gone once all are done.
+- Seen in a real browser against a throwaway copy with in-memory databases: Inter loaded, the
+  checklist at 0 of 4, the title in the bar after scrolling at 390, 820 and 1280 px with nothing
+  overlapping, the dark theme in Marathi.
+- Deleted the build output and tool caches (`core-api/target`, `web/dist`, Vite's cache): all
+  rebuilt when needed. The installed packages, backups, research data and `.env` were left alone.
+- Tests: 293 web, all passing. core-api was not changed.
+
 ## 2026-11-02 (last) — passengers pay the driver directly, in cash or by UPI
 
 - **As the team decided:** VAYORA no longer takes, holds or charges any money. A passenger pays
