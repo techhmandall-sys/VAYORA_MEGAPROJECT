@@ -1333,3 +1333,90 @@ baseline. Judged by `python -m experiments.analysis.time_cost`, which writes
   two points would put it a little above 0.03, but that is an extrapolation.
 - A passenger still sees only the first ride offered (assumption M2), so a cost cannot make them choose
   another ride on the list.
+
+## 29. Experiment X3: the reconfirmation ceiling, cell by cell
+
+Computed on 2026-11-04 from stored logs, against the hypotheses of section 26 (committed in `66d73cc`
+before any X3 number existed). `configs/x3.yaml` fixed how section 26's words are read before the
+computation. Judged by `python -m experiments.analysis.ceiling`, which writes
+`experiments/reports/x3-ceiling.md` and `.json`.
+
+**What was built.**
+- **`ride_seat_accounting` (`metrics.sql`):** per ride, the seat identity's terms B, U and F of the
+  paper's Proposition 7, with refills counted both when requested and when the refilling booking
+  stands at departure.
+  - The log has no withdrawal event. A ride is treated as withdrawn when a driver cancelled a booking
+    on it in either run of a pair; common random numbers make withdrawals the same in both.
+- **`booking_fates`:** per booking, when it was accepted, asked, cancelled or started.
+- **Classes.** Each asked booking is put in 𝓛 (late canceller), 𝓔 (early canceller, after the ask)
+  or 𝓝 (would travel) by its **twin** in the run without requests: the same search booking the same
+  ride, accepted at the same moment.
+  - Common random numbers give the twin the same cancellation draw, so its fate is the asked
+    booking's own, had it not been asked.
+  - Between 86.5% and 98.7% of asked seats found a twin, depending on the cell. The rest belong to
+    worlds that had already diverged.
+- **Ceiling.** The central ceiling shares those unmatched bookings out in proportion; the
+  conservative one puts them all in 𝓛.
+- **Cells.** 34 cells:
+  - the ladder policies;
+  - X1's three worlds;
+  - every cell of the response, oracle-response, threshold, budget and demand sweeps.
+
+  Some are the same runs met twice: B4 at the world's settings appears in five. The budget sweep's
+  comparator, B3, is taken from ladder `…004`; that run's B4 equals the sweep's B4 on all 30 seeds.
+  X5's cells wait for X5.
+
+**Results against the hypotheses.** Seats per 100 searches on departed rides; 30 paired seeds.
+
+| | Result | Holds |
+|---|---|---|
+| H3.1 | One cell in 34 has its whole interval of ΔB above the central ceiling: B4 at 120 searches a day, +0.113 (+0.092 to +0.134) against 0.071 (the conservative ceiling is 0.153). One is allowed | yes |
+| H3.2 | ΔO with refills counted when they stand is wholly below zero in 28 of 34 cells | **no** |
+| H3.3 | Spearman between the ceiling in completed rides, by eq. (19), and the observed change in completed rides is 0.622 | **no** |
+
+| Ladder policy vs B3 | ΔB observed | Ceiling, central (conservative) | Share of the ceiling reached | ΔO, refills when requested |
+|---|---|---|---|---|
+| B4 | +0.139 (+0.092 to +0.186) | 0.272 (0.366) | 51% | +0.052 (+0.001 to +0.102) |
+| B4-KM | +0.162 (+0.109 to +0.215) | 0.282 (0.539) | 57% | +0.056 (−0.006 to +0.118) |
+| B5 | +0.029 (−0.003 to +0.062) | 0.106 (0.122) | 28% | +0.039 (+0.005 to +0.073) |
+| B5-RANDOM | +0.029 (+0.006 to +0.053) | 0.077 (0.084) | 38% | +0.019 (−0.004 to +0.041) |
+| ORACLE | +0.223 (+0.176 to +0.270) | 0.288 (0.288) | 78% | +0.071 (+0.026 to +0.116) |
+
+**What the results say.**
+- **The ceiling holds.** No policy, at any setting tried, gains more standing seats than Proposition 8
+  allows, except in one cell. That cell is the one where the proposition's own assumption A3 fails
+  (below).
+  - ORACLE reaches 78% of its ceiling in world h3, and 99% and 92% in X1's worlds at w = 0.5 and 0.9
+    (+0.362 against 0.364, +0.477 against 0.518).
+  - B4 reaches about half of its ceiling.
+- **H3.2 failed as written, and the quantity it names was the wrong one.** That is found here, after
+  the hypotheses were fixed, and is reported as such.
+  - "ΔO with refills counted when they stand" is not a count of seats. It subtracts every refilled
+    seat whose refilling booking did not stand, but those seats are already counted: as released
+    again, if that passenger cancelled, or as otherwise empty, if the request was refused. It is
+    therefore negative whenever a policy adds refills that do not last, whatever A3 says.
+  - The identity's exact residual counts refills when requested, as Proposition 7 does. It is A3's
+    test, and its interval reaches zero or above in 33 of 34 cells (wholly above zero in 23).
+  - The exception is B4 at 120 searches a day: −0.058 (−0.075 to −0.041). It is the same cell that
+    breaks the ceiling. Where demand is heavy, asking frees seats that are then taken by passengers
+    who would otherwise have filled no seat, which is the effect A3 rules out.
+  - This reading is exploratory.
+- **Many of the extra refills do not last.** Under B4, refilled seats rose by 0.495 per 100 searches,
+  but those whose refilling booking stood at departure rose by only 0.219: 56% of the extra refills
+  fell through. Under ORACLE, 32% did.
+- **H3.3 failed in completed rides, not in seats.** These are exploratory readings, not results.
+  - Across the same 34 cells, the ceiling in seats and the observed change in standing seats have a
+    Spearman correlation of 0.798.
+  - Converting seats to completed rides with an average party size breaks the ranking. Asking adds
+    standing seats faster than it adds trips (B4: +0.139 seats, +0.027 trips), so the extra seats come
+    with larger parties.
+  - Without the demand cells the correlation is 0.727. With duplicate runs removed it is 0.590.
+- **Whom B4 asks.** Per 100 searches, B4 asks bookings worth 1.06 seats that would have cancelled
+  late, 3.64 that would have cancelled early anyway, and 8.19 that would have travelled.
+  - Nearly half of its positive ceiling (46%) comes from moving early cancellations earlier still.
+    ORACLE never gets that part.
+
+**Not done here.**
+- X5's cells.
+- Seats on rides withdrawn with no booking left on them cannot be told apart in the log. Rides
+  treated as withdrawn are those with a driver cancellation in either run of a pair.

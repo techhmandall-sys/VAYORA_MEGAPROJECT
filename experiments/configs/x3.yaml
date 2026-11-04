@@ -1,0 +1,47 @@
+# Experiment X3 (docs/EXPERIMENT_PROTOCOL.md, sections 26 and 29): the paper's reconfirmation ceiling
+# (Proposition 8, eq. 17) against the observed change in standing seats, cell by cell. Read by
+# experiments/analysis/ceiling.py. Written on 2026-11-04, before any X3 number was computed. The runs
+# already existed: X3 reads stored logs.
+#
+# A cell is a policy that asks passengers to reconfirm, against the same ranking without requests
+# (B3) on the same seeds. ρ and η are the cell's own: world.yaml's unless its sweep sets them.
+
+# Ladders: each policy against the baseline in the same run.
+ladders:
+  - {run: 7a1c0de0-0000-4000-8000-000000000004, world: world.yaml, baseline: B3,
+     policies: [B4, B4-KM, B5, B5-RANDOM]}
+  - {run: 7a1c0de0-0000-4000-8000-000000000003, world: world.yaml, baseline: B3, policies: [ORACLE]}
+  # Experiment X1's worlds, w = 0, 0.5 and 0.9.
+  - {run: 7a1c0de0-0000-4000-8000-000000000012, world: world.yaml, baseline: B3, policies: [B4, ORACLE]}
+  - {run: 7a1c0de0-0000-4000-8000-000000000014, world: worlds/proximity_w0.5.yaml, baseline: B3,
+     policies: [B4, ORACLE]}
+  - {run: 7a1c0de0-0000-4000-8000-000000000016, world: worlds/proximity_w0.9.yaml, baseline: B3,
+     policies: [B4, ORACLE]}
+
+# Sweeps: every cell against the sweep's baseline, or against B3 from another run of the same world
+# when the sweep's own baseline is not B3. That run's events must then equal the sweep's for a
+# variant both share, which the judge checks seed by seed.
+sweeps:
+  - {config: sweeps/intervention_response.yaml, run: 5eeb0000-0000-4000-8000-000000000009}
+  - {config: sweeps/oracle_response.yaml, run: 5eeb0000-0000-4000-8000-000000000007}
+  - {config: sweeps/survival_threshold.yaml, run: 5eeb0000-0000-4000-8000-000000000006}
+  - {config: sweeps/contact_budget.yaml, run: 5eeb0000-0000-4000-8000-000000000003,
+     baseline_from: {run: 7a1c0de0-0000-4000-8000-000000000004, variant: B3, shared_variant: B4}}
+  - {config: sweeps/demand_density.yaml, run: 5eeb0000-0000-4000-8000-000000000010}
+# Experiment X5's cells are added here when X5 has run.
+
+# Hours before departure that separate a late cancellation from an early one, as everywhere else.
+late_hours: 24
+
+# How section 26's words are read:
+# - H3.1: a cell breaks the ceiling when the 95% t interval of its change in standing seats lies
+#   wholly above the ceiling. The ceiling uses the central estimate: asked bookings whose twin cannot
+#   be found are shared among the classes in proportion to those that can. The hypothesis holds when
+#   no more than one cell in cells_per_allowed_breach breaks it.
+# - H3.2: the residual ΔO, with refills counted when the refilling booking stands at departure, has a
+#   95% t interval whose upper end is at least zero, in every cell.
+# - H3.3: across cells, Spearman's rank correlation between the ceiling converted to completed rides
+#   by the paper's eq. (19) and the observed change in completed rides per 100 searches is at least
+#   spearman_threshold.
+cells_per_allowed_breach: 20
+spearman_threshold: 0.8
