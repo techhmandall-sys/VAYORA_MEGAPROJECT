@@ -428,3 +428,66 @@ FROM per_search
 WHERE requests > 0
 GROUP BY seed
 ORDER BY seed;
+
+-- name: ride_seat_accounting
+-- One row per seed and ride with any booking: the seats of the paper's seat identity
+-- C = B + (U - F) + O (Proposition 7; EXPERIMENT_PROTOCOL.md sections 26 and 29).
+--   standing_seats           B: seats of bookings whose trip started, so held at departure
+--   released_seats           U: seats passengers released by cancelling
+--   released_late_seats      the part of U released under 24 hours before departure
+--   refilled_seats           F: seats later bookings took from releases, counted when requested
+--   refilled_standing_seats  the part of F whose refilling booking still stood at departure
+--   driver_cancelled         a driver cancelled a booking on it, so the ride was withdrawn
+-- The log has no event for a withdrawal, so a ride withdrawn with no booking left on it cannot be
+-- told from one that departed empty. Grouped by booking and then by ride, never joined on payload keys.
+WITH per_booking AS (
+  SELECT seed, payload->>'booking_id' AS booking_id,
+    MAX(payload->>'ride_id') AS ride_id,
+    MAX(CAST(payload->>'seats' AS int)) FILTER (WHERE event_type = 'booking_requested') AS seats,
+    BOOL_OR(event_type = 'trip_started') AS started,
+    COALESCE(SUM(CAST(payload->>'seats' AS int)) FILTER (WHERE event_type = 'seat_refilled'), 0) AS refilled,
+    BOOL_OR(event_type = 'booking_cancelled' AND payload->>'cancelled_by' = 'passenger') AS released,
+    BOOL_OR(event_type = 'booking_cancelled' AND payload->>'cancelled_by' = 'passenger'
+            AND CAST(payload->>'departure_time' AS timestamptz) - sim_time < INTERVAL '24 hours') AS released_late,
+    BOOL_OR(event_type = 'booking_cancelled' AND payload->>'cancelled_by' = 'driver') AS driver_cancelled
+  FROM events
+  WHERE run_id = :run_id AND variant = :variant
+    AND event_type IN ('booking_requested', 'trip_started', 'seat_refilled', 'booking_cancelled')
+  GROUP BY seed, payload->>'booking_id'
+)
+SELECT seed, ride_id,
+  CAST(COALESCE(SUM(seats) FILTER (WHERE started), 0) AS int) AS standing_seats,
+  CAST(COALESCE(SUM(seats) FILTER (WHERE released), 0) AS int) AS released_seats,
+  CAST(COALESCE(SUM(seats) FILTER (WHERE released_late), 0) AS int) AS released_late_seats,
+  CAST(COALESCE(SUM(refilled), 0) AS int) AS refilled_seats,
+  CAST(COALESCE(SUM(refilled) FILTER (WHERE started), 0) AS int) AS refilled_standing_seats,
+  BOOL_OR(driver_cancelled) AS driver_cancelled
+FROM per_booking
+GROUP BY seed, ride_id
+ORDER BY seed, ride_id;
+
+-- name: booking_fates
+-- One row per seed and booking: what became of it, and when. X3 (EXPERIMENT_PROTOCOL.md section 29)
+-- classes each booking a policy asked to reconfirm by what its twin did in the run without requests.
+-- The twin is the same search booking the same ride, accepted at the same moment. Common random
+-- numbers then give it the same cancellation draw, so the twin's fate is the asked booking's own,
+-- had it not been asked.
+SELECT seed, payload->>'booking_id' AS booking_id,
+  MAX(payload->>'search_id') FILTER (WHERE event_type = 'booking_requested') AS search_id,
+  MAX(payload->>'ride_id') AS ride_id,
+  MAX(CAST(payload->>'seats' AS int)) FILTER (WHERE event_type = 'booking_requested') AS seats,
+  MAX(CAST(payload->>'departure_time' AS timestamptz)) FILTER (WHERE event_type = 'booking_requested')
+    AS departure,
+  MIN(sim_time) FILTER (WHERE event_type = 'booking_accepted') AS accepted_at,
+  MIN(sim_time) FILTER (WHERE event_type = 'intervention_issued') AS asked_at,
+  MIN(sim_time) FILTER (WHERE event_type = 'booking_cancelled' AND payload->>'cancelled_by' = 'passenger')
+    AS passenger_cancelled_at,
+  BOOL_OR(event_type = 'booking_cancelled' AND payload->>'cancelled_by' = 'driver') AS driver_cancelled,
+  BOOL_OR(event_type = 'trip_started') AS started,
+  BOOL_OR(event_type = 'trip_completed') AS completed
+FROM events
+WHERE run_id = :run_id AND variant = :variant
+  AND event_type IN ('booking_requested', 'booking_accepted', 'intervention_issued', 'booking_cancelled',
+                     'trip_started', 'trip_completed')
+GROUP BY seed, payload->>'booking_id'
+ORDER BY seed, booking_id;

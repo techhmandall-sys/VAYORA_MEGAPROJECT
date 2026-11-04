@@ -208,7 +208,8 @@ def test_metrics_file_defines_the_expected_queries():
         "primary_metric", "late_cancellation_share", "funnel_rates", "intervention_volume",
         "refill_additionality", "empty_search_reasons", "refill_by_release_timing",
         "cancellation_timing", "daily_cancellation_hazard", "seats_travelled",
-        "late_cancellation_share_passenger", "event_digest", "booked_departure_gap"}
+        "late_cancellation_share_passenger", "event_digest", "booked_departure_gap",
+        "ride_seat_accounting", "booking_fates"}
 
 
 def _event(seed, event_type, payload=None, variant=VARIANT, at=NOW):
@@ -304,6 +305,62 @@ def test_the_booked_departure_gap_is_signed_hours_from_the_wanted_time(sa_conn):
 
     assert row["requests"] == 3
     assert float(row["mean_gap_hours"]) == pytest.approx(0.5 / 3)
+
+
+def _booking_events(booking, ride, seats, departs, *, search=1, steps=()):
+    """A booking's request, then each (event type, hours after NOW, extra payload) in steps."""
+    departure = (NOW + departs).astimezone(IST).isoformat()
+    rows = [_event(1, "booking_requested", {"booking_id": booking, "ride_id": ride, "seats": seats,
+                                            "search_id": search, "departure_time": departure})]
+    for event_type, at, extra in steps:
+        payload = {"booking_id": booking, "ride_id": ride, "departure_time": departure, **extra}
+        rows.append(_event(1, event_type, payload, at=NOW + at))
+    return rows
+
+
+def test_ride_seat_accounting_counts_standing_released_and_refilled_seats_per_ride(sa_conn):
+    passenger = {"cancelled_by": "passenger"}
+    rows = (
+        # Ride 1 leaves at +40 h: booking 1 (2 seats) travels; booking 2 (1 seat) cancels 30 h before,
+        # early; booking 3 refills that seat and travels.
+        _booking_events(1, 1, 2, 40 * H, steps=[("trip_started", 40 * H, {})])
+        + _booking_events(2, 1, 1, 40 * H, steps=[("booking_cancelled", 10 * H, dict(passenger, seats=1))])
+        + _booking_events(3, 1, 1, 40 * H, steps=[("seat_refilled", 12 * H, {"seats": 1}),
+                                                 ("trip_started", 40 * H, {})])
+        # Ride 2 leaves at +20 h: booking 4 cancels 2 h before; booking 5 refills it, then cancels too.
+        + _booking_events(4, 2, 1, 20 * H, steps=[("booking_cancelled", 18 * H, dict(passenger, seats=1))])
+        + _booking_events(5, 2, 1, 20 * H, steps=[("seat_refilled", 18 * H + 30 * M, {"seats": 1}),
+                                                 ("booking_cancelled", 19 * H, dict(passenger, seats=1))])
+        # Ride 3: its driver withdrew it.
+        + _booking_events(6, 3, 2, 30 * H, steps=[("booking_cancelled", 5 * H,
+                                                  {"cancelled_by": "driver", "seats": 2})])
+    )
+    sa_conn.execute(INSERT, rows)
+
+    result = run_query(sa_conn, "ride_seat_accounting", run_id=RUN_ID, variant=VARIANT)
+
+    assert [(r["ride_id"], r["standing_seats"], r["released_seats"], r["released_late_seats"],
+             r["refilled_seats"], r["refilled_standing_seats"], r["driver_cancelled"]) for r in result] == [
+        ("1", 3, 1, 0, 1, 1, False), ("2", 0, 2, 2, 1, 0, False), ("3", 0, 0, 0, 0, 0, True)]
+
+
+def test_booking_fates_say_when_a_booking_was_accepted_asked_and_cancelled(sa_conn):
+    rows = (
+        _booking_events(1, 4, 2, 50 * H, search=7, steps=[
+            ("booking_accepted", 1 * H, {}), ("intervention_issued", 5 * H, {}),
+            ("booking_cancelled", 6 * H, {"cancelled_by": "passenger", "seats": 2})])
+        + _booking_events(2, 4, 1, 50 * H, search=8, steps=[
+            ("booking_accepted", 2 * H, {}), ("trip_started", 50 * H, {}), ("trip_completed", 55 * H, {})])
+    )
+    sa_conn.execute(INSERT, rows)
+
+    asked, travelled = run_query(sa_conn, "booking_fates", run_id=RUN_ID, variant=VARIANT)
+
+    assert (asked["search_id"], asked["ride_id"], asked["seats"]) == ("7", "4", 2)
+    assert asked["accepted_at"] == NOW + 1 * H and asked["asked_at"] == NOW + 5 * H
+    assert asked["passenger_cancelled_at"] == NOW + 6 * H and not asked["started"]
+    assert asked["departure"] == NOW + 50 * H
+    assert travelled["asked_at"] is None and travelled["started"] and travelled["completed"]
 
 
 def test_intervention_volume_matches_hand_computed_values(sa_conn):
