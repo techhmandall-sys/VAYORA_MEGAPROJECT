@@ -1,0 +1,20 @@
+# Experiment X2 (docs/EXPERIMENT_PROTOCOL.md, sections 26 and 28): which runs answer which
+# hypothesis, and how section 26's words are read. Read by experiments/analysis/time_cost.py; the
+# statistics come from analysis.yaml. Written on 2026-11-04 before either sweep was run.
+earliest_sweep: {config: sweeps/time_cost_earliest.yaml, run: 5eeb0000-0000-4000-8000-000000000011}
+b3_sweep: {config: sweeps/time_cost_b3.yaml, run: 5eeb0000-0000-4000-8000-000000000012}
+
+# H2.0: at cost 0 the sweeps' B0, EARLIEST and B3 must write exactly the events of this run.
+reproduces: 7a1c0de0-0000-4000-8000-000000000010
+
+# H2.1, "EARLIEST - B0 falls as the cost rises and crosses zero between 0.001 and 0.03 per hour",
+# is read as two conditions, both needed:
+# - falls: seed by seed, EARLIEST - B0 at the largest cost minus EARLIEST - B0 at cost 0 has its
+#   whole 95% t interval below zero;
+# - crosses: the mean of EARLIEST - B0 is above zero at the first cost below and below zero at
+#   the second.
+crossing_between: [0.001, 0.03]
+
+# H2.3: the cancellation hazard per hour at the end of a booking's exposure in world h3, the
+# number section 26 names (the paper's Proposition 3, h-bar).
+exposure_hazard_per_hour: 0.0031

@@ -1,0 +1,371 @@
+{
+  "config": {
+    "earliest_sweep": {
+      "config": "sweeps/time_cost_earliest.yaml",
+      "run": "5eeb0000-0000-4000-8000-000000000011"
+    },
+    "b3_sweep": {
+      "config": "sweeps/time_cost_b3.yaml",
+      "run": "5eeb0000-0000-4000-8000-000000000012"
+    },
+    "reproduces": "7a1c0de0-0000-4000-8000-000000000010",
+    "crossing_between": [
+      0.001,
+      0.03
+    ],
+    "exposure_hazard_per_hour": 0.0031,
+    "parameter": "demand.time_deviation_cost_per_hour",
+    "costs": [
+      0.0,
+      0.001,
+      0.002,
+      0.005,
+      0.01,
+      0.03
+    ]
+  },
+  "analysis": {
+    "equivalence_margin": 0.1,
+    "equivalence_alpha": 0.05,
+    "bootstrap": {
+      "resamples": 20000,
+      "seed": 20261029
+    },
+    "bootstrapped_measures": [
+      "per_100",
+      "seats_per_100"
+    ]
+  },
+  "hypotheses": {
+    "H2.0": {
+      "rule": "at cost 0, B0, EARLIEST and B3 write the earlier run's events, seed by seed",
+      "cells": {
+        "B0: B0[time_deviation_cost_per_hour=0.0]": {
+          "seeds": 30,
+          "earlier_seeds": 30,
+          "identical": 30
+        },
+        "EARLIEST: EARLIEST[time_deviation_cost_per_hour=0.0]": {
+          "seeds": 30,
+          "earlier_seeds": 30,
+          "identical": 30
+        },
+        "EARLIEST_B: EARLIEST[time_deviation_cost_per_hour=0.0]": {
+          "seeds": 30,
+          "earlier_seeds": 30,
+          "identical": 30
+        },
+        "B3: B3[time_deviation_cost_per_hour=0.0]": {
+          "seeds": 30,
+          "earlier_seeds": 30,
+          "identical": 30
+        }
+      },
+      "holds": true
+    },
+    "H2.1": {
+      "rule": "EARLIEST - B0 falls from cost 0.0 to 0.03 (whole interval of the change below zero) and is above zero at 0.001 and below zero at 0.03",
+      "earliest_minus_b0": {
+        "0.0": {
+          "seeds": 30,
+          "mean_difference": 0.31762163403745375,
+          "ci_low": 0.2280040424181491,
+          "ci_high": 0.4072392256567584,
+          "bootstrap_ci_low": 0.23318964766732792,
+          "bootstrap_ci_high": 0.401699063377932
+        },
+        "0.001": {
+          "seeds": 30,
+          "mean_difference": 0.30823538083829427,
+          "ci_low": 0.21762525821677575,
+          "ci_high": 0.3988455034598128,
+          "bootstrap_ci_low": 0.22295975036983304,
+          "bootstrap_ci_high": 0.39335448454677185
+        },
+        "0.002": {
+          "seeds": 30,
+          "mean_difference": 0.2961852503942643,
+          "ci_low": 0.20524942449803169,
+          "ci_high": 0.3871210762904969,
+          "bootstrap_ci_low": 0.2106407368680991,
+          "bootstrap_ci_high": 0.38169797769358466
+        },
+        "0.005": {
+          "seeds": 30,
+          "mean_difference": 0.2675242941740265,
+          "ci_low": 0.17479353464713904,
+          "ci_high": 0.360255053700914,
+          "bootstrap_ci_low": 0.1793832314819129,
+          "bootstrap_ci_high": 0.3551630364731961
+        },
+        "0.01": {
+          "seeds": 30,
+          "mean_difference": 0.2093049010559876,
+          "ci_low": 0.11460662912360314,
+          "ci_high": 0.30400317298837204,
+          "bootstrap_ci_low": 0.11776559811968718,
+          "bootstrap_ci_high": 0.2989155712088744
+        },
+        "0.03": {
+          "seeds": 30,
+          "mean_difference": 0.05191641736433207,
+          "ci_low": -0.035351585608781835,
+          "ci_high": 0.139184420337446,
+          "bootstrap_ci_low": -0.03237666574013353,
+          "bootstrap_ci_high": 0.13269901464669026
+        }
+      },
+      "change": {
+        "seeds": 30,
+        "mean_difference": -0.2657052166731217,
+        "ci_low": -0.31142245366546045,
+        "ci_high": -0.21998797968078293,
+        "bootstrap_ci_low": -0.30789294015415825,
+        "bootstrap_ci_high": -0.22255548931434674
+      },
+      "falls": true,
+      "crosses": false,
+      "crossing_cost": null,
+      "holds": false
+    },
+    "H2.2": {
+      "rule": "B3 - EARLIEST equivalent to zero at every cost",
+      "b3_minus_earliest": {
+        "0.0": {
+          "seeds": 30,
+          "mean_difference": 0.0010499273878901742,
+          "ci_low": -0.018416106495904756,
+          "ci_high": 0.020515961271685104,
+          "bootstrap_ci_low": -0.016795940850773555,
+          "bootstrap_ci_high": 0.019793656423605494
+        },
+        "0.001": {
+          "seeds": 30,
+          "mean_difference": 0.001049927387890411,
+          "ci_low": -0.01841610649590442,
+          "ci_high": 0.02051596127168524,
+          "bootstrap_ci_low": -0.016795940850773208,
+          "bootstrap_ci_high": 0.019793656423605394
+        },
+        "0.002": {
+          "seeds": 30,
+          "mean_difference": -0.0008072121889487249,
+          "ci_low": -0.019469927980881555,
+          "ci_high": 0.017855503602984102,
+          "bootstrap_ci_low": -0.018252782593636052,
+          "bootstrap_ci_high": 0.016998070619890143
+        },
+        "0.005": {
+          "seeds": 30,
+          "mean_difference": -0.001756352548489796,
+          "ci_low": -0.020680873574474748,
+          "ci_high": 0.01716816847749516,
+          "bootstrap_ci_low": -0.019402782935385644,
+          "bootstrap_ci_high": 0.01621832719911501
+        },
+        "0.01": {
+          "seeds": 30,
+          "mean_difference": -0.0054481769050264955,
+          "ci_low": -0.025418859055980396,
+          "ci_high": 0.014522505245927407,
+          "bootstrap_ci_low": -0.024086133259894584,
+          "bootstrap_ci_high": 0.013199718256813077
+        },
+        "0.03": {
+          "seeds": 30,
+          "mean_difference": -0.01831043631202102,
+          "ci_low": -0.04112411147455175,
+          "ci_high": 0.004503238850509711,
+          "bootstrap_ci_low": -0.039654078168200546,
+          "bootstrap_ci_high": 0.0030082033046540196
+        }
+      },
+      "by_cost": {
+        "0.0": {
+          "margin": 0.1,
+          "tost_p": 1.3563034823947992e-11,
+          "equivalent": true
+        },
+        "0.001": {
+          "margin": 0.1,
+          "tost_p": 1.356303482394718e-11,
+          "equivalent": true
+        },
+        "0.002": {
+          "margin": 0.1,
+          "tost_p": 4.806020972491413e-12,
+          "equivalent": true
+        },
+        "0.005": {
+          "margin": 0.1,
+          "tost_p": 8.330532188655451e-12,
+          "equivalent": true
+        },
+        "0.01": {
+          "margin": 0.1,
+          "tost_p": 6.815012779852423e-11,
+          "equivalent": true
+        },
+        "0.03": {
+          "margin": 0.1,
+          "tost_p": 2.2836755909423028e-08,
+          "equivalent": true
+        }
+      },
+      "holds": true
+    },
+    "H2.3": {
+      "rule": "(B0's mean gap - EARLIEST's) x 0.0031 per hour is below EARLIEST's relative gain over B0 at cost 0.0",
+      "shift_hours": {
+        "seeds": 30,
+        "mean_difference": 0.29353581039609633,
+        "ci_low": 0.28448966101306145,
+        "ci_high": 0.3025819597791312,
+        "bootstrap_ci_low": 0.28500990950027033,
+        "bootstrap_ci_high": 0.30176441599130754
+      },
+      "predicted_relative_gain": 0.0009099610122278986,
+      "predicted_interval": [
+        0.0008819179491404905,
+        0.0009380040753153067
+      ],
+      "observed_relative_gain": 0.010510752821256136,
+      "share_explained": 0.08657429469634788,
+      "holds": true
+    }
+  },
+  "means": {
+    "0.0": {
+      "B0": {
+        "per_100": 30.2187330859042,
+        "booking_rate": 0.4569049323965374,
+        "seats_per_100": 38.7992997020863
+      },
+      "EARLIEST": {
+        "per_100": 30.536354719941652,
+        "booking_rate": 0.46063746726705046,
+        "seats_per_100": 39.3639943945154
+      },
+      "EARLIEST_B": {
+        "per_100": 30.536354719941652,
+        "booking_rate": 0.46063746726705046,
+        "seats_per_100": 39.3639943945154
+      },
+      "B3": {
+        "per_100": 30.53740464732954,
+        "booking_rate": 0.46088563886760986,
+        "seats_per_100": 39.34384162098017
+      }
+    },
+    "0.001": {
+      "B0": {
+        "per_100": 30.211351518891355,
+        "booking_rate": 0.456701842258551,
+        "seats_per_100": 38.79095699419199
+      },
+      "EARLIEST": {
+        "per_100": 30.519586899729646,
+        "booking_rate": 0.46031306435355446,
+        "seats_per_100": 39.34445541993238
+      },
+      "EARLIEST_B": {
+        "per_100": 30.519586899729646,
+        "booking_rate": 0.46031306435355446,
+        "seats_per_100": 39.34445541993238
+      },
+      "B3": {
+        "per_100": 30.520636827117535,
+        "booking_rate": 0.46052492385078686,
+        "seats_per_100": 39.32430264639716
+      }
+    },
+    "0.002": {
+      "B0": {
+        "per_100": 30.203079806550203,
+        "booking_rate": 0.4565712281998652,
+        "seats_per_100": 38.7808447787022
+      },
+      "EARLIEST": {
+        "per_100": 30.499265056944466,
+        "booking_rate": 0.4599986312986655,
+        "seats_per_100": 39.31777999804802
+      },
+      "EARLIEST_B": {
+        "per_100": 30.499265056944466,
+        "booking_rate": 0.4599986312986655,
+        "seats_per_100": 39.31777999804802
+      },
+      "B3": {
+        "per_100": 30.49845784475552,
+        "booking_rate": 0.460201031847733,
+        "seats_per_100": 39.29577008493596
+      }
+    },
+    "0.005": {
+      "B0": {
+        "per_100": 30.18366245284444,
+        "booking_rate": 0.45620057019885213,
+        "seats_per_100": 38.76435883210682
+      },
+      "EARLIEST": {
+        "per_100": 30.451186747018472,
+        "booking_rate": 0.45918395666765266,
+        "seats_per_100": 39.269850401164646
+      },
+      "EARLIEST_B": {
+        "per_100": 30.451186747018472,
+        "booking_rate": 0.45918395666765266,
+        "seats_per_100": 39.269850401164646
+      },
+      "B3": {
+        "per_100": 30.449430394469978,
+        "booking_rate": 0.45935838589869943,
+        "seats_per_100": 39.246891347693044
+      }
+    },
+    "0.01": {
+      "B0": {
+        "per_100": 30.141111933430974,
+        "booking_rate": 0.45543462055036865,
+        "seats_per_100": 38.70059298429183
+      },
+      "EARLIEST": {
+        "per_100": 30.35041683448696,
+        "booking_rate": 0.45771375599589803,
+        "seats_per_100": 39.16249003210296
+      },
+      "EARLIEST_B": {
+        "per_100": 30.35041683448696,
+        "booking_rate": 0.45771375599589803,
+        "seats_per_100": 39.16249003210296
+      },
+      "B3": {
+        "per_100": 30.344968657581937,
+        "booking_rate": 0.457859944641533,
+        "seats_per_100": 39.13771849385348
+      }
+    },
+    "0.03": {
+      "B0": {
+        "per_100": 29.965434653099425,
+        "booking_rate": 0.45244820462016894,
+        "seats_per_100": 38.478315620358764
+      },
+      "EARLIEST": {
+        "per_100": 30.017351070463757,
+        "booking_rate": 0.45226381127945187,
+        "seats_per_100": 38.74704807055663
+      },
+      "EARLIEST_B": {
+        "per_100": 30.017351070463757,
+        "booking_rate": 0.45226381127945187,
+        "seats_per_100": 38.74704807055663
+      },
+      "B3": {
+        "per_100": 29.999040634151736,
+        "booking_rate": 0.4522725924906525,
+        "seats_per_100": 38.70757950235232
+      }
+    }
+  }
+}

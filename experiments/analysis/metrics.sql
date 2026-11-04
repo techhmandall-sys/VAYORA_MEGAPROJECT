@@ -402,3 +402,29 @@ FROM events
 WHERE run_id = :run_id AND variant = :variant
 GROUP BY seed
 ORDER BY seed;
+
+-- name: booked_departure_gap
+-- Hours from the time a passenger wanted to leave to the departure of the ride they asked to
+-- book, signed: negative for a ride that leaves earlier than wanted. One mean per seed over every
+-- booking request, repeat searches included (they keep their search's wanted time). The paper's
+-- H2.3 compares it between B0 and EARLIEST: how much earlier EARLIEST sends people
+-- (EXPERIMENT_PROTOCOL.md section 26). Grouped by search, not joined, as the queries above are.
+WITH per_search AS (
+  SELECT seed, payload->>'search_id' AS search_id,
+    MAX(EXTRACT(EPOCH FROM CAST(payload->>'desired_departure' AS timestamptz)))
+      FILTER (WHERE event_type = 'search_issued') AS wanted,
+    SUM(EXTRACT(EPOCH FROM CAST(payload->>'departure_time' AS timestamptz)))
+      FILTER (WHERE event_type = 'booking_requested') AS departures,
+    COUNT(*) FILTER (WHERE event_type = 'booking_requested') AS requests
+  FROM events
+  WHERE run_id = :run_id AND variant = :variant
+    AND event_type IN ('search_issued', 'booking_requested')
+  GROUP BY seed, payload->>'search_id'
+)
+SELECT seed,
+  SUM(requests) AS requests,
+  SUM(departures - requests * wanted) / 3600.0 / NULLIF(SUM(requests), 0) AS mean_gap_hours
+FROM per_search
+WHERE requests > 0
+GROUP BY seed
+ORDER BY seed;

@@ -1,0 +1,12 @@
+# Experiment X2 (EXPERIMENT_PROTOCOL.md sections 26 and 28): does offering the soonest ride first
+# still gain once leaving away from the wanted time costs the passenger something?
+#
+# A passenger books the ride offered with probability book_probability * exp(-cost * gap), the
+# gap in hours. The cost changes what B0's passengers book as much as EARLIEST's, so each cell has
+# its own baseline. 0 is world h3. Not offered in the what-if explorer (no live bounds).
+name: time-cost-earliest
+baseline: variants/B0.yaml
+variant: variants/EARLIEST.yaml
+baseline_per_cell: true
+parameters:
+  demand.time_deviation_cost_per_hour: [0.0, 0.001, 0.002, 0.005, 0.01, 0.03]

@@ -208,7 +208,7 @@ def test_metrics_file_defines_the_expected_queries():
         "primary_metric", "late_cancellation_share", "funnel_rates", "intervention_volume",
         "refill_additionality", "empty_search_reasons", "refill_by_release_timing",
         "cancellation_timing", "daily_cancellation_hazard", "seats_travelled",
-        "late_cancellation_share_passenger", "event_digest"}
+        "late_cancellation_share_passenger", "event_digest", "booked_departure_gap"}
 
 
 def _event(seed, event_type, payload=None, variant=VARIANT, at=NOW):
@@ -281,6 +281,29 @@ def test_the_event_digest_sees_a_changed_payload(sa_conn):
                for r in (RUN_ID, OTHER_RUN_ID)}
 
     assert len(digests) == 2
+
+
+def test_the_booked_departure_gap_is_signed_hours_from_the_wanted_time(sa_conn):
+    def search(search_id, wanted):
+        return _event(1, "search_issued", {"search_id": search_id,
+                                           "desired_departure": (NOW + wanted).astimezone(IST).isoformat()})
+
+    def request(search_id, departs, variant=VARIANT):
+        return _event(1, "booking_requested", {"search_id": search_id,
+                                               "departure_time": (NOW + departs).astimezone(IST).isoformat()},
+                      variant=variant)
+
+    # Search 1 wanted +10 h and asked twice, an hour early and an hour late; search 2 wanted +8 h
+    # and asked for +8.5 h; search 3 never asked. Mean of -1, +1 and +0.5 hours.
+    rows = [search(1, 10 * H), search(2, 8 * H), search(3, 9 * H),
+            request(1, 9 * H), request(1, 11 * H), request(2, 8 * H + 30 * M),
+            request(2, 2 * H, variant="B1")]
+    sa_conn.execute(INSERT, rows)
+
+    (row,) = run_query(sa_conn, "booked_departure_gap", run_id=RUN_ID, variant=VARIANT)
+
+    assert row["requests"] == 3
+    assert float(row["mean_gap_hours"]) == pytest.approx(0.5 / 3)
 
 
 def test_intervention_volume_matches_hand_computed_values(sa_conn):

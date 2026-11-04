@@ -1,0 +1,11 @@
+# Experiment X2 (EXPERIMENT_PROTOCOL.md sections 26 and 28): does survival ranking still do no
+# better than offering the soonest ride first once leaving away from the wanted time has a cost?
+#
+# The same grid as time_cost_earliest.yaml, with EARLIEST as each cell's baseline and B3 (model
+# h3) as the variant. Not offered in the what-if explorer (no live bounds).
+name: time-cost-b3
+baseline: variants/EARLIEST.yaml
+variant: variants/B3.yaml
+baseline_per_cell: true
+parameters:
+  demand.time_deviation_cost_per_hour: [0.0, 0.001, 0.002, 0.005, 0.01, 0.03]

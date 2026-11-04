@@ -1271,3 +1271,65 @@ which writes `experiments/reports/x1-proximity.md` and `.json` from the event lo
 - X2, the cost of leaving away from the wanted time, has not been run.
 - No model was trained at w = 0.9.
 - The calibration holds each type's chance of reaching departure on B0's bookings in world h3 only.
+
+## 28. Experiment X2: a cost of leaving away from the wanted time
+
+Run on 2026-11-04 against the hypotheses of section 26, committed (`66d73cc`) before any run. Sweeps
+`5eeb0000-…-011` (EARLIEST against B0) and `…-012` (B3 against EARLIEST), each cell with its own
+baseline. Judged by `python -m experiments.analysis.time_cost`, which writes
+`experiments/reports/x2-time-cost.md` and `.json`.
+
+**What was built.**
+- **The cost.** A world's `demand.time_deviation_cost_per_hour` γ multiplies the chance of booking the
+  ride offered by exp(−γ·g), g the hours between that ride and the wanted time. The same draw decides
+  as before.
+  - At γ = 0 the factor is exactly 1.0.
+  - Every world file has γ = 0. The X1 worlds were regenerated with the new key and kept their rates.
+- **Two sweeps over γ ∈ {0, 0.001, 0.002, 0.005, 0.01, 0.03}** (`configs/sweeps/time_cost_*.yaml`).
+  B3 uses model h3. Neither sweep is offered in the what-if explorer.
+- **A query, `booked_departure_gap`** in `metrics.sql`: the signed hours from the wanted time to the
+  departure of each ride asked for.
+- **Section 26's words read as follows.** `configs/x2.yaml` wrote this down before either sweep ran.
+  - *Falls:* the seed-by-seed change in EARLIEST − B0 from γ = 0 to γ = 0.03 has its whole interval
+    below zero.
+  - *Crosses:* EARLIEST − B0 is above zero at γ = 0.001 and below zero at γ = 0.03.
+
+**Results against the hypotheses.** Completed rides per 100 searches; 30 paired seeds; 95% t intervals.
+
+| γ per hour | EARLIEST − B0 | B3 − EARLIEST |
+|---|---|---|
+| 0 | +0.318 (+0.228 to +0.407) | +0.001 (−0.018 to +0.021) |
+| 0.001 | +0.308 (+0.218 to +0.399) | +0.001 (−0.018 to +0.021) |
+| 0.002 | +0.296 (+0.205 to +0.387) | −0.001 (−0.019 to +0.018) |
+| 0.005 | +0.268 (+0.175 to +0.360) | −0.002 (−0.021 to +0.017) |
+| 0.01 | +0.209 (+0.115 to +0.304) | −0.005 (−0.025 to +0.015) |
+| 0.03 | +0.052 (−0.035 to +0.139) | −0.018 (−0.041 to +0.005) |
+
+| | Result | Holds |
+|---|---|---|
+| H2.0 | At γ = 0, B0, EARLIEST (in both sweeps) and B3 wrote exactly the events of run `…010`, 30 seeds of 30 each | yes |
+| H2.1 | It falls: the change from γ = 0 to 0.03 is −0.266 (−0.311 to −0.220). It does not cross inside the range: at γ = 0.03 the mean is still +0.052, though its interval now includes zero | **no** |
+| H2.2 | B3 − EARLIEST lies within ±0.10 at every γ (equivalence p < 0.0001 throughout) | yes |
+| H2.3 | EARLIEST's passengers asked for rides leaving 0.294 h earlier than B0's (0.284 to 0.303). Times 0.0031 per hour, that predicts a relative gain of 0.091%, against the 1.05% observed: exposure accounts for about 9% of it | yes |
+
+**What the results say.**
+- **The ranking gain does depend on the price of leaving early.** It falls steadily with γ and, at
+  0.03 per hour, is about a sixth of its size and no longer distinguishable from zero.
+- **It survives a far higher cost than Proposition 3 predicted.** Proposition 3 put the break-even near
+  0.003 per hour. At 0.005 the gain is still 84% of its size.
+  - Proposition 3 reasons from shorter exposure alone.
+  - H2.3 measures exposure at about a tenth of the gain, which agrees with X1 (section 27).
+- **The rest is allocation, in a sense these runs do not yet explain.** EARLIEST's passengers left only
+  about 18 minutes earlier, yet more of them found a ride: booking requests per search were 0.461
+  against B0's 0.457 at γ = 0. The two were equal at γ = 0.03.
+  - One possible reading: a seat on a ride that leaves soon has few later searches left that could
+    fill it, so offering it first wastes fewer seats.
+  - That reading is a hypothesis, not a result.
+- **Survival ranking stays equivalent to soonest-first at every γ.** The model adds nothing that
+  ordering by departure does not.
+
+**Not done here.**
+- No γ beyond 0.03, so where the gain reaches zero was not measured. A straight line through the last
+  two points would put it a little above 0.03, but that is an extrapolation.
+- A passenger still sees only the first ride offered (assumption M2), so a cost cannot make them choose
+  another ride on the list.
