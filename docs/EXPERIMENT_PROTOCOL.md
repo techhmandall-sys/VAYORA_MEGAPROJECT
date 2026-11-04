@@ -1105,3 +1105,83 @@ with the research audit's own recomputation (`research_audit/statistical_analysi
 **The margin was fixed after the h3 ladder had been seen.** For those contrasts the equivalence tests
 are reported, not claimed. Read that way, B4 − B3 (+0.027) lies within ±0.10 (equivalence p = 0.0012),
 as do B3-KM, B4-KM, B5 and B5-RANDOM against B3. B0 and ASK-ONLY do not (Holm p 4.8e-6 and 0.0002).
+
+## 26. Hypotheses for experiments X1 to X7, written before any of them was run
+
+Written on 2026-11-04. Each is to be judged by its run's report as it stands, without moving the line
+afterwards. The designs are those of the paper's plan as corrected by its formulation (Phase 5 §11).
+Every comparison is paired by seed over seeds 1 to 30; equivalence uses the ±0.10 margin of section 25.
+
+**X1: hazard tied to departure.**
+- *Design.* Worlds that move a share w ∈ {0, 0.5, 0.9} of each type's cancellation risk from the
+  clock since acceptance to a hazard `β_k·exp(−v/θ)` in the hours v left before departure, θ = 24 h.
+  Each `β_k` is set, before any variant is run, so that type k keeps its h3 chance of reaching
+  departure.
+- *Model.* Retrained on the w = 0.5 world's training seeds; used outside its world at w = 0.9.
+- *Variants.* B0, B3, EARLIEST, B3-KM, B4, ORACLE.
+- *Hypotheses:*
+  - **H1.0:** w = 0 reproduces runs `…004` and `…010` for B0, B3, B3-KM, B4 and EARLIEST, seed by seed
+    and to every digit.
+  - **H1.1:** the relative gain of EARLIEST over B0 falls as w rises. At w = 0.9 it is less than half
+    its value at w = 0. If it is not, the gain is mostly seat allocation, not shorter exposure.
+  - **H1.2:** ORACLE − B3 is larger at w = 0.9 than at w = 0.
+  - **H1.3:** B4 − B3 is within ±0.10 (equivalence p < 0.05) at every w.
+
+**X2: a cost of leaving away from the wanted time.**
+- *Design.* A passenger books the first ride with probability `p_k·exp(−γ·g)`, g in hours, with
+  γ ∈ {0, 0.001, 0.002, 0.005, 0.01, 0.03}. Variants B0, EARLIEST, B3.
+- *Hypotheses:*
+  - **H2.0:** γ = 0 reproduces run `…010` exactly.
+  - **H2.1:** EARLIEST − B0 falls as γ rises and crosses zero at a γ between 0.001 and 0.03 per hour.
+  - **H2.2:** B3 − EARLIEST is within ±0.10 at every γ.
+  - **H2.3** (a measurement with a stated expectation): the mean departure shift between the rides B0
+    and EARLIEST book, times 0.0031 per hour, accounts for less than the observed relative gain of
+    EARLIEST at γ = 0.
+
+**X3: the reconfirmation ceiling.**
+- *Design.* For B4, B4-KM, B5, B5-RANDOM and ORACLE against B3, and for every cell of the response,
+  oracle-response, threshold, budget and demand sweeps and of X1 and X5, compute the standing,
+  released and refilled seats on departed rides. Refills are counted both when requested and when they
+  stand at departure. Compute the first-order ceiling of the paper's Proposition 8 from them.
+- *Hypotheses:*
+  - **H3.1:** in no more than one cell in twenty does the observed change in standing seats have its
+    whole 95% interval above the ceiling.
+  - **H3.2:** the otherwise-empty residual ΔO, with refills counted when they stand, is at least zero
+    within its 95% interval in every cell.
+  - **H3.3:** across cells, the ceiling converted to completed rides and the observed effect have a
+    Spearman correlation of at least 0.8.
+
+**X4: model evaluation.**
+- *Design.*
+  - Seed-bootstrap intervals, Uno's concordance and time-dependent AUC for the simulator's models
+    (validation seeds).
+  - The same for the hotel models on bookings made at most 7 days ahead and on all lead times.
+  - Random survival forests and tuned gradient boosting beside Cox, in both.
+- *Hypotheses:*
+  - **H4.1:** for each hotel model, concordance on all lead times is higher than within 7 days.
+  - **H4.2:** calibration of the logged `hazard_scored` values under B4 differs from that under B0
+    (two-sided; size not predicted).
+  - **H4.3:** no model beats Cox's validation concordance in the simulator by more than 0.02.
+
+**X5: robustness.**
+- *Design.* Supply density of 6, 12 and 20 rides a day in world h3 (rebuilding sweep `5eeb…002`). In
+  the X1 world at w = 0.5: demand of 30, 60 and 120 searches a day, and cancellation scale ×1, ×2 and
+  ×3. B3 and B4; B0 too in the scale cells.
+- *Hypotheses:*
+  - **H5.1:** B4 − B3 is within ±0.10 in every cell.
+  - **H5.2:** B3 − B0 is above zero in every cell of world h3.
+
+**X7: the assumptions moved together.**
+- *Design.* A Latin hypercube of 20 points, with its seed fixed in configuration before the run, over
+  five ranges:
+  - ρ ∈ [0.25, 1] and η ∈ [0, 0.05];
+  - searches a day ∈ [30, 120] and rides a day ∈ [6, 20];
+  - every Weibull scale multiplied by a value in [1, 3].
+
+  B3, B4 and ORACLE at each point.
+- *Hypotheses:*
+  - **H7.1:** at every point where ORACLE − B3 is below 0.20, B4 − B3 is within ±0.10.
+  - **H7.2:** ORACLE − B3 stays below 0.5 completed rides per 100 searches at every point.
+
+These hypotheses are fixed by the commit that adds this section. A result against any of them is
+reported as such.
