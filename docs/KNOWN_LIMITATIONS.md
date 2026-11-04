@@ -43,9 +43,11 @@ mistake for more. Updated 2026-11-01.
   the requests withheld. The scheduler's choice of whom to ask concentrates nothing,
   and choosing at random does as well (section 14). Its worth formula is an
   assumption with no evidence behind it. See EXPERIMENT_PROTOCOL.md section 8.
-- The likeliest reason refills add no rides: the extra seats B4 frees are all taken by
-  passengers who were offered another ride as well. That is an upper-bound argument
-  from means, not a paired test.
+- Why refills add no rides is not settled. The extra seats B4 frees are mostly taken by
+  passengers who were offered another ride as well, but that count does not bound what
+  released seats add (corrected 2026-11-04; EXPERIMENT_PROTOCOL.md section 8): a seat such
+  a passenger leaves free can go to someone with no other option. Comparing seats standing
+  at departure across variants measures it; that has not been run yet.
 - Over half of all searches are offered no ride. Neither a wider window nor earlier
   publishing changes that much, so in this world most are full rides: about 31 seats a day
   are offered against about 84 wanted. Early releases are refilled far more often than

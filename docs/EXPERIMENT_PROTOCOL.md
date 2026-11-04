@@ -333,6 +333,14 @@ nothing else can be a booking that would not otherwise exist.
 - This is an explanation that fits, not a proof. Only-option refills are an upper bound
   on added bookings, not a count of them; the B3-to-B4 comparison is of means, and no
   paired test of that difference was run.
+
+  **Corrected on 2026-11-04.** Only-option refills are *not* an upper bound on added
+  bookings. A refiller who had another ride on offer leaves that ride's seat free, and a
+  later searcher with no other option can take it: a booking added without any only-option
+  refill. The count describes who takes released seats; what a policy adds is measured by
+  comparing seats standing at departure across variants, which change by refilled minus
+  released minus otherwise-empty seats. The sentence above is kept so the record shows what
+  was believed.
 - **More than half of all searches are offered nothing.** Demand for seats is not what
   is missing. A search is offered nothing when no ride within the passenger's time
   tolerance has enough seats, and the event log does not say which of the two it was.

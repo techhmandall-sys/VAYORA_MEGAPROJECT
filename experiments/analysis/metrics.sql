@@ -90,10 +90,11 @@ ORDER BY seed;
 -- refills_only_option  of those, the ones whose search was offered that ride and no other
 -- only_option_share    refills_only_option / refills; undefined with no refills
 --
--- A passenger who was offered another ride as well would have asked for a ride anyway,
--- so only an only-option refill can be a booking that would otherwise not exist.
--- refills_only_option is therefore an upper bound on bookings added by released seats.
--- It is not the number added: the ride may have had other free seats too.
+-- refills_only_option describes who takes released seats. It does NOT bound the bookings
+-- released seats add (corrected 2026-11-04): a refiller who had another ride on offer leaves
+-- that ride's seat free, and a later searcher with no other option can take it, a booking
+-- added with no only-option refill at all. What a policy adds is measured by comparing seats
+-- standing at departure, which change by refilled minus released minus otherwise-empty seats.
 --
 -- A booking is matched to the answer its own search got by search id and instant, since
 -- a repeat search reuses the search id. Matching is by grouping, not joining: the keys
