@@ -69,6 +69,18 @@
         "seeds": 30,
         "mean": 0.6944624831032403,
         "vs_baseline": null
+      },
+      "seats_per_100": {
+        "label": "Seats travelled per 100 searches",
+        "seeds": 30,
+        "mean": 40.79686371922415,
+        "vs_baseline": null
+      },
+      "late_share_passenger": {
+        "label": "Late share of passenger cancellations",
+        "seeds": 30,
+        "mean": 0.35722795958218223,
+        "vs_baseline": null
       }
     },
     "B0": {
@@ -84,7 +96,13 @@
           "confidence": 0.95,
           "wilcoxon_p": 8.074500287803561e-06,
           "seeds_improved": 3,
-          "seeds_worsened": 25
+          "seeds_worsened": 25,
+          "bootstrap_ci_low": -0.3914395598169149,
+          "bootstrap_ci_high": -0.2401461719018975,
+          "margin": 0.1,
+          "tost_p": 0.9999972149570353,
+          "equivalent": false,
+          "holm_p": 1.6149000575607122e-05
         }
       },
       "late_share": {
@@ -236,6 +254,38 @@
           "seeds_improved": 11,
           "seeds_worsened": 16
         }
+      },
+      "seats_per_100": {
+        "label": "Seats travelled per 100 searches",
+        "seeds": 30,
+        "mean": 40.244797281965,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": -0.5520664372591512,
+          "ci_low": -0.676091231445459,
+          "ci_high": -0.4280416430728433,
+          "confidence": 0.95,
+          "wilcoxon_p": 2.5630832507250074e-06,
+          "seeds_improved": 0,
+          "seeds_worsened": 29,
+          "bootstrap_ci_low": -0.6696035394519388,
+          "bootstrap_ci_high": -0.4344542105080466
+        }
+      },
+      "late_share_passenger": {
+        "label": "Late share of passenger cancellations",
+        "seeds": 30,
+        "mean": 0.35731673987578966,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": 8.878029360746645e-05,
+          "ci_low": -0.005020432010559559,
+          "ci_high": 0.0051979925977744925,
+          "confidence": 0.95,
+          "wilcoxon_p": 0.956888952107657,
+          "seeds_improved": 17,
+          "seeds_worsened": 12
+        }
       }
     },
     "B4": {
@@ -251,7 +301,13 @@
           "confidence": 0.95,
           "wilcoxon_p": 0.03318108280504148,
           "seeds_improved": 12,
-          "seeds_worsened": 17
+          "seeds_worsened": 17,
+          "bootstrap_ci_low": -0.07500755580215653,
+          "bootstrap_ci_high": -0.007199255379985351,
+          "margin": 0.1,
+          "tost_p": 0.0012674764026464754,
+          "equivalent": true,
+          "holm_p": 0.03318108280504148
         }
       },
       "late_share": {
@@ -403,7 +459,46 @@
           "seeds_improved": 14,
           "seeds_worsened": 16
         }
+      },
+      "seats_per_100": {
+        "label": "Seats travelled per 100 searches",
+        "seeds": 30,
+        "mean": 40.82302428212844,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": 0.026160562904292563,
+          "ci_low": -0.016031024726876918,
+          "ci_high": 0.06835215053546204,
+          "confidence": 0.95,
+          "wilcoxon_p": 0.2845036889199185,
+          "seeds_improved": 14,
+          "seeds_worsened": 14,
+          "bootstrap_ci_low": -0.012624657750099593,
+          "bootstrap_ci_high": 0.06591417357874149
+        }
+      },
+      "late_share_passenger": {
+        "label": "Late share of passenger cancellations",
+        "seeds": 30,
+        "mean": 0.26822300008841427,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": -0.08900495949376791,
+          "ci_low": -0.09810409631259609,
+          "ci_high": -0.07990582267493973,
+          "confidence": 0.95,
+          "wilcoxon_p": 1.862645149230957e-09,
+          "seeds_improved": 0,
+          "seeds_worsened": 30
+        }
       }
     }
+  },
+  "analysis": {
+    "bootstrap_resamples": 20000,
+    "bootstrap_seed": 20261029,
+    "equivalence_margin": 0.1,
+    "equivalence_alpha": 0.05,
+    "holm_family": "per_100: the 2 contrasts against B3 in this report"
   }
 }

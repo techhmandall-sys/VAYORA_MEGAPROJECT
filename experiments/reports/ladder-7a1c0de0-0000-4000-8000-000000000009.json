@@ -69,6 +69,18 @@
         "seeds": 30,
         "mean": 0.6649556953178367,
         "vs_baseline": null
+      },
+      "seats_per_100": {
+        "label": "Seats travelled per 100 searches",
+        "seeds": 30,
+        "mean": 39.46127030463774,
+        "vs_baseline": null
+      },
+      "late_share_passenger": {
+        "label": "Late share of passenger cancellations",
+        "seeds": 30,
+        "mean": 0.3615359739446011,
+        "vs_baseline": null
       }
     },
     "B3": {
@@ -84,7 +96,13 @@
           "confidence": 0.95,
           "wilcoxon_p": 7.2296055077611124e-06,
           "seeds_improved": 27,
-          "seeds_worsened": 2
+          "seeds_worsened": 2,
+          "bootstrap_ci_low": 0.22325655191185884,
+          "bootstrap_ci_high": 0.3861176302566282,
+          "margin": 0.1,
+          "tost_p": 0.9999777239011693,
+          "equivalent": false,
+          "holm_p": 7.2296055077611124e-06
         }
       },
       "late_share": {
@@ -236,7 +254,46 @@
           "seeds_improved": 21,
           "seeds_worsened": 9
         }
+      },
+      "seats_per_100": {
+        "label": "Seats travelled per 100 searches",
+        "seeds": 30,
+        "mean": 40.00806846864645,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": 0.5467981640087077,
+          "ci_low": 0.40779038700011794,
+          "ci_high": 0.6858059410172975,
+          "confidence": 0.95,
+          "wilcoxon_p": 2.5630832507250074e-06,
+          "seeds_improved": 29,
+          "seeds_worsened": 0,
+          "bootstrap_ci_low": 0.4179316433590828,
+          "bootstrap_ci_high": 0.6779597000866463
+        }
+      },
+      "late_share_passenger": {
+        "label": "Late share of passenger cancellations",
+        "seeds": 30,
+        "mean": 0.36074795829628375,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": -0.0007880156483173528,
+          "ci_low": -0.005623479365803017,
+          "ci_high": 0.004047448069168312,
+          "confidence": 0.95,
+          "wilcoxon_p": 0.705128996462832,
+          "seeds_improved": 14,
+          "seeds_worsened": 15
+        }
       }
     }
+  },
+  "analysis": {
+    "bootstrap_resamples": 20000,
+    "bootstrap_seed": 20261029,
+    "equivalence_margin": 0.1,
+    "equivalence_alpha": 0.05,
+    "holm_family": "per_100: the 1 contrasts against B0 in this report"
   }
 }

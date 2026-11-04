@@ -331,3 +331,56 @@ SELECT *,
   AS week_survival
 FROM counted
 ORDER BY seed;
+
+-- name: seats_travelled
+-- Seats on completed bookings per 100 first searches: the primary metric counted in people
+-- rather than bookings. A booking counts once in primary_metric whatever its party size; here a
+-- party of three counts three. Declared a secondary outcome on 2026-11-04 (exploratory before).
+-- A booking's seats are on its booking_requested event; trip_completed carries only its id, so
+-- the two are matched by grouping on (seed, booking id), as refill_additionality matches.
+WITH per_booking AS (
+  SELECT seed, payload->>'booking_id' AS booking,
+    MAX(CAST(payload->>'seats' AS integer)) FILTER (WHERE event_type = 'booking_requested') AS seats,
+    BOOL_OR(event_type = 'trip_completed') AS completed
+  FROM events
+  WHERE run_id = :run_id AND variant = :variant
+    AND event_type IN ('booking_requested', 'trip_completed')
+  GROUP BY seed, payload->>'booking_id'
+),
+searched AS (
+  SELECT seed, COUNT(*) AS searches
+  FROM events
+  WHERE run_id = :run_id AND variant = :variant AND event_type = 'search_issued'
+  GROUP BY seed
+),
+travelled AS (
+  SELECT seed, SUM(seats) AS seats_completed, COUNT(*) AS completed
+  FROM per_booking
+  WHERE completed
+  GROUP BY seed
+)
+SELECT s.seed, s.searches,
+  COALESCE(t.completed, 0) AS completed,
+  COALESCE(t.seats_completed, 0) AS seats_completed,
+  100.0 * COALESCE(t.seats_completed, 0) / NULLIF(s.searches, 0) AS seats_per_100
+FROM searched s
+LEFT JOIN travelled t ON t.seed = s.seed
+ORDER BY s.seed;
+
+-- name: late_cancellation_share_passenger
+-- As late_cancellation_share, counting only cancellations made by passengers. A driver's
+-- withdrawal cancels every booking on the ride, which is not the passenger behaviour a
+-- reconfirmation request tries to move; late_cancellation_share counts both.
+SELECT seed,
+  COUNT(*) AS cancellations,
+  COUNT(*) FILTER (
+    WHERE CAST(payload->>'departure_time' AS timestamptz) - sim_time < INTERVAL '24 hours'
+  ) AS late,
+  1.0 * COUNT(*) FILTER (
+    WHERE CAST(payload->>'departure_time' AS timestamptz) - sim_time < INTERVAL '24 hours'
+  ) / COUNT(*) AS late_share_passenger
+FROM events
+WHERE run_id = :run_id AND variant = :variant
+  AND event_type = 'booking_cancelled' AND payload->>'cancelled_by' = 'passenger'
+GROUP BY seed
+ORDER BY seed;

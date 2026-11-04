@@ -69,6 +69,18 @@
         "seeds": 30,
         "mean": 0.6226629878436225,
         "vs_baseline": null
+      },
+      "seats_per_100": {
+        "label": "Seats travelled per 100 searches",
+        "seeds": 30,
+        "mean": 38.7992997020863,
+        "vs_baseline": null
+      },
+      "late_share_passenger": {
+        "label": "Late share of passenger cancellations",
+        "seeds": 30,
+        "mean": 0.3509636729225346,
+        "vs_baseline": null
       }
     },
     "B3": {
@@ -84,7 +96,13 @@
           "confidence": 0.95,
           "wilcoxon_p": 6.910413503646851e-07,
           "seeds_improved": 26,
-          "seeds_worsened": 4
+          "seeds_worsened": 4,
+          "bootstrap_ci_low": 0.22667861172251555,
+          "bootstrap_ci_high": 0.4111169904877531,
+          "margin": 0.1,
+          "tost_p": 0.9999541918496484,
+          "equivalent": false,
+          "holm_p": 2.073124051094055e-06
         }
       },
       "late_share": {
@@ -236,6 +254,38 @@
           "seeds_improved": 24,
           "seeds_worsened": 6
         }
+      },
+      "seats_per_100": {
+        "label": "Seats travelled per 100 searches",
+        "seeds": 30,
+        "mean": 39.34384162098017,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": 0.5445419188938713,
+          "ci_low": 0.4059669159520862,
+          "ci_high": 0.6831169218356563,
+          "confidence": 0.95,
+          "wilcoxon_p": 3.5149630812742274e-06,
+          "seeds_improved": 27,
+          "seeds_worsened": 2,
+          "bootstrap_ci_low": 0.4147530007916324,
+          "bootstrap_ci_high": 0.6746110451906501
+        }
+      },
+      "late_share_passenger": {
+        "label": "Late share of passenger cancellations",
+        "seeds": 30,
+        "mean": 0.3540580683966169,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": 0.0030943954740823474,
+          "ci_low": -0.0014055428905126407,
+          "ci_high": 0.007594333838677336,
+          "confidence": 0.95,
+          "wilcoxon_p": 0.18396909348666668,
+          "seeds_improved": 17,
+          "seeds_worsened": 13
+        }
       }
     },
     "B4": {
@@ -251,7 +301,13 @@
           "confidence": 0.95,
           "wilcoxon_p": 5.256413325850834e-06,
           "seeds_improved": 26,
-          "seeds_worsened": 2
+          "seeds_worsened": 2,
+          "bootstrap_ci_low": 0.2551050856365773,
+          "bootstrap_ci_high": 0.43717116804524186,
+          "margin": 0.1,
+          "tost_p": 0.999993264109646,
+          "equivalent": false,
+          "holm_p": 1.0512826651701667e-05
         }
       },
       "late_share": {
@@ -403,6 +459,38 @@
           "seeds_improved": 21,
           "seeds_worsened": 8
         }
+      },
+      "seats_per_100": {
+        "label": "Seats travelled per 100 searches",
+        "seeds": 30,
+        "mean": 39.482134818600905,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": 0.6828351165146034,
+          "ci_low": 0.5545568937872718,
+          "ci_high": 0.811113339241935,
+          "confidence": 0.95,
+          "wilcoxon_p": 1.862645149230957e-09,
+          "seeds_improved": 30,
+          "seeds_worsened": 0,
+          "bootstrap_ci_low": 0.5604759858275932,
+          "bootstrap_ci_high": 0.8022563198667808
+        }
+      },
+      "late_share_passenger": {
+        "label": "Late share of passenger cancellations",
+        "seeds": 30,
+        "mean": 0.27931317962987645,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": -0.07165049329265819,
+          "ci_low": -0.08120514831132963,
+          "ci_high": -0.06209583827398673,
+          "confidence": 0.95,
+          "wilcoxon_p": 1.862645149230957e-09,
+          "seeds_improved": 0,
+          "seeds_worsened": 30
+        }
       }
     },
     "B5": {
@@ -418,7 +506,13 @@
           "confidence": 0.95,
           "wilcoxon_p": 1.5144889860530222e-05,
           "seeds_improved": 26,
-          "seeds_worsened": 2
+          "seeds_worsened": 2,
+          "bootstrap_ci_low": 0.22431990779386116,
+          "bootstrap_ci_high": 0.40536420104570514,
+          "margin": 0.1,
+          "tost_p": 0.9999570184609553,
+          "equivalent": false,
+          "holm_p": 1.5144889860530222e-05
         }
       },
       "late_share": {
@@ -570,6 +664,38 @@
           "seeds_improved": 22,
           "seeds_worsened": 8
         }
+      },
+      "seats_per_100": {
+        "label": "Seats travelled per 100 searches",
+        "seeds": 30,
+        "mean": 39.36968425014431,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": 0.5703845480580035,
+          "ci_low": 0.43102557616310816,
+          "ci_high": 0.709743519952899,
+          "confidence": 0.95,
+          "wilcoxon_p": 3.725290298461914e-09,
+          "seeds_improved": 29,
+          "seeds_worsened": 1,
+          "bootstrap_ci_low": 0.43787664677662247,
+          "bootstrap_ci_high": 0.7005318763355001
+        }
+      },
+      "late_share_passenger": {
+        "label": "Late share of passenger cancellations",
+        "seeds": 30,
+        "mean": 0.3347757505535786,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": -0.016187922368956005,
+          "ci_low": -0.022212681035971363,
+          "ci_high": -0.010163163701940647,
+          "confidence": 0.95,
+          "wilcoxon_p": 3.2391399145126343e-06,
+          "seeds_improved": 6,
+          "seeds_worsened": 24
+        }
       }
     },
     "ORACLE": {
@@ -585,7 +711,13 @@
           "confidence": 0.95,
           "wilcoxon_p": 1.862645149230957e-09,
           "seeds_improved": 30,
-          "seeds_worsened": 0
+          "seeds_worsened": 0,
+          "bootstrap_ci_low": 0.36470849406472144,
+          "bootstrap_ci_high": 0.5241558468143156,
+          "margin": 0.1,
+          "tost_p": 0.9999999983159468,
+          "equivalent": false,
+          "holm_p": 7.450580596923828e-09
         }
       },
       "late_share": {
@@ -737,7 +869,46 @@
           "seeds_improved": 22,
           "seeds_worsened": 8
         }
+      },
+      "seats_per_100": {
+        "label": "Seats travelled per 100 searches",
+        "seeds": 30,
+        "mean": 39.56742412536066,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": 0.7681244232743547,
+          "ci_low": 0.6365398821513223,
+          "ci_high": 0.8997089643973871,
+          "confidence": 0.95,
+          "wilcoxon_p": 3.725290298461914e-09,
+          "seeds_improved": 29,
+          "seeds_worsened": 1,
+          "bootstrap_ci_low": 0.6408085859727108,
+          "bootstrap_ci_high": 0.8894865579796469
+        }
+      },
+      "late_share_passenger": {
+        "label": "Late share of passenger cancellations",
+        "seeds": 30,
+        "mean": 0.23544863625491058,
+        "vs_baseline": {
+          "seeds": 30,
+          "mean_difference": -0.11551503666762403,
+          "ci_low": -0.12431306284435403,
+          "ci_high": -0.10671701049089402,
+          "confidence": 0.95,
+          "wilcoxon_p": 1.862645149230957e-09,
+          "seeds_improved": 0,
+          "seeds_worsened": 30
+        }
       }
     }
+  },
+  "analysis": {
+    "bootstrap_resamples": 20000,
+    "bootstrap_seed": 20261029,
+    "equivalence_margin": 0.1,
+    "equivalence_alpha": 0.05,
+    "holm_family": "per_100: the 4 contrasts against B0 in this report"
   }
 }

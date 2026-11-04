@@ -207,7 +207,53 @@ def test_metrics_file_defines_the_expected_queries():
     assert set(load_queries()) == {
         "primary_metric", "late_cancellation_share", "funnel_rates", "intervention_volume",
         "refill_additionality", "empty_search_reasons", "refill_by_release_timing",
-        "cancellation_timing", "daily_cancellation_hazard"}
+        "cancellation_timing", "daily_cancellation_hazard", "seats_travelled",
+        "late_cancellation_share_passenger"}
+
+
+def _event(seed, event_type, payload=None, variant=VARIANT, at=NOW):
+    return {"run_id": RUN_ID, "variant": variant, "seed": seed, "sim_time": at,
+            "event_type": event_type, "payload": json.dumps(payload or {})}
+
+
+def test_seats_travelled_counts_each_completed_booking_s_seats(sa_conn):
+    rows = [_event(1, "search_issued") for _ in range(10)]
+    # Bookings 1, 2 and 4 travel (2 + 1 + 1 seats); booking 3 (3 seats) never completes.
+    for booking, seats in ((1, 2), (2, 1), (3, 3), (4, 1)):
+        rows.append(_event(1, "booking_requested", {"booking_id": booking, "seats": seats}))
+    rows += [_event(1, "trip_completed", {"booking_id": b}) for b in (1, 2, 4)]
+    # Seed 2 searched but nobody travelled: zero, not missing.
+    rows += [_event(2, "search_issued") for _ in range(4)]
+    rows.append(_event(2, "booking_requested", {"booking_id": 1, "seats": 2}))
+    # A decoy under another variant, with the same booking id as seed 1's.
+    rows += [_event(1, "booking_requested", {"booking_id": 1, "seats": 3}, variant="B1"),
+             _event(1, "trip_completed", {"booking_id": 1}, variant="B1")]
+    sa_conn.execute(INSERT, rows)
+
+    result = run_query(sa_conn, "seats_travelled", run_id=RUN_ID, variant=VARIANT)
+
+    assert [(r["seed"], r["searches"], r["completed"], r["seats_completed"]) for r in result] == [
+        (1, 10, 3, 4), (2, 4, 0, 0)]
+    assert float(result[0]["seats_per_100"]) == pytest.approx(40.0)
+    assert float(result[1]["seats_per_100"]) == 0.0
+
+
+def test_late_share_of_passenger_cancellations_leaves_out_drivers(sa_conn):
+    def cancelled(lead, by):
+        departure = (NOW + lead).astimezone(IST)
+        return _event(1, "booking_cancelled", {"departure_time": departure.isoformat(), "cancelled_by": by})
+
+    # Passengers: 2 late, 1 early. Drivers: 2 late, which late_cancellation_share also counts.
+    rows = [cancelled(2 * H, "passenger"), cancelled(10 * H, "passenger"), cancelled(30 * H, "passenger"),
+            cancelled(1 * H, "driver"), cancelled(5 * H, "driver")]
+    sa_conn.execute(INSERT, rows)
+
+    (passenger,) = run_query(sa_conn, "late_cancellation_share_passenger", run_id=RUN_ID, variant=VARIANT)
+    (everyone,) = run_query(sa_conn, "late_cancellation_share", run_id=RUN_ID, variant=VARIANT)
+
+    assert (passenger["cancellations"], passenger["late"]) == (3, 2)
+    assert float(passenger["late_share_passenger"]) == pytest.approx(2 / 3)
+    assert float(everyone["late_share"]) == pytest.approx(4 / 5)
 
 
 def test_intervention_volume_matches_hand_computed_values(sa_conn):

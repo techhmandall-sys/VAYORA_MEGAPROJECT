@@ -1075,3 +1075,33 @@ every level, and more seats were refilled on all 30.
 When a real figure is known, the result can be read off this table, or the sweep widened to reach it.
 `python -m experiments.real_data` says how far the platform's own searches are from giving one, and
 with `--write-world` makes a world at that demand once they are enough. Only that would finish feature 89.
+
+## 25. The analysis plan in the pipeline
+
+Built on 2026-11-04 (experiment X0 of the paper's plan). Configuration: `experiments/configs/analysis.yaml`.
+`experiments/analysis/compare.py` now adds to every ladder report:
+
+- **Two secondary measures**, as named queries in `metrics.sql`:
+  - `seats_travelled`: seats on completed bookings per 100 first searches, the primary metric counted
+    in people;
+  - `late_cancellation_share_passenger`: the late share counting passenger cancellations only.
+- **For the primary metric:**
+  - a percentile bootstrap interval of the per-seed difference (20,000 resamples, seed 20261029);
+  - Holm's correction across the variants of the report;
+  - two one-sided tests at a margin of **0.10 completed rides per 100 searches**.
+
+  Seats travelled gets the bootstrap interval too.
+
+Sweeps stay descriptive: t interval and Wilcoxon only.
+
+All seven ladder reports (`…003`, `…004`, `…006` to `…010`) were rebuilt from their stored events.
+**Every value already in them is unchanged:** each committed JSON is contained in its rebuilt version
+with equal values, and each committed markdown file is the start of its new one. The new figures agree
+with the research audit's own recomputation (`research_audit/statistical_analysis.md` §5):
+- seats per 100 searches B0 38.80, B3 39.34, B4 39.48;
+- passenger-only late share B0 0.351, B4 0.279;
+- seats, B4 − B3, +0.138 (+0.092 to +0.184).
+
+**The margin was fixed after the h3 ladder had been seen.** For those contrasts the equivalence tests
+are reported, not claimed. Read that way, B4 − B3 (+0.027) lies within ±0.10 (equivalence p = 0.0012),
+as do B3-KM, B4-KM, B5 and B5-RANDOM against B3. B0 and ASK-ONLY do not (Holm p 4.8e-6 and 0.0002).

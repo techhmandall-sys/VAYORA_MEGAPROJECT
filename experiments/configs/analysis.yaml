@@ -1,0 +1,23 @@
+# How variants are compared beyond the t interval and Wilcoxon test (EXPERIMENT_PROTOCOL.md
+# section 25). Fixed on 2026-11-04, before experiments X1-X7 were run.
+#
+# Applied by experiments/analysis/compare.py to the primary metric of a ladder report. Sweeps stay
+# descriptive (t interval and Wilcoxon only), as the protocol says.
+
+# Two one-sided tests at this margin decide whether a difference in completed rides per 100
+# searches counts as no effect: equivalent when the difference is shown to lie within +/- margin.
+# About 0.33% of the baseline. It was chosen after the h3 ladder had been seen, so for those
+# contrasts it is reported, not claimed.
+equivalence_margin: 0.10
+# Significance level of each one-sided test (so the equivalence test is at the 90% interval).
+equivalence_alpha: 0.05
+
+# Percentile bootstrap of the per-seed differences. Every contrast starts from the same seed, so a
+# result does not depend on which variants share the report.
+bootstrap:
+  resamples: 20000
+  seed: 20261029
+
+# Measures whose differences also get a bootstrap interval. Holm's correction and the equivalence
+# test apply to the first only: the primary metric's contrasts in one report form one family.
+bootstrapped_measures: [per_100, seats_per_100]

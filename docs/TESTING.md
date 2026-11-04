@@ -10,7 +10,7 @@ with the lint checks below: `npm run lint` in `web/` and `gateway/` (ESLint), an
 | Suite | Command, from the repository root | Tests |
 |---|---|---|
 | core-api | `docker compose --profile test run --rm core-api-tests` | 349 |
-| Python (events, simulator, model, scheduler, experiments, intel API) | `docker compose --profile research run --rm research` | 224 |
+| Python (events, simulator, model, scheduler, experiments, intel API) | `docker compose --profile research run --rm research` | 234 |
 | web | `cd web && npm ci && npm test` | 296 |
 | gateway | `cd gateway && npm ci && npm test` | 28 |
 
