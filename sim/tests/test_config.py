@@ -3,6 +3,7 @@ import copy
 import pytest
 import yaml
 
+from intel.app.hazard.model import MODEL_DIR
 from sim.config import ConfigError, load_variant, load_world
 from sim.frozen import LATENT_TYPES
 from sim.run import CONFIGS
@@ -27,14 +28,17 @@ def test_the_shipped_world_loads_and_has_exactly_the_four_latent_types():
     assert sum(kind.share for kind in world.demand.types.values()) == pytest.approx(1.0)
 
 
-def test_every_shipped_variant_loads_and_names_a_known_ranking():
-    variants = sorted((CONFIGS / "variants").glob("*.yaml"))
+def test_every_shipped_variant_loads_and_names_a_known_ranking_and_a_shipped_model():
+    # Subfolders hold the same variants with another model (variants/h4 for experiment X1).
+    variants = sorted((CONFIGS / "variants").rglob("*.yaml"))
 
     assert variants
     for path in variants:
         variant = load_variant(path)
         assert variant.name == path.stem
         assert variant.ranking in RANKINGS
+        if variant.hazard_model is not None:
+            assert (MODEL_DIR / f"{variant.hazard_model}.json").is_file()
 
 
 def test_an_unknown_key_is_an_error_not_a_silent_default(tmp_path):

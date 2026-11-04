@@ -1,0 +1,9 @@
+# Experiment X1: B3-KM with model h4 in place of h3; nothing else differs from ../B3-KM.yaml.
+# h4 is trained on worlds/proximity_w0.5.yaml (hazard_h4.yaml).
+#
+# B3-KM: B3 with the no-feature model. Kaplan-Meier knows nothing about the booking or the
+# passenger: its estimate of survival to departure depends only on how far off departure
+# is. If B3-KM does as well as B3, the model's features are not what B3's gain comes from.
+name: B3-KM
+ranking: predicted_survival
+hazard_model: h4-km

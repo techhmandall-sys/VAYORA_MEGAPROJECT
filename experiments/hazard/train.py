@@ -1,6 +1,9 @@
 """Trains and evaluates the booking-durability models.
 
-    python -m experiments.hazard.train
+    python -m experiments.hazard.train [--config experiments/configs/hazard_h4.yaml]
+
+The configuration defaults to experiments/configs/hazard.yaml (model h3); another names its own
+version and world, as hazard_h4.yaml does for experiment X1.
 
 Simulates the training and validation seeds, fits three models, scores each on the
 validation seeds, and writes:
@@ -14,6 +17,7 @@ docs/AI_ML_METHODOLOGY.md.
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 from typing import Any
@@ -175,7 +179,9 @@ def _surv(frame: pd.DataFrame):
 
 
 def main() -> None:
-    config = load_config()
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--config", type=Path, default=CONFIGS / "hazard.yaml")
+    config = load_config(parser.parse_args().config)
     version = config["version"]
     train = simulate(config, seeds(config["train_seeds"]))
     valid = simulate(config, seeds(config["validation_seeds"]))

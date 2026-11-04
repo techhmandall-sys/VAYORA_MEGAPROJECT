@@ -1,0 +1,11 @@
+# Experiment X1: B3 with model h4 in place of h3; nothing else differs from ../B3.yaml.
+# h4 is trained on worlds/proximity_w0.5.yaml (hazard_h4.yaml).
+#
+# B3: survival-aware ranking. Candidates are ordered by the model's estimate that a
+# booking on them would last until departure. No intervention.
+#
+# B1 (feasibility filter) and B2 (two-sided ranking) are not implemented: the simulated
+# corridor has a single origin and destination, so there is no geography to filter on.
+name: B3
+ranking: predicted_survival
+hazard_model: h4-cox

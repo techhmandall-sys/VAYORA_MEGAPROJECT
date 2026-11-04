@@ -35,6 +35,14 @@ def test_training_validation_and_experiment_seeds_never_overlap(tmp_path):
         load_config(leaky)
 
 
+@pytest.mark.parametrize("name, version", [("hazard.yaml", "h3"), ("hazard_h4.yaml", "h4")])
+def test_every_model_config_keeps_its_seeds_apart_and_names_a_world_that_loads(name, version):
+    config = load_config(CONFIGS / name)
+
+    assert config["version"] == version
+    assert load_world(CONFIGS / config["world"]) is not None
+
+
 def test_there_is_one_row_per_accepted_booking_with_the_right_outcome(run):
     events, rows = run
     counts = Counter(e.event_type for e in events)

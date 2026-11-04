@@ -1,0 +1,35 @@
+# Model h4 for experiment X1 (docs/EXPERIMENT_PROTOCOL.md, sections 26 and 27): hazard.yaml with
+# one change of world. It is trained on worlds/proximity_w0.5.yaml, where half of each type's
+# Weibull hazard is moved to a hazard tied to departure, and used there and, outside the world
+# it learnt from, at share 0.9. Same seeds, features and settings as h3.
+#
+# Training and evaluation of the booking-durability model.
+#
+# The model is trained and validated on simulator seeds that the experiments never use
+# (research integrity rule 3). Experiments run seeds 1-30; nothing here may overlap them
+# or each other, and the training code refuses to run if they do.
+version: h4
+world: worlds/proximity_w0.5.yaml
+variant: variants/B0.yaml
+train_seeds: {first: 1001, last: 1020}
+validation_seeds: {first: 2001, last: 2010}
+
+cox:
+  # L2 penalty; the history counts are collinear by construction.
+  penalizer: 0.01
+
+gradient_boosting:
+  # scikit-survival's Cox loss costs O(rows^2) per tree, so this model is fitted on a
+  # random sample of the training bookings. Cox and Kaplan-Meier use all of them.
+  max_train_rows: 5000
+  params:
+    n_estimators: 200
+    learning_rate: 0.1
+    max_depth: 3
+    subsample: 0.8
+    random_state: 0
+
+# Hours since acceptance at which the Brier score is evaluated and integrated.
+brier_times_hours: [6, 12, 24, 48, 72, 96, 120]
+# Equal-count bins for the calibration table of P(survives to departure).
+calibration_bins: 10

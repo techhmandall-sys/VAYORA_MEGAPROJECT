@@ -1,0 +1,111 @@
+{
+  "config": {
+    "world": "world.yaml",
+    "variant": "variants/B0.yaml",
+    "scale_hours": 24.0,
+    "shares": [
+      0.5,
+      0.9
+    ],
+    "calibration_seeds": {
+      "first": 3001,
+      "last": 3010
+    },
+    "rate_upper": 10.0,
+    "rate_tolerance": 1e-12
+  },
+  "world_h3": {
+    "target_survival": {
+      "committed": 0.9726050543861947,
+      "flexible": 0.7175858776464634,
+      "opportunistic": 0.557696186534766,
+      "deadline_bound": 0.9651799264493405
+    },
+    "realised": {
+      "committed": {
+        "bookings": 5882,
+        "survival": 0.9700782046922816
+      },
+      "flexible": {
+        "bookings": 2807,
+        "survival": 0.71571072319202
+      },
+      "opportunistic": {
+        "bookings": 3163,
+        "survival": 0.5561176098640531
+      },
+      "deadline_bound": {
+        "bookings": 1792,
+        "survival": 0.9592633928571429
+      }
+    }
+  },
+  "worlds": {
+    "proximity_w0.5.yaml": {
+      "share": 0.5,
+      "rates_per_hour": {
+        "committed": 0.0007713895635674817,
+        "flexible": 0.008018831931906334,
+        "opportunistic": 0.012510993031753515,
+        "deadline_bound": 0.0011657766211214948
+      },
+      "analytic_survival": {
+        "committed": 0.9726050543881456,
+        "flexible": 0.7175858776444435,
+        "opportunistic": 0.557696186535229,
+        "deadline_bound": 0.9651799264476316
+      },
+      "realised": {
+        "committed": {
+          "bookings": 5825,
+          "survival": 0.9685836909871245
+        },
+        "flexible": {
+          "bookings": 2767,
+          "survival": 0.7253342970726419
+        },
+        "opportunistic": {
+          "bookings": 3145,
+          "survival": 0.5583465818759936
+        },
+        "deadline_bound": {
+          "bookings": 1774,
+          "survival": 0.9633596392333709
+        }
+      }
+    },
+    "proximity_w0.9.yaml": {
+      "share": 0.9,
+      "rates_per_hour": {
+        "committed": 0.0014156602011894392,
+        "flexible": 0.015178665394444124,
+        "opportunistic": 0.026453944495017367,
+        "deadline_bound": 0.0021815815071590805
+      },
+      "analytic_survival": {
+        "committed": 0.9726050543843004,
+        "flexible": 0.7175858776496233,
+        "opportunistic": 0.557696186535516,
+        "deadline_bound": 0.9651799264513834
+      },
+      "realised": {
+        "committed": {
+          "bookings": 5726,
+          "survival": 0.9725812085225288
+        },
+        "flexible": {
+          "bookings": 2737,
+          "survival": 0.7347460723419803
+        },
+        "opportunistic": {
+          "bookings": 3133,
+          "survival": 0.5563357804021705
+        },
+        "deadline_bound": {
+          "bookings": 1763,
+          "survival": 0.968803176403857
+        }
+      }
+    }
+  }
+}

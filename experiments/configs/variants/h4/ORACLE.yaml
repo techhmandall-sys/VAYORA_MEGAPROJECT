@@ -1,0 +1,19 @@
+# Experiment X1: ORACLE with model h4 in place of h3; nothing else differs from ../ORACLE.yaml.
+# h4 is trained on worlds/proximity_w0.5.yaml (hazard_h4.yaml).
+#
+# ORACLE: an upper bound, not a method. Like B4, but asks exactly the bookings the
+# simulator knows will be cancelled less than a day before departure, using ground truth
+# no platform could have. It shows the most any reconfirmation policy could gain in this
+# world, given how passengers answer (world.yaml, intervention_response).
+#
+# It reads the hidden cancellation time, never a latent type, and writes nothing a model
+# could learn from that B4 would not also write. It must never be reported as a result
+# the platform could achieve.
+name: ORACLE
+ranking: predicted_survival
+hazard_model: h4-cox
+intervention:
+  survival_threshold: 0.8
+  min_hours_before_departure: 24
+  scoring_interval_hours: 24
+  selector: oracle

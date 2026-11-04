@@ -1,0 +1,23 @@
+# Experiment X1 (docs/EXPERIMENT_PROTOCOL.md, sections 26 and 27): worlds in which a share of each
+# passenger type's cancellation risk is tied to the time left before departure instead of the time
+# since acceptance. Read by experiments/proximity/calibrate.py, which sets each type's rate and
+# writes the worlds to worlds/proximity_w<share>.yaml.
+world: world.yaml
+variant: variants/B0.yaml
+
+# θ: the hazard tied to departure is proximity_rate * exp(-v / scale_hours) at v hours before
+# departure, so it rises e-fold in each last scale_hours.
+scale_hours: 24.0
+
+# Shares w of each type's Weibull hazard moved to it. w = 0 is world.yaml itself.
+shares: [0.5, 0.9]
+
+# Seeds simulated (world h3, variant B0) to set each type's rate. Disjoint from the experiment
+# seeds (1-30) and from the model's training and validation seeds (hazard.yaml); the script
+# refuses to run otherwise.
+calibration_seeds: {first: 3001, last: 3010}
+
+# Each rate is found by bisection on [0, rate_upper] per hour, stopped when the bracket is
+# narrower than rate_tolerance.
+rate_upper: 10.0
+rate_tolerance: 1.0e-12
