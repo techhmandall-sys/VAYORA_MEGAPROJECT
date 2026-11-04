@@ -39,6 +39,7 @@ was decided while building within them.
 | A live run builds its cell with the sweeps' own code (`sim.config.apply_cell`) | So a live run at a value a sweep covered reproduces it exactly, which a test checks | |
 | Experiment X1's hazard tied to departure takes a share of each type's Weibull hazard rather than adding to it, and each type's rate is set so the type keeps its world-h3 chance of reaching departure (2026-11-04) | Added risk would change how many cancel as well as when, and the experiment asks only about when | The chance is held on the bookings B0 accepts in world h3 on ten calibration seeds; under other variants it holds only as nearly as their bookings resemble those |
 | The draw for that hazard is made last of a search's draws, and share 0 divides by exactly 1.0 | So every run made before it exists is reproduced event for event, which X1 checks | |
+| Experiment X2's cost of leaving away from the wanted time lowers only the chance of booking the ride offered, by exp(−cost × gap), with the same draw deciding (2026-11-04) | It is the smallest change that makes an earlier ride cost the passenger something, and at cost 0 it is the old rule exactly | A passenger still sees only the first ride; a cost cannot make them choose another one on the list |
 
 ## Platform: correctness
 

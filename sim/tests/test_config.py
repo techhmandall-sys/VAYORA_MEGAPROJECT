@@ -81,6 +81,7 @@ def test_latent_types_cannot_be_added_or_removed(tmp_path):
     lambda raw: raw["demand"]["proximity"].update(share=-0.1),
     lambda raw: raw["demand"]["proximity"].update(scale_hours=0),
     lambda raw: raw["demand"]["types"]["flexible"].update(proximity_rate=-0.01),
+    lambda raw: raw["demand"].update(time_deviation_cost_per_hour=-0.01),
 ])
 def test_nonsense_values_are_rejected(tmp_path, change):
     with pytest.raises(ConfigError):

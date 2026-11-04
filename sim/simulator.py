@@ -366,8 +366,17 @@ class Simulation:
         kind = self.world.demand.types[passenger.kind]
         if not candidates:
             self._maybe_retry(passenger)
-        elif passenger.book_draw < kind.book_probability:
+        elif passenger.book_draw < self._book_probability(kind, passenger, candidates[0]):
             self._request(passenger, candidates[0])
+
+    def _book_probability(self, kind: PassengerType, passenger: Passenger, ride: Ride) -> float:
+        """The chance this passenger books the ride offered first.
+
+        A world may charge for leaving away from the wanted time. With a cost of 0 the factor is
+        exp(-0.0) == 1.0 exactly, so the same draw decides as it always did.
+        """
+        gap = abs(ride.departure - passenger.desired_departure)
+        return kind.book_probability * math.exp(-self.world.demand.time_deviation_cost_per_hour * gap)
 
     # ---- bookings -------------------------------------------------------------
 

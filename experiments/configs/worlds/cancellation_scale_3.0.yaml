@@ -43,6 +43,10 @@ demand:
   departure_hours: {6: 2, 7: 4, 8: 4, 9: 2, 14: 1, 16: 2, 17: 4, 18: 3, 19: 1}
   # A ride is a candidate if it leaves within this many hours of the preferred time.
   departure_tolerance_hours: 2.0
+  # What leaving away from the wanted time costs (experiment X2, EXPERIMENT_PROTOCOL section 26):
+  # the chance of booking the ride offered is the type's book_probability times
+  # exp(-cost * gap), the gap in hours from the preferred time. 0 is this world exactly.
+  time_deviation_cost_per_hour: 0.0
   # Seats wanted per search: weight.
   party_size: {1: 7, 2: 2, 3: 1}
 

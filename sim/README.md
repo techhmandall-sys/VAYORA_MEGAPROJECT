@@ -25,7 +25,7 @@ Tests: `docker compose --profile research run --rm research` (runs `pytest`).
 | Supply | Poisson rides per day; each has a departure hour, seats, a publish time 1-7 days ahead, and a chance the driver withdraws it |
 | Demand | Poisson searches; each passenger has a preferred departure, a party size and a latent type |
 | Matching | Open rides inside the booking horizon, within the passenger's time tolerance, with enough seats; ordered by the variant's ranking |
-| Booking | The top candidate is requested with the type's booking probability; the seat is held; the driver answers after a delay |
+| Booking | The top candidate is requested with the type's booking probability; the seat is held; the driver answers after a delay. A world may lower that probability by exp(−cost × gap) for a ride leaving the gap's hours from the wanted time (`demand.time_deviation_cost_per_hour`, experiment X2); world.yaml charges nothing |
 | Cancellation | Weibull hazard per latent type over hours since acceptance, multiplied after an unobservable shock (`hazard.py`). A world may move a share of it to a second hazard that rises as departure nears (`demand.proximity`, experiment X1); the booking is cancelled by whichever comes first. world.yaml moves none |
 | Refill | A seat released by a passenger can be taken by a later search; that booking logs `seat_refilled` |
 | Trip | At departure unanswered requests are rejected and each confirmed booking starts a trip; it ends as `trip_completed` or, for a no-show, `trip_failed` |

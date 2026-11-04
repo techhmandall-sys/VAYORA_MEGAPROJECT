@@ -125,6 +125,10 @@ class Demand:
     population: int
     departure_hours: Mapping[int, float]
     departure_tolerance_hours: float
+    # What leaving away from the wanted time costs a passenger (experiment X2): the chance of
+    # booking the ride offered is the type's book_probability times exp(-cost * gap), the gap
+    # in hours. 0 is world h3 exactly: the same draw decides against the same probability.
+    time_deviation_cost_per_hour: float
     party_size: Mapping[int, float]
     types: Mapping[str, PassengerType]
     shock: Shock
@@ -291,7 +295,7 @@ def validate(world: World) -> None:
         if value <= 0:
             raise ConfigError(f"{name} must be positive")
     if (demand.departure_tolerance_hours < 0 or demand.shock.rate_per_day < 0
-            or demand.flexible_booking.window_hours < 0):
+            or demand.flexible_booking.window_hours < 0 or demand.time_deviation_cost_per_hour < 0):
         raise ConfigError("tolerances, windows and rates cannot be negative")
     if demand.last_mile.offer_beyond_metres < 0:
         raise ConfigError("demand.last_mile.offer_beyond_metres cannot be negative")

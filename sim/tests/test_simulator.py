@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import math
 import re
 import uuid
 from collections import Counter
@@ -458,6 +459,43 @@ def test_a_share_with_no_proximity_rate_only_takes_risk_away(baseline):
     _, lighter = _run(_proximity(WORLD, share=0.5, rate=0.0))
 
     assert len(_passenger_cancellations(lighter)) < len(_passenger_cancellations(events))
+
+
+def _booked_gaps(events):
+    """Hours between each requested ride's departure and the time its passenger wanted."""
+    wanted = {e.payload["search_id"]: datetime.fromisoformat(e.payload["desired_departure"])
+              for e in events if e.event_type == "search_issued"}
+    return [abs(datetime.fromisoformat(e.payload["departure_time"]) - wanted[e.payload["search_id"]])
+            .total_seconds() / 3600
+            for e in events if e.event_type == "booking_requested"]
+
+
+def test_with_no_time_cost_the_booking_chance_is_exactly_the_types_own(baseline):
+    sim, _ = baseline
+    kind = WORLD.demand.types["flexible"]
+    passenger = next(iter(sim._passenger_of.values()))
+    ride = next(r for r in sim.rides if r.departure != passenger.desired_departure)
+
+    assert sim._book_probability(kind, passenger, ride) == kind.book_probability
+
+    costly = Simulation(_demand(WORLD, time_deviation_cost_per_hour=0.1), B0, 1, MemorySink())
+    gap = abs(ride.departure - passenger.desired_departure)
+    assert costly._book_probability(kind, passenger, ride) == pytest.approx(
+        kind.book_probability * math.exp(-0.1 * gap))
+
+
+def test_a_time_cost_leaves_searches_and_rides_alone_and_books_closer_to_the_wanted_time(baseline):
+    sim, events = baseline
+    costly, costly_events = _run(_demand(WORLD, time_deviation_cost_per_hour=0.5))
+
+    def searches(evs):
+        return [(e.sim_time, e.payload) for e in evs if e.event_type == "search_issued"]
+
+    assert searches(costly_events) == searches(events)
+    assert [r.departure for r in costly.rides] == [r.departure for r in sim.rides]
+    assert _counts(costly_events)["booking_requested"] < _counts(events)["booking_requested"]
+    assert (sum(_booked_gaps(costly_events)) / len(_booked_gaps(costly_events))
+            < sum(_booked_gaps(events)) / len(_booked_gaps(events)))
 
 
 @pytest.mark.parametrize("change, absent", [
