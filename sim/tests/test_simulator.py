@@ -410,6 +410,56 @@ def test_shocks_add_cancellations():
     assert cancellations(stormy) > 2 * cancellations(calm)
 
 
+def _proximity(world, share, rate, scale_hours=24.0):
+    """World h3 with a share of each type's risk moved to a hazard tied to departure."""
+    types = {name: dataclasses.replace(spec, proximity_rate=rate)
+             for name, spec in world.demand.types.items()}
+    return _demand(world, types=types, proximity=dataclasses.replace(
+        world.demand.proximity, share=share, scale_hours=scale_hours))
+
+
+def _passenger_cancellations(events):
+    """Hours before departure of every cancellation a passenger made."""
+    return [(datetime.fromisoformat(e.payload["departure_time"]) - e.sim_time).total_seconds() / 3600
+            for e in events
+            if e.event_type == "booking_cancelled" and e.payload["cancelled_by"] == "passenger"]
+
+
+def test_without_proximity_rates_the_hazard_scale_changes_nothing(baseline):
+    _, events = baseline
+
+    assert _run(_proximity(WORLD, share=0.0, rate=0.0, scale_hours=99.0))[1] == events
+
+
+def test_the_hazard_tied_to_departure_leaves_who_searches_and_what_runs_alone(baseline):
+    sim, events = baseline
+    moved, moved_events = _run(_proximity(WORLD, share=0.9, rate=0.01))
+
+    def searches(evs):
+        return [(e.sim_time, e.payload) for e in evs if e.event_type == "search_issued"]
+
+    assert searches(moved_events) == searches(events)
+    assert [r.departure for r in moved.rides] == [r.departure for r in sim.rides]
+
+
+def test_moving_risk_to_departure_moves_cancellations_towards_it(baseline):
+    _, events = baseline
+    _, moved = _run(_proximity(WORLD, share=0.9, rate=0.01))
+
+    def late_share(evs):
+        hours = _passenger_cancellations(evs)
+        return sum(1 for h in hours if h < 24) / len(hours)
+
+    assert late_share(moved) > late_share(events) + 0.1
+
+
+def test_a_share_with_no_proximity_rate_only_takes_risk_away(baseline):
+    _, events = baseline
+    _, lighter = _run(_proximity(WORLD, share=0.5, rate=0.0))
+
+    assert len(_passenger_cancellations(lighter)) < len(_passenger_cancellations(events))
+
+
 @pytest.mark.parametrize("change, absent", [
     (lambda w: _supply(w, accept_probability=0.0), ["booking_accepted", "trip_started"]),
     (lambda w: _supply(w, withdraw_probability=1.0), ["trip_started", "trip_completed"]),

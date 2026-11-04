@@ -73,6 +73,10 @@ def test_latent_types_cannot_be_added_or_removed(tmp_path):
     lambda raw: raw["demand"]["last_mile"].update(offer_beyond_metres=-1),
     lambda raw: raw["demand"]["last_mile"].update(offset_metres_sigma=0),
     lambda raw: raw["demand"]["types"]["opportunistic"].update(last_mile_sensitivity=-0.1),
+    lambda raw: raw["demand"]["proximity"].update(share=1.0),
+    lambda raw: raw["demand"]["proximity"].update(share=-0.1),
+    lambda raw: raw["demand"]["proximity"].update(scale_hours=0),
+    lambda raw: raw["demand"]["types"]["flexible"].update(proximity_rate=-0.01),
 ])
 def test_nonsense_values_are_rejected(tmp_path, change):
     with pytest.raises(ConfigError):

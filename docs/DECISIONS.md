@@ -37,6 +37,8 @@ was decided while building within them.
 | A live run gives means, the mean paired difference and seeds up and down, but no interval | It is an exploration, not a result; an interval would need scipy in intel and would look like a report figure | A small difference can be over-read; a sweep gives the interval |
 | Each sweep says in its YAML how far a live run may take its setting | Bounds are tunables (rule 5); outside them a run may mean nothing or take long | A sweep with no bounds is not offered live |
 | A live run builds its cell with the sweeps' own code (`sim.config.apply_cell`) | So a live run at a value a sweep covered reproduces it exactly, which a test checks | |
+| Experiment X1's hazard tied to departure takes a share of each type's Weibull hazard rather than adding to it, and each type's rate is set so the type keeps its world-h3 chance of reaching departure (2026-11-04) | Added risk would change how many cancel as well as when, and the experiment asks only about when | The chance is held on the bookings B0 accepts in world h3 on ten calibration seeds; under other variants it holds only as nearly as their bookings resemble those |
+| The draw for that hazard is made last of a search's draws, and share 0 divides by exactly 1.0 | So every run made before it exists is reproduced event for event, which X1 checks | |
 
 ## Platform: correctness
 

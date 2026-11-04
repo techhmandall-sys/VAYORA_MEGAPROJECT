@@ -33,6 +33,9 @@ class PassengerType:
     # divided by (1 + last_mile_sensitivity * offset_km), so 0 leaves the type exactly as
     # before. Never read by anything a feature could see; only the distance is observable.
     last_mile_sensitivity: float = 0.0
+    # This type's hazard at the moment of departure from risk tied to departure (per hour);
+    # see Proximity. 0 leaves the type exactly as in world h3.
+    proximity_rate: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -88,6 +91,22 @@ class FlexibleBooking:
 
 
 @dataclass(frozen=True)
+class Proximity:
+    """Cancellation risk tied to the time left before departure (experiment X1).
+
+    On real airline tickets cancellations come more often as departure nears; the Weibull
+    hazard counts only time since acceptance. Here a booking can also be cancelled by a hazard
+    that depends only on the hours v left before its ride leaves:
+    ``proximity_rate * exp(-v / scale_hours)``, with each type's own proximity_rate. `share` is
+    the part of each type's Weibull hazard moved away: that hazard is multiplied by
+    (1 - share). share 0 with every proximity_rate 0 is world h3, draw for draw.
+    """
+
+    share: float
+    scale_hours: float
+
+
+@dataclass(frozen=True)
 class Supply:
     rides_per_day: float
     departure_hours: Mapping[int, float]
@@ -113,6 +132,7 @@ class Demand:
     retry: Retry
     flexible_booking: FlexibleBooking
     last_mile: LastMile
+    proximity: Proximity
 
 
 @dataclass(frozen=True)
@@ -183,6 +203,7 @@ def load_world(path: Path) -> World:
     retry_raw = demand_raw.pop("retry", None) or {}
     flexible_raw = demand_raw.pop("flexible_booking", None) or {}
     last_mile_raw = demand_raw.pop("last_mile", None) or {}
+    proximity_raw = demand_raw.pop("proximity", None) or {}
     if set(types_raw) != set(LATENT_TYPES):
         raise ConfigError(f"demand.types must be exactly {sorted(LATENT_TYPES)}")
     types = {
@@ -196,7 +217,8 @@ def load_world(path: Path) -> World:
              InterventionResponse, response_raw, "demand.intervention_response"),
          "retry": _build(Retry, retry_raw, "demand.retry"),
          "flexible_booking": _build(FlexibleBooking, flexible_raw, "demand.flexible_booking"),
-         "last_mile": _build(LastMile, last_mile_raw, "demand.last_mile")},
+         "last_mile": _build(LastMile, last_mile_raw, "demand.last_mile"),
+         "proximity": _build(Proximity, proximity_raw, "demand.proximity")},
         "demand",
     )
     world = World(start=start, supply=_build(Supply, raw["supply"], "supply"), demand=demand)
@@ -264,6 +286,7 @@ def validate(world: World) -> None:
         ("demand.retry.delay_mean_hours", demand.retry.delay_mean_hours),
         ("demand.last_mile.offset_metres_mean", demand.last_mile.offset_metres_mean),
         ("demand.last_mile.offset_metres_sigma", demand.last_mile.offset_metres_sigma),
+        ("demand.proximity.scale_hours", demand.proximity.scale_hours),
     ]:
         if value <= 0:
             raise ConfigError(f"{name} must be positive")
@@ -272,6 +295,9 @@ def validate(world: World) -> None:
         raise ConfigError("tolerances, windows and rates cannot be negative")
     if demand.last_mile.offer_beyond_metres < 0:
         raise ConfigError("demand.last_mile.offer_beyond_metres cannot be negative")
+    # A share of 1 would leave nothing of the Weibull hazard, and divides by zero.
+    if not 0 <= demand.proximity.share < 1:
+        raise ConfigError("demand.proximity.share must be at least 0 and below 1")
     if demand.retry.max_attempts < 0 or demand.retry.max_attempts != int(demand.retry.max_attempts):
         raise ConfigError("demand.retry.max_attempts must be a whole number, 0 or more")
     if not 0 <= supply.publish_lead_days_min <= supply.publish_lead_days_max:
@@ -297,6 +323,8 @@ def validate(world: World) -> None:
                 f"demand.types.{name}: Weibull shape, scale and lead time must be positive")
         if kind.last_mile_sensitivity < 0:
             raise ConfigError(f"demand.types.{name}.last_mile_sensitivity cannot be negative")
+        if kind.proximity_rate < 0:
+            raise ConfigError(f"demand.types.{name}.proximity_rate cannot be negative")
     for name, value in probabilities:
         if not 0 <= value <= 1:
             raise ConfigError(f"{name} must be between 0 and 1")

@@ -58,6 +58,7 @@ demand:
       weibull_scale_hours: 2500
       no_show_probability: 0.01
       last_mile_sensitivity: 0.03
+      proximity_rate: 0.0
     flexible:
       share: 0.25
       lead_days_mean: 4.0
@@ -66,6 +67,7 @@ demand:
       weibull_scale_hours: 400
       no_show_probability: 0.02
       last_mile_sensitivity: 0.12
+      proximity_rate: 0.0
     opportunistic:
       share: 0.20
       lead_days_mean: 3.0
@@ -74,6 +76,7 @@ demand:
       weibull_scale_hours: 110
       no_show_probability: 0.06
       last_mile_sensitivity: 0.30
+      proximity_rate: 0.0
     deadline_bound:
       share: 0.15
       lead_days_mean: 1.0
@@ -82,6 +85,7 @@ demand:
       weibull_scale_hours: 600
       no_show_probability: 0.01
       last_mile_sensitivity: 0.08
+      proximity_rate: 0.0
 
   # The gap from a passenger's start to the stop they would board at: log-normal,
   # metres, independent of which ride they take. How much it speeds up a cancellation
@@ -92,6 +96,16 @@ demand:
     offset_metres_mean: 1200
     offset_metres_sigma: 0.9
     offer_beyond_metres: 500
+
+  # A hazard tied to departure (experiment X1, EXPERIMENT_PROTOCOL section 26): a share of
+  # each type's cancellation risk moves from the clock since acceptance to a hazard
+  # proximity_rate * exp(-v / scale_hours) in the hours v left before departure. The
+  # Weibull hazard is scaled by (1 - share); each type's proximity_rate is set by
+  # experiments/proximity/calibrate.py so that the type keeps its chance of reaching
+  # departure. share 0 with every proximity_rate 0 is this world exactly, draw for draw.
+  proximity:
+    share: 0.0
+    scale_hours: 24.0
 
   # An unobservable shock (illness, a change of plans) can hit any booking. From the
   # moment it hits, that booking's hazard is multiplied. No feature records it

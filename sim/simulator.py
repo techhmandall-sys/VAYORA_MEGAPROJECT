@@ -38,7 +38,7 @@ from intel.app.scheduler.plan import Candidate, Limits, plan
 from vayora_events import EventType
 from sim.config import PassengerType, Variant, World
 from sim.frozen import BOOKING_HORIZON_DAYS, DESTINATION, LATENT_TYPES, ORIGIN, SPAN_DAYS
-from sim.hazard import cancellation_time
+from sim.hazard import cancellation_time, proximity_cancellation_time
 
 HOURS_PER_DAY = 24.0
 
@@ -132,6 +132,9 @@ class Passenger:
     # independent of which ride they take. Never leaves this module as a feature of its
     # own passenger: only the distance (sim/hazard's effect on it) is observable.
     last_mile_offset_m: float
+    # Exp(1), for the hazard tied to departure (sim/hazard.py). Drawn last of all, so a
+    # world without that hazard makes every earlier draw, and every run, as before.
+    proximity_exposure: float
     # 0 for the first search; 1 and up for a search made after being left without a seat.
     attempt: int = 0
 
@@ -281,6 +284,7 @@ class Simulation:
             annoyed_draw=rng.random(),
             last_mile_offset_m=rng.lognormvariate(
                 math.log(demand.last_mile.offset_metres_mean), demand.last_mile.offset_metres_sigma),
+            proximity_exposure=rng.expovariate(1.0),
         )
 
     def _maybe_retry(self, passenger: Passenger) -> None:
@@ -308,6 +312,7 @@ class Simulation:
             annoyed_draw=rng.random(),
             last_mile_offset_m=rng.lognormvariate(
                 math.log(demand.last_mile.offset_metres_mean), demand.last_mile.offset_metres_sigma),
+            proximity_exposure=rng.expovariate(1.0),
         )
         if retries:
             self.env.process(self._search_again(again, delay))
@@ -456,13 +461,26 @@ class Simulation:
         # depends on the (unobservable) type, never on anything a feature could see.
         scale = kind.weibull_scale_hours / (
             1.0 + kind.last_mile_sensitivity * (passenger.last_mile_offset_m / 1000.0))
+        # A world may move a share of the risk from the clock since acceptance to a hazard
+        # tied to departure. Scaling the Weibull hazard by (1 - share) is the same as
+        # dividing the exposure by it; with share 0 this divides by exactly 1.0.
+        proximity = self.world.demand.proximity
         wait = cancellation_time(
-            passenger.cancel_exposure,
+            passenger.cancel_exposure / (1.0 - proximity.share),
             shape=kind.weibull_shape,
             scale=scale,
             shock_time=passenger.shock_time,
             shock_multiplier=self.world.demand.shock.hazard_multiplier,
         )
+        if kind.proximity_rate > 0:
+            near = proximity_cancellation_time(
+                passenger.proximity_exposure,
+                hours_left=ride.departure - self.env.now,
+                rate=kind.proximity_rate,
+                scale_hours=proximity.scale_hours,
+            )
+            if near is not None:
+                wait = min(wait, near)  # whichever of the two hazards cancels first
         if self.env.now + wait >= ride.departure:
             return  # survives to departure
         booking.cancel_at = self.env.now + wait
