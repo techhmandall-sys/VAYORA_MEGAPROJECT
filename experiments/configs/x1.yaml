@@ -1,0 +1,33 @@
+# Experiment X1 (docs/EXPERIMENT_PROTOCOL.md, sections 26 and 27): which runs answer which
+# hypothesis. Read by experiments/analysis/proximity.py; the statistics come from analysis.yaml.
+#
+# Each world has two runs, as the ladder has: a ranking run against B0 (B3, EARLIEST, B3-KM) and
+# a reconfirmation run against B3 (B0, B4, ORACLE). Share 0 is world.yaml with model h3; the
+# other shares use model h4 (hazard_h4.yaml), trained at share 0.5.
+worlds:
+  - share: 0.0
+    world: world.yaml
+    ranking_run: 7a1c0de0-0000-4000-8000-000000000011
+    reconfirmation_run: 7a1c0de0-0000-4000-8000-000000000012
+  - share: 0.5
+    world: worlds/proximity_w0.5.yaml
+    ranking_run: 7a1c0de0-0000-4000-8000-000000000013
+    reconfirmation_run: 7a1c0de0-0000-4000-8000-000000000014
+  - share: 0.9
+    world: worlds/proximity_w0.9.yaml
+    ranking_run: 7a1c0de0-0000-4000-8000-000000000015
+    reconfirmation_run: 7a1c0de0-0000-4000-8000-000000000016
+
+# H1.0: the share-0 runs must write, variant by variant and seed by seed, exactly the events of
+# these earlier world-h3 runs.
+reproduces:
+  - {run: 7a1c0de0-0000-4000-8000-000000000011, earlier: 7a1c0de0-0000-4000-8000-000000000010,
+     variants: [B0, B3, EARLIEST, B3-KM]}
+  - {run: 7a1c0de0-0000-4000-8000-000000000012, earlier: 7a1c0de0-0000-4000-8000-000000000004,
+     variants: [B0, B3, B4]}
+  - {run: 7a1c0de0-0000-4000-8000-000000000012, earlier: 7a1c0de0-0000-4000-8000-000000000003,
+     variants: [ORACLE]}
+
+# H1.1: at the largest share, EARLIEST's relative gain over B0 must be below this fraction of
+# its value at share 0.
+h1_1_fraction: 0.5

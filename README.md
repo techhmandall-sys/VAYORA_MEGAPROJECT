@@ -24,7 +24,7 @@ more bookings and still move fewer people.
 | Features | 84 verified and 5 partial of the 89 still in scope, the team having removed 6 of the original 95 on 2026-11-02: about 97% counting a partial feature as half. The five need accounts, a native speaker or real data, not more code ([feature matrix](docs/FEATURE_MATRIX.md)) |
 | Routes | Any route in India in the app, from 126 listed cities or a point on the map. Road distances between Kolhapur and Pune; elsewhere a labelled straight line until a bigger map is built ([how](docs/DEPLOYMENT.md#road-routes-across-india)) |
 | Interface | A side bar, or tabs on a phone, in light and dark, each role with its own tint. Screens keep themselves current without a reload |
-| Tests | 310 Java, 293 web, 234 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
+| Tests | 310 Java, 293 web, 274 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
 | Languages | English, Hindi and Marathi, on every screen, notification and error message |
 | Research | On Kolhapur to Pune alone. A SimPy simulator of the corridor: 60 simulated days, 30 seeds per variant, train and validation on disjoint seeds |
 | Data | All synthetic, plus one public dataset of real hotel cancellations used as a check |
@@ -62,6 +62,10 @@ reproduces the earlier world's committed numbers (B0 30.77, B3 31.11) to every d
 - **It does not depend on the assumed cancellation rate.** With cancellations three times
   rarer, where the simulated week looks like real hotels', ranking still gains +0.34 and
   asking still nothing.
+- **Tying cancellations to departure changes the picture only a little.** In worlds where most
+  of the risk rises as departure nears, not from booking (experiment X1, protocol section 27):
+  - the soonest-ride gain keeps 93% of its size, so it is not just shorter exposure;
+  - asking starts to help a little, +0.07 (+0.02 to +0.13), against an oracle's +0.25.
 - **On real hotel cancellations, features do help.** The same kinds of model rank who
   cancels better than lead time alone (concordance 0.597 for Cox and 0.653 for gradient
   boosting, against 0.544), which suggests the simulated world understates what booking

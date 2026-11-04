@@ -208,7 +208,7 @@ def test_metrics_file_defines_the_expected_queries():
         "primary_metric", "late_cancellation_share", "funnel_rates", "intervention_volume",
         "refill_additionality", "empty_search_reasons", "refill_by_release_timing",
         "cancellation_timing", "daily_cancellation_hazard", "seats_travelled",
-        "late_cancellation_share_passenger"}
+        "late_cancellation_share_passenger", "event_digest"}
 
 
 def _event(seed, event_type, payload=None, variant=VARIANT, at=NOW):
@@ -254,6 +254,33 @@ def test_late_share_of_passenger_cancellations_leaves_out_drivers(sa_conn):
     assert (passenger["cancellations"], passenger["late"]) == (3, 2)
     assert float(passenger["late_share_passenger"]) == pytest.approx(2 / 3)
     assert float(everyone["late_share"]) == pytest.approx(4 / 5)
+
+
+def test_the_event_digest_is_equal_only_for_the_same_events_in_the_same_order(sa_conn):
+    def written(run_id, booking_ids):
+        return [dict(_event(1, "booking_requested", {"booking_id": b}, at=NOW + b * M), run_id=run_id)
+                for b in booking_ids]
+
+    sa_conn.execute(INSERT, written(RUN_ID, [1, 2, 3]))
+    sa_conn.execute(INSERT, written(OTHER_RUN_ID, [1, 2, 3]))
+    (same, other) = (run_query(sa_conn, "event_digest", run_id=r, variant=VARIANT)[0]
+                     for r in (RUN_ID, OTHER_RUN_ID))
+    assert (same["events"], same["digest"]) == (other["events"], other["digest"])
+
+    sa_conn.execute(INSERT, written(OTHER_RUN_ID, [4]))
+    (longer,) = run_query(sa_conn, "event_digest", run_id=OTHER_RUN_ID, variant=VARIANT)
+    assert longer["events"] == 4 and longer["digest"] != same["digest"]
+
+
+def test_the_event_digest_sees_a_changed_payload(sa_conn):
+    sa_conn.execute(INSERT, [_event(1, "booking_requested", {"booking_id": 1, "seats": 1})])
+    sa_conn.execute(INSERT, [dict(_event(1, "booking_requested", {"booking_id": 1, "seats": 2}),
+                                  run_id=OTHER_RUN_ID)])
+
+    digests = {run_query(sa_conn, "event_digest", run_id=r, variant=VARIANT)[0]["digest"]
+               for r in (RUN_ID, OTHER_RUN_ID)}
+
+    assert len(digests) == 2
 
 
 def test_intervention_volume_matches_hand_computed_values(sa_conn):

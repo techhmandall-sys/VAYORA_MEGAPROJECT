@@ -932,6 +932,11 @@ be cancelled, and that is all the survival model's ranking adds in this world. I
 prediction about the passenger and no model. Whether booking features would add something
 on real data is section 19's question, and there the answer was yes.
 
+*Correction, 2026-11-04 (section 27).* Experiment X1 tested this account and it did not hold. With
+nine-tenths of the risk tied to departure instead of to acceptance, EARLIEST kept 93% of its gain over
+B0. The finding above stands: the gain needs no model. The reason given for it does not: the gain is
+mostly not shorter exposure.
+
 ## 22. How passengers respond to being asked, in the current world
 
 Run on 2026-10-29. Synthetic data; 30 seeds per cell; world h3; model `h3-cox`. Sweep
@@ -1185,3 +1190,84 @@ Every comparison is paired by seed over seeds 1 to 30; equivalence uses the ±0.
 
 These hypotheses are fixed by the commit that adds this section. A result against any of them is
 reported as such.
+
+## 27. Experiment X1: a hazard tied to departure
+
+Run on 2026-11-04 against the hypotheses of section 26, which were committed (`66d73cc`) before any
+run started. Runs `7a1c0de0-…-011` to `…-016`; judged by `python -m experiments.analysis.proximity`,
+which writes `experiments/reports/x1-proximity.md` and `.json` from the event log.
+
+**What was built.**
+- **The hazard.** `sim/hazard.py` gains a second cancellation hazard, `β_k·exp(−v/θ)` in the hours v
+  left before departure, θ = 24 h, sampled in closed form. A booking is cancelled by whichever of the
+  two hazards comes first.
+  - A world's `demand.proximity.share` w scales each type's Weibull hazard by (1 − w).
+  - The new hazard's Exp(1) draw is the last of a search's draws.
+  - world.yaml and every earlier alternative world have w = 0 and every rate 0.
+- **The rates.** `experiments/proximity/calibrate.py` (`configs/proximity.yaml`) sets each β_k so that
+  type k keeps its world-h3 chance of reaching departure.
+  - That chance is averaged over the bookings B0 accepts in world h3 on calibration seeds 3001–3010,
+    disjoint from every other seed set.
+  - The match is exact in expectation (to 10⁻⁹).
+  - It writes `worlds/proximity_w0.5.yaml` and `worlds/proximity_w0.9.yaml`.
+
+  | Type | β at w = 0.5 (per hour) | β at w = 0.9 | Chance of reaching departure, h3 | Realised: h3, w = 0.5, w = 0.9 |
+  |---|---|---|---|---|
+  | committed | 0.000771 | 0.001416 | 0.973 | 0.970, 0.969, 0.973 |
+  | flexible | 0.008019 | 0.015179 | 0.718 | 0.716, 0.725, 0.735 |
+  | opportunistic | 0.012511 | 0.026454 | 0.558 | 0.556, 0.558, 0.556 |
+  | deadline_bound | 0.001166 | 0.002182 | 0.965 | 0.959, 0.963, 0.969 |
+
+  "Realised" is the share of B0's accepted bookings whose drawn cancellation falls after departure, on
+  the calibration seeds (`experiments/reports/proximity-calibration.json`). The largest gap, flexible
+  at w = 0.9, is +0.019 on about 2,700 bookings.
+- **Model h4** (`configs/hazard_h4.yaml`) is trained on the w = 0.5 world with h3's seeds and settings.
+  - Cox concordance 0.628 (h3: 0.638); integrated Brier score 0.137 (h3: 0.161).
+  - `variants/h4/` holds B3, B4, ORACLE and B3-KM with h4 in place of h3.
+  - It is used at w = 0.9 outside the world it learnt from. w = 0 uses h3.
+- **A fingerprint query.** `metrics.sql` gains `event_digest`, a per-seed fingerprint of every event.
+  It is used only for H1.0 and gives no reported number.
+
+**The worlds did what they were built to.** As w rose from 0 to 0.5 and 0.9:
+- B0's late share of passenger cancellations rose from 0.351 to 0.483 and 0.637;
+- its completed rides per 100 searches fell from 30.22 to 29.98 and 29.71, since a late release is
+  refilled less often.
+
+**Results against the hypotheses.** Completed rides per 100 searches; 30 paired seeds; 95% t intervals.
+
+| | Result | Holds |
+|---|---|---|
+| H1.0 | At w = 0, all 240 variant-seed pairs wrote exactly the events of the earlier runs: B0, B3, EARLIEST and B3-KM against `…010`; B0, B3 and B4 against `…004`; ORACLE against `…003` | yes |
+| H1.1 | EARLIEST's relative gain over B0 was 1.05%, 1.12% and 0.98% at w = 0, 0.5 and 0.9 (EARLIEST − B0 +0.318, +0.336, +0.290). The ratio at w = 0.9 to w = 0 is 0.930, bootstrap 95% interval 0.666 to 1.317, against a threshold of 0.5 | **no** |
+| H1.2 | ORACLE − B3 was +0.126, +0.206 and +0.251. Seed by seed, the change from w = 0 to w = 0.9 is +0.126 (+0.061 to +0.190) | yes |
+| H1.3 | B4 − B3 was +0.027 (equivalence p 0.0012) and +0.050 (+0.003 to +0.098; p 0.021), so equivalent at w = 0 and 0.5. At w = 0.9 it was +0.074 (+0.017 to +0.131; equivalence p 0.18; Holm p 0.019; 18 seeds up, 7 down) | **no** |
+
+**What the results say.**
+- **H1.1: the ranking gain is not mainly the acceptance clock.** With nine-tenths of the Weibull hazard
+  moved to departure, offering the soonest ride first kept 93% of its relative gain over B0. The whole
+  interval of that ratio lies above one half. By the rule written beforehand, the gain is mostly seat
+  allocation, not shorter exposure.
+  - One qualification: the hazard tied to departure still integrates to more for a longer lead, up to
+    about two days, so an earlier ride is still slightly less exposed at w = 0.9.
+  - Section 21's account does not survive this test. It held that a sooner ride gains only because
+    it leaves less time in which to be cancelled. Its finding stands: the gain needs no model.
+  - The other assumption, that leaving earlier than wanted costs nothing, is X2's to test. X2's H2.3
+    measures the departure shift directly.
+- **H1.2: the ceiling grows as risk moves to departure.** ORACLE's gain over B3 doubles from w = 0 to
+  w = 0.9. More cancellations are late, so there is more for an early release to rescue.
+- **H1.3: reconfirmation helps a little once risk bunches near departure.** At w = 0.9, B4 − B3 is
+  positive and not equivalent to zero. Even there it is about 0.25% of B3's level and about 30% of
+  ORACLE's gain (21% at w = 0). The model at w = 0.9 is h4, trained at w = 0.5.
+- **Secondary measures, reported for these runs and not chosen after them.**
+  - Seats travelled per 100 searches:
+    - B4 − B3: +0.138, +0.191 and +0.261 (w = 0.9: +0.196 to +0.326);
+    - ORACLE − B3: +0.224, +0.369 and +0.478.
+  - The passenger-only late share fell under B4 by 0.075, 0.107 and 0.148.
+- **Exploratory, not among X1's hypotheses.** B3 − EARLIEST was +0.001, +0.022 and +0.048 (+0.011 to
+  +0.085). At w = 0.9 the model ranking may add something beyond soonest-first. This is a question for
+  X2's H2.2, not a result.
+
+**Not done here.**
+- X2, the cost of leaving away from the wanted time, has not been run.
+- No model was trained at w = 0.9.
+- The calibration holds each type's chance of reaching departure on B0's bookings in world h3 only.

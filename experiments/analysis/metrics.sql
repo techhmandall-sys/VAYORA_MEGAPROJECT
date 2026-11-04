@@ -384,3 +384,21 @@ WHERE run_id = :run_id AND variant = :variant
   AND event_type = 'booking_cancelled' AND payload->>'cancelled_by' = 'passenger'
 GROUP BY seed
 ORDER BY seed;
+
+-- name: event_digest
+-- Not a metric: no report number comes from it. One fingerprint per seed of everything a
+-- variant wrote: every event's type, time, actor and payload, in the order written. Two runs
+-- with the same digest for a seed wrote the same events, draw for draw (EXPERIMENT_PROTOCOL.md
+-- section 26, H1.0: a world change switched off must leave every earlier run as it was).
+SELECT seed,
+  COUNT(*) AS events,
+  md5(string_agg(
+    concat_ws('|', event_type,
+              to_char(sim_time AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US'),
+              COALESCE(actor_type, ''), COALESCE(CAST(actor_id AS text), ''),
+              CAST(payload AS text)),
+    E'\n' ORDER BY id)) AS digest
+FROM events
+WHERE run_id = :run_id AND variant = :variant
+GROUP BY seed
+ORDER BY seed;
