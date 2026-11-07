@@ -1,0 +1,72 @@
+# Experiment X4 (docs/EXPERIMENT_PROTOCOL.md, sections 26 and 30): the durability models evaluated
+# with intervals, Uno's concordance and time-dependent AUC, beside a random survival forest and a
+# tuned gradient-boosted model, on the simulator's validation seeds and on the real hotel bookings,
+# within 7 days and at all lead times. Read by experiments/hazard/evaluate.py. Written on 2026-11-04
+# before any X4 number was computed.
+
+# ---- The simulator: hazard.yaml's world, seeds and Cox settings (model h3)
+simulator:
+  hazard_config: hazard.yaml
+  # Tuned models are tuned on these training seeds, fitted on the rest; validation stays untouched.
+  tuning_seeds: {first: 1017, last: 1020}
+  # Hours since acceptance for the time-dependent AUC, and Uno's truncation time.
+  auc_times: [24, 48, 72, 96, 120]
+  uno_tau: 144
+
+# ---- The hotels: hotel_survival.yaml's years, features and Cox settings
+hotels:
+  # All lead times as well as within the horizon of hotel.yaml (7 days). Times are in days.
+  auc_times_horizon: [1, 2, 3, 4, 5, 6]
+  uno_tau_horizon: 7
+  auc_times_all: [7, 30, 60, 90, 180]
+  uno_tau_all: 240
+  brier_times_all: [7, 14, 30, 60, 90, 180]
+  # Share of training arrival weeks held out to tune on.
+  tuning_share: 0.2
+
+# ---- The added models, fitted on at most max_train_rows sampled training rows, as boosting is
+random_survival_forest:
+  max_train_rows: 5000
+  # A forest keeps a survival curve over every distinct training time in every leaf. The simulator's
+  # times are continuous hours (some 5,000 distinct in a sample), which exhausts the machine's 8 GB,
+  # so there it is fitted on times rounded up to this many hours; it is evaluated on the exact times.
+  # The hotels' times are in half days already.
+  simulator_time_grid_hours: 1
+  params: {n_estimators: 200, min_samples_leaf: 15, max_features: sqrt, random_state: 0, n_jobs: 4}
+gradient_boosting_tuned:
+  max_train_rows: 5000
+  # Every combination is fitted on the tuning fit set and scored by Harrell's concordance on the
+  # tuning hold-out; the best is refitted on all training rows sampled.
+  grid:
+    learning_rate: [0.05, 0.1]
+    max_depth: [2, 4]
+    n_estimators: [100, 300]
+  fixed: {subsample: 0.8, random_state: 0}
+
+# ---- Intervals: the evaluation set resampled by cluster, the fitted models held fixed. Clusters
+# are validation seeds in the simulator and weeks of arrival for the hotels.
+bootstrap:
+  resamples: 200
+  seed: 20261104
+  confidence: 0.95
+
+# ---- H4.2: the calibration of logged scores when the platform acts on them
+# B0 logs no scores (only policies that ask score bookings), so section 26's "under B0" cannot be
+# computed as written. The reference is instead B4 in a world where nobody answers a request
+# (release and put-off chances 0): the same scores are logged, and asking changes no outcome.
+calibration:
+  acting: {run: 7a1c0de0-0000-4000-8000-000000000004, variant: B4}
+  not_acting: {config: sweeps/intervention_null.yaml, run: 5eeb0000-0000-4000-8000-000000000013}
+  bins: 10
+
+# ---- How section 26's words are read
+# - H4.1: for each hotel model that ranks bookings, Harrell's concordance at all lead times is higher
+#   than within 7 days. Kaplan-Meier ranks no one (its concordance is 0.5 by construction) and is
+#   left out.
+# - H4.2: per seed, calibration-in-the-large (mean outcome minus mean logged score, over every scored
+#   booking and round, outcome = still booked at departure; withdrawn rides left out) differs
+#   between acting and not acting, by a paired two-sided t test at h4_2_alpha.
+# - H4.3: on the simulator's validation seeds, no model's Harrell concordance exceeds Cox's by more
+#   than h4_3_margin.
+h4_2_alpha: 0.05
+h4_3_margin: 0.02

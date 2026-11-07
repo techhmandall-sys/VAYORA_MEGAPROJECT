@@ -1,0 +1,10 @@
+# Experiment X4's H4.2 (EXPERIMENT_PROTOCOL.md sections 26 and 30): B4 in a world where nobody
+# answers a request to reconfirm. Every score is logged as under B4, but asking changes no outcome,
+# so its logged scores show how calibrated the model is when nobody acts on it. Not offered in the
+# what-if explorer (no live bounds).
+name: intervention-null
+baseline: variants/B3.yaml
+variant: variants/B4.yaml
+parameters:
+  demand.intervention_response.early_release_probability: [0.0]
+  demand.intervention_response.annoyed_cancel_probability: [0.0]

@@ -1420,3 +1420,74 @@ computation. Judged by `python -m experiments.analysis.ceiling`, which writes
 - X5's cells.
 - Seats on rides withdrawn with no booking left on them cannot be told apart in the log. Rides
   treated as withdrawn are those with a driver cancellation in either run of a pair.
+
+## 30. Experiment X4: the durability models, with intervals
+
+Computed on 2026-11-07 against the hypotheses of section 26 (committed in `66d73cc` before any X4 number
+existed). `configs/x4.yaml` fixed settings and readings first. Judged by
+`python -m experiments.hazard.evaluate`, which writes `experiments/reports/x4-models.md` and `.json`.
+
+**What was built.**
+- **Models.** Every model is fitted once and scored once on the evaluation set. Beside Kaplan-Meier, Cox
+  and the configured gradient-boosted model it fits:
+  - a gradient-boosted model tuned on held-out training data: training seeds 1017–1020; a fifth of the
+    hotels' training weeks;
+  - a random survival forest. In the simulator the forest is fitted on times rounded up to the hour; at
+    some 5,000 distinct times it exhausted the machine's 8 GB.
+- **Measures:**
+  - Harrell's and Uno's concordance;
+  - the time-dependent AUC;
+  - the integrated Brier score;
+  - the Brier score for still being booked at departure (or arrival).
+- **Intervals.** Harrell's concordance and the end Brier score get 95% percentile intervals from 200
+  resamples of whole clusters, with the fitted models held fixed. The clusters are validation seeds in
+  the simulator and weeks of arrival for the hotels.
+- **Hotels at every lead time.** The hotel bookings are evaluated within 7 days of arrival, as before,
+  and at every lead time (78,703 training and 40,687 evaluated bookings).
+- **H4.2's reference.** As written, H4.2 cannot be computed: B0 logs no scores, because only policies
+  that ask score bookings. Its reference is therefore B4 in a world where nobody answers a request
+  (`sweeps/intervention_null.yaml`, run `5eeb…013`). There the same scores are logged, and asking changes
+  no outcome: completed rides equal B3's on every seed. This substitution was written into `x4.yaml`
+  before any X4 number existed.
+- **A query.** `metrics.sql` gains `scored_outcomes`: every score logged for a booking, and its fate.
+
+**Results.** Harrell's concordance (95% interval). All values are from `x4-models.md`.
+
+| Model | Simulator | Hotels, within 7 days | Hotels, every lead time |
+|---|---|---|---|
+| Kaplan-Meier | 0.500 | 0.500 | 0.500 |
+| Cox, lead time only | — | 0.544 (0.505 to 0.586) | 0.534 (0.515 to 0.555) |
+| Cox | 0.638 (0.627 to 0.652) | 0.597 (0.540 to 0.641) | 0.715 (0.696 to 0.734) |
+| Gradient boosting | 0.621 (0.610 to 0.630) | 0.653 (0.608 to 0.697) | 0.719 (0.701 to 0.739) |
+| Boosting, tuned | 0.626 (0.615 to 0.636) | 0.657 (0.607 to 0.702) | 0.711 (0.694 to 0.728) |
+| Survival forest | 0.625 (0.612 to 0.638) | 0.640 (0.596 to 0.679) | 0.742 (0.721 to 0.757) |
+
+| | Result | Holds |
+|---|---|---|
+| H4.1 | The four models with booking features rank better at every lead time than within 7 days. Lead time alone does not: 0.544 within 7 days, 0.534 at every lead time | **no** |
+| H4.2 | Among scored booking-rounds, the share still booked at departure exceeds the mean logged score by +0.019 when the platform acts, against −0.004 when nobody answers. The difference is +0.023, paired over 30 seeds, p = 1.3e-21 | yes |
+| H4.3 | No model beats Cox in the simulator; the best other is tuned boosting at 0.626 | yes |
+
+**What the results say.**
+- **The earlier numbers stand, now with intervals.** X4 reproduces section 19's and the model report's
+  values exactly: Cox 0.638 and Brier 0.1169 in the simulator, 0.597 and 0.653 on the hotels.
+- **The gap to the published deep model is mostly the horizon.** At every lead time the same features
+  reach 0.715 to 0.742, against the deep model's 0.812 on these data. Within the final week, lead time
+  varies too little to carry much.
+- **H4.1 failed for the one model without booking features.** Lead time alone ranks hotel cancellations
+  no better at every lead time than within the week, by Harrell's measure. Its time-dependent AUC does
+  rise (to 0.864 at 180 days), so it ranks who has cancelled by a given day but not the order of
+  cancellation.
+- **Acting on scores changes their calibration.** Asking removes the riskiest bookings early, so those
+  left to be scored again are better than their scores say. A model retrained on the logs of a platform
+  that acts would learn from that shifted population: the scores feed back into their own data.
+- **The simulator's single risk score cannot rank late cancellers.**
+  - Cox's time-dependent AUC falls from 0.626 at 24 hours to 0.443 at 120 hours, below chance. The
+    hidden types' hazards have different shapes, so one score ranks the early cancellers and inverts
+    the late ones.
+  - No model's integrated Brier score beats Kaplan-Meier's in the simulator (Cox 0.1609 against
+    0.1589), though Cox's at departure does (0.1169 against 0.1228).
+
+**Not done here.**
+- Intervals for Uno's concordance and the AUC; they are point estimates.
+- No forest or tuned model was tried as the platform's model in the simulator's policy runs.
