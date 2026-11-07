@@ -491,3 +491,20 @@ WHERE run_id = :run_id AND variant = :variant
                      'trip_started', 'trip_completed')
 GROUP BY seed, payload->>'booking_id'
 ORDER BY seed, booking_id;
+
+-- name: scored_outcomes
+-- One row per seed and booking a policy scored: every chance of reaching departure logged for it
+-- (hazard_scored, one per scoring round, in order) and what became of it. X4's H4.2 compares the
+-- calibration of these scores when the platform acts on them and when it does not
+-- (EXPERIMENT_PROTOCOL.md section 30). A booking whose ride was withdrawn has no outcome to compare.
+SELECT seed, payload->>'booking_id' AS booking_id,
+  ARRAY_AGG(CAST(payload->>'survival_probability' AS float) ORDER BY sim_time)
+    FILTER (WHERE event_type = 'hazard_scored') AS scores,
+  BOOL_OR(event_type = 'trip_started') AS started,
+  BOOL_OR(event_type = 'booking_cancelled' AND payload->>'cancelled_by' = 'driver') AS driver_cancelled
+FROM events
+WHERE run_id = :run_id AND variant = :variant
+  AND event_type IN ('hazard_scored', 'trip_started', 'booking_cancelled')
+GROUP BY seed, payload->>'booking_id'
+HAVING COUNT(*) FILTER (WHERE event_type = 'hazard_scored') > 0
+ORDER BY seed, booking_id;

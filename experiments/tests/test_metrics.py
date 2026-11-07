@@ -209,7 +209,7 @@ def test_metrics_file_defines_the_expected_queries():
         "refill_additionality", "empty_search_reasons", "refill_by_release_timing",
         "cancellation_timing", "daily_cancellation_hazard", "seats_travelled",
         "late_cancellation_share_passenger", "event_digest", "booked_departure_gap",
-        "ride_seat_accounting", "booking_fates"}
+        "ride_seat_accounting", "booking_fates", "scored_outcomes"}
 
 
 def _event(seed, event_type, payload=None, variant=VARIANT, at=NOW):
@@ -361,6 +361,21 @@ def test_booking_fates_say_when_a_booking_was_accepted_asked_and_cancelled(sa_co
     assert asked["passenger_cancelled_at"] == NOW + 6 * H and not asked["started"]
     assert asked["departure"] == NOW + 50 * H
     assert travelled["asked_at"] is None and travelled["started"] and travelled["completed"]
+
+
+def test_scored_outcomes_keep_every_score_in_order_and_the_bookings_fate(sa_conn):
+    def scored(booking, at, survival):
+        return _event(1, "hazard_scored", {"booking_id": booking, "survival_probability": survival}, at=NOW + at)
+
+    rows = [scored(1, 48 * H, 0.7), scored(1, 24 * H, 0.9), _event(1, "trip_started", {"booking_id": 1}),
+            scored(2, 24 * H, 0.4), _event(1, "booking_cancelled", {"booking_id": 2, "cancelled_by": "driver"}),
+            _event(1, "trip_started", {"booking_id": 3})]
+    sa_conn.execute(INSERT, rows)
+
+    result = run_query(sa_conn, "scored_outcomes", run_id=RUN_ID, variant=VARIANT)
+
+    assert [(r["booking_id"], r["scores"], r["started"], r["driver_cancelled"]) for r in result] == [
+        ("1", [0.9, 0.7], True, False), ("2", [0.4], False, True)]
 
 
 def test_intervention_volume_matches_hand_computed_values(sa_conn):

@@ -53,23 +53,28 @@ def load_survival_config(path: Path = CONFIG) -> dict[str, Any]:
     return config
 
 
-def rows(records: Iterable[dict[str, str]], hotel: HotelConfig) -> pd.DataFrame:
-    """One row per booking made within the horizon: its features, time and outcome."""
+def rows(records: Iterable[dict[str, str]], hotel: HotelConfig, *, all_leads: bool = False) -> pd.DataFrame:
+    """One row per booking made within the horizon (or at any lead time): its features, time and outcome.
+
+    arrival_week (ISO year and week of arrival) is a cluster for resampling, never a feature.
+    """
     out = []
     for record in records:
         lead = int(record["lead_time"])
-        if lead > hotel.horizon_days:
+        if lead > hotel.horizon_days and not all_leads:
             continue
         cancelled = record["reservation_status"] == "Canceled"
+        arrival = pd.Timestamp(int(record["arrival_date_year"]), MONTHS[record["arrival_date_month"]],
+                               int(record["arrival_date_day_of_month"]))
+        iso = arrival.isocalendar()
         if cancelled:
-            arrival = pd.Timestamp(int(record["arrival_date_year"]), MONTHS[record["arrival_date_month"]],
-                                   int(record["arrival_date_day_of_month"]))
             made = arrival - pd.Timedelta(days=lead)
             duration = (pd.Timestamp(record["reservation_status_date"]) - made).days + 0.5
         else:
             duration = lead + 1.0
         out.append({
             "year": int(record["arrival_date_year"]),
+            "arrival_week": int(iso[0]) * 100 + int(iso[1]),
             "duration_days": duration,
             "cancelled": cancelled,
             "lead_days": lead,
