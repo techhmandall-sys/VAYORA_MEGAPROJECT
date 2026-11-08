@@ -100,7 +100,7 @@ def test_two_breaches_in_twenty_cells_a_negative_residual_or_unrelated_ranks_are
 def test_the_shipped_cells_cover_the_ladders_x1_and_every_sweep_cell():
     cells = cells_from(load_x3())
 
-    assert len(cells) == 4 + 1 + 6 + 9 + 3 + 4 + 4 + 3
+    assert len(cells) == 4 + 1 + 6 + 9 + 3 + 4 + 4 + 3 + 3 * 3  # the last, X5's three sweeps
     budget = [c for c in cells if c.group == "contact-budget"]
     assert {c.baseline for c in budget} == {"B3"} and {c.baseline_run[-3:] for c in budget} == {"004"}
     response = next(c for c in cells if c.policy.startswith("B4[early_release_probability=1.0,annoyed"))

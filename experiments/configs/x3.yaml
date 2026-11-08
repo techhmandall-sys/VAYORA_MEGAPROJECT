@@ -28,7 +28,10 @@ sweeps:
   - {config: sweeps/contact_budget.yaml, run: 5eeb0000-0000-4000-8000-000000000003,
      baseline_from: {run: 7a1c0de0-0000-4000-8000-000000000004, variant: B3, shared_variant: B4}}
   - {config: sweeps/demand_density.yaml, run: 5eeb0000-0000-4000-8000-000000000010}
-# Experiment X5's cells are added here when X5 has run.
+# Experiment X5's cells, added on 2026-11-07 once X5 had run (section 31):
+  - {config: sweeps/supply_density.yaml, run: 5eeb0000-0000-4000-8000-000000000014}
+  - {config: sweeps/demand_density_w05.yaml, run: 5eeb0000-0000-4000-8000-000000000016}
+  - {config: sweeps/cancellation_scale_w05.yaml, run: 5eeb0000-0000-4000-8000-000000000017}
 
 # Hours before departure that separate a late cancellation from an early one, as everywhere else.
 late_hours: 24

@@ -1,0 +1,11 @@
+# Experiment X5 (EXPERIMENT_PROTOCOL.md sections 26 and 31): reconfirmation against demand in X1's
+# world at w = 0.5, where half of each type's cancellation risk is tied to departure. Model h4, trained
+# in that world at 60 searches a day. Demand changes the baseline, so each cell has its own. Not
+# offered in the what-if explorer.
+name: demand-density-w05
+world: worlds/proximity_w0.5.yaml
+baseline: variants/h4/B3.yaml
+variant: variants/h4/B4.yaml
+baseline_per_cell: true
+parameters:
+  demand.searches_per_day: [30, 60, 120]

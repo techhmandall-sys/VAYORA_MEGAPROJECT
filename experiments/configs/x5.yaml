@@ -1,0 +1,23 @@
+# Experiment X5 (docs/EXPERIMENT_PROTOCOL.md, sections 26 and 31): robustness. Which sweeps answer which
+# hypothesis, and how section 26's words are read. Read by experiments/analysis/robustness.py; the
+# statistics come from analysis.yaml. Written on 2026-11-07 before any X5 sweep was run.
+#
+# Section 26 put B0 only in the scale cells, but H5.2 is about B3 - B0 in world h3, so B0 is run in the
+# supply cells too (supply_density_ranking.yaml). The scale cells in X1's world have B0 as designed.
+
+# H5.1: B4 against B3, every cell of these.
+reconfirmation:
+  - {config: sweeps/supply_density.yaml, run: 5eeb0000-0000-4000-8000-000000000014}
+  - {config: sweeps/demand_density_w05.yaml, run: 5eeb0000-0000-4000-8000-000000000016}
+  - {config: sweeps/cancellation_scale_w05.yaml, run: 5eeb0000-0000-4000-8000-000000000017}
+
+# Survival ranking against B0. H5.2 judges the world-h3 sweep; the other is reported beside it.
+ranking:
+  - {config: sweeps/supply_density_ranking.yaml, run: 5eeb0000-0000-4000-8000-000000000015, h5_2: true}
+  - {config: sweeps/cancellation_scale_w05_ranking.yaml, run: 5eeb0000-0000-4000-8000-000000000018,
+     h5_2: false}
+
+# How section 26's words are read:
+# - H5.1: in every cell, B4 - B3 is equivalent to zero by two one-sided tests at analysis.yaml's margin
+#   and alpha.
+# - H5.2: in every world-h3 cell, the 95% t interval of B3 - B0 lies wholly above zero.

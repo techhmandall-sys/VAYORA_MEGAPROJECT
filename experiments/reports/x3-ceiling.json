@@ -73,6 +73,18 @@
       {
         "config": "sweeps/demand_density.yaml",
         "run": "5eeb0000-0000-4000-8000-000000000010"
+      },
+      {
+        "config": "sweeps/supply_density.yaml",
+        "run": "5eeb0000-0000-4000-8000-000000000014"
+      },
+      {
+        "config": "sweeps/demand_density_w05.yaml",
+        "run": "5eeb0000-0000-4000-8000-000000000016"
+      },
+      {
+        "config": "sweeps/cancellation_scale_w05.yaml",
+        "run": "5eeb0000-0000-4000-8000-000000000017"
       }
     ],
     "late_hours": 24,
@@ -101,8 +113,9 @@
   ],
   "hypotheses": {
     "H3.1": {
-      "rule": "at most 1 of 34 cells with the whole interval of \u0394B above the ceiling",
+      "rule": "at most 2 of 43 cells with the whole interval of \u0394B above the ceiling",
       "breaches": [
+        "B4[searches_per_day=120]",
         "B4[searches_per_day=120]"
       ],
       "holds": true
@@ -137,25 +150,35 @@
         "B5[contacts_per_round=4]",
         "B5[contacts_per_round=8]",
         "B4[searches_per_day=60]",
-        "B4[searches_per_day=120]"
+        "B4[searches_per_day=120]",
+        "B4[rides_per_day=6]",
+        "B4[rides_per_day=12]",
+        "B4[rides_per_day=20]",
+        "B4[searches_per_day=60]",
+        "B4[searches_per_day=120]",
+        "B4[scale=1]",
+        "B4[scale=2]",
+        "B4[scale=3]"
       ],
       "holds": false
     },
     "H3.3": {
       "rule": "Spearman between the ceiling in completed rides and the observed effect is at least 0.8",
-      "spearman": 0.6223926380368097,
+      "spearman": 0.43454545454545457,
       "holds": false
     }
   },
   "exploratory": {
-    "spearman_seats": 0.7984662576687114,
-    "spearman_without_demand": 0.7274014155712839,
-    "spearman_distinct": 0.5903540903540903,
-    "distinct_cells": 27,
+    "spearman_seats": 0.6372727272727273,
+    "spearman_without_demand": 0.49261593453108826,
+    "spearman_distinct": 0.37165775401069523,
+    "distinct_cells": 33,
     "residual_when_requested": {
-      "above_zero": 23,
+      "above_zero": 30,
       "across_zero": 10,
       "below_zero": [
+        "B4[searches_per_day=120]",
+        "B4[rides_per_day=6]",
         "B4[searches_per_day=120]"
       ]
     }
@@ -3117,6 +3140,789 @@
         "ci_high": -0.006236915383540757,
         "bootstrap_ci_low": -0.06928449376044647,
         "bootstrap_ci_high": -0.008235402671329257
+      }
+    },
+    {
+      "name": "B4[rides_per_day=6]",
+      "group": "supply-density",
+      "run": "5eeb0000-0000-4000-8000-000000000014",
+      "policy": "B4[rides_per_day=6]",
+      "baseline_run": "5eeb0000-0000-4000-8000-000000000014",
+      "baseline": "B3[rides_per_day=6]",
+      "rho": 0.5,
+      "eta": 0.02,
+      "seeds": 30,
+      "r_early": 0.9749440192636954,
+      "r_late": 0.7219276220450895,
+      "matched_share": 0.9358251755166618,
+      "asked_seats_per_100": {
+        "late": 0.6760502120394907,
+        "early": 2.3493610461854146,
+        "travels": 5.483760059242708,
+        "withdrawn": 0.23058004877706856,
+        "unmatched": 0.598842017273795
+      },
+      "ceiling_central": 0.11993138465615613,
+      "ceiling_terms": {
+        "late": 0.09140442529433891,
+        "early": 0.03146284362393215,
+        "travels": -0.002935884262114934
+      },
+      "ceiling_conservative": 0.18796907218120718,
+      "ceiling_rides": 0.09557610346462204,
+      "completed_share": 0.9782497441146366,
+      "seats_per_booking": 1.2275332650972364,
+      "standing": {
+        "seeds": 30,
+        "mean_difference": 0.1289022811936876,
+        "ci_low": 0.08645923163095019,
+        "ci_high": 0.171345330756425,
+        "bootstrap_ci_low": 0.08975140332477421,
+        "bootstrap_ci_high": 0.16918876853156362
+      },
+      "released": {
+        "seeds": 30,
+        "mean_difference": 0.2711822455632901,
+        "ci_low": 0.23537856171657284,
+        "ci_high": 0.3069859294100074,
+        "bootstrap_ci_low": 0.23724740959626192,
+        "bootstrap_ci_high": 0.30455327744691163
+      },
+      "refilled": {
+        "seeds": 30,
+        "mean_difference": 0.37435153442083624,
+        "ci_low": 0.3316223820374093,
+        "ci_high": 0.4170806868042632,
+        "bootstrap_ci_low": 0.33348270517679657,
+        "bootstrap_ci_high": 0.4141602750750713
+      },
+      "refilled_standing": {
+        "seeds": 30,
+        "mean_difference": 0.13594282784992792,
+        "ci_low": 0.0845788873600275,
+        "ci_high": 0.18730676833982834,
+        "bootstrap_ci_low": 0.08651208603694181,
+        "bootstrap_ci_high": 0.18194543631099513
+      },
+      "residual": {
+        "seeds": 30,
+        "mean_difference": -0.02573299233614145,
+        "ci_low": -0.04745833208523868,
+        "ci_high": -0.004007652587044219,
+        "bootstrap_ci_low": -0.046392325266030175,
+        "bootstrap_ci_high": -0.00545019790082095
+      },
+      "residual_standing": {
+        "seeds": 30,
+        "mean_difference": -0.26414169890704975,
+        "ci_low": -0.32538319496811396,
+        "ci_high": -0.20290020284598556,
+        "bootstrap_ci_low": -0.3238285174466989,
+        "bootstrap_ci_high": -0.2089088881320782
+      },
+      "completed": {
+        "seeds": 30,
+        "mean_difference": 0.027522800888798334,
+        "ci_low": -0.008062426749185184,
+        "ci_high": 0.06310802852678185,
+        "bootstrap_ci_low": -0.005682037979533691,
+        "bootstrap_ci_high": 0.06124324433529295
+      }
+    },
+    {
+      "name": "B4[rides_per_day=12]",
+      "group": "supply-density",
+      "run": "5eeb0000-0000-4000-8000-000000000014",
+      "policy": "B4[rides_per_day=12]",
+      "baseline_run": "5eeb0000-0000-4000-8000-000000000014",
+      "baseline": "B3[rides_per_day=12]",
+      "rho": 0.5,
+      "eta": 0.02,
+      "seeds": 30,
+      "r_early": 0.932417157740643,
+      "r_late": 0.6608400566713991,
+      "matched_share": 0.9424688262848848,
+      "asked_seats_per_100": {
+        "late": 1.0645086795645533,
+        "early": 3.641788936984549,
+        "travels": 8.188264327923438,
+        "withdrawn": 0.2981339134162064,
+        "unmatched": 0.8037018966660394
+      },
+      "ceiling_central": 0.2722772440236518,
+      "ceiling_terms": {
+        "late": 0.15343045207797293,
+        "early": 0.13058746618705572,
+        "travels": -0.011740674241376847
+      },
+      "ceiling_conservative": 0.3656751063458127,
+      "ceiling_rides": 0.20681287334336593,
+      "completed_share": 0.9787189960338601,
+      "seats_per_booking": 1.2885218729651335,
+      "standing": {
+        "seeds": 30,
+        "mean_difference": 0.13905634850100637,
+        "ci_low": 0.09203417272975728,
+        "ci_high": 0.18607852427225546,
+        "bootstrap_ci_low": 0.09438831590992627,
+        "bootstrap_ci_high": 0.1820195773146407
+      },
+      "released": {
+        "seeds": 30,
+        "mean_difference": 0.30388541755893417,
+        "ci_low": 0.2482344115312493,
+        "ci_high": 0.359536423586619,
+        "bootstrap_ci_low": 0.25323357008347613,
+        "bootstrap_ci_high": 0.3571637797563711
+      },
+      "refilled": {
+        "seeds": 30,
+        "mean_difference": 0.49458251089302796,
+        "ci_low": 0.4098059467854056,
+        "ci_high": 0.5793590750006503,
+        "bootstrap_ci_low": 0.4179522962206942,
+        "bootstrap_ci_high": 0.5759569206498814
+      },
+      "refilled_standing": {
+        "seeds": 30,
+        "mean_difference": 0.21881056523602246,
+        "ci_low": 0.15489225355429836,
+        "ci_high": 0.28272887691774656,
+        "bootstrap_ci_low": 0.1573733672440959,
+        "bootstrap_ci_high": 0.2792636361124038
+      },
+      "residual": {
+        "seeds": 30,
+        "mean_difference": 0.05164074483308742,
+        "ci_low": 0.0009925162349127617,
+        "ci_high": 0.10228897343126209,
+        "bootstrap_ci_low": 0.003245452452182032,
+        "bootstrap_ci_high": 0.09933651120475862
+      },
+      "residual_standing": {
+        "seeds": 30,
+        "mean_difference": -0.22413120082391808,
+        "ci_low": -0.30829663434206356,
+        "ci_high": -0.13996576730577256,
+        "bootstrap_ci_low": -0.3051930198910635,
+        "bootstrap_ci_high": -0.1465560766803441
+      },
+      "completed": {
+        "seeds": 30,
+        "mean_difference": 0.026653010518679566,
+        "ci_low": -0.018398037212344922,
+        "ci_high": 0.07170405824970405,
+        "bootstrap_ci_low": -0.015309054680538975,
+        "bootstrap_ci_high": 0.06956355924881978
+      }
+    },
+    {
+      "name": "B4[rides_per_day=20]",
+      "group": "supply-density",
+      "run": "5eeb0000-0000-4000-8000-000000000014",
+      "policy": "B4[rides_per_day=20]",
+      "baseline_run": "5eeb0000-0000-4000-8000-000000000014",
+      "baseline": "B3[rides_per_day=20]",
+      "rho": 0.5,
+      "eta": 0.02,
+      "seeds": 30,
+      "r_early": 0.8638936471367131,
+      "r_late": 0.6037003392302256,
+      "matched_share": 0.9482636813216673,
+      "asked_seats_per_100": {
+        "late": 1.2492083999610784,
+        "early": 4.52834509203863,
+        "travels": 9.975418631401165,
+        "withdrawn": 0.3565049928326197,
+        "unmatched": 0.8791978111511755
+      },
+      "ceiling_central": 0.46763749873637206,
+      "ceiling_terms": {
+        "late": 0.17127142907859258,
+        "early": 0.3250041883218229,
+        "travels": -0.028638118664043356
+      },
+      "ceiling_conservative": 0.5579124368467873,
+      "ceiling_rides": 0.34068857399150426,
+      "completed_share": 0.9796108560258217,
+      "seats_per_booking": 1.3446379051688866,
+      "standing": {
+        "seeds": 30,
+        "mean_difference": 0.03986648724285553,
+        "ci_low": -0.01365115199528176,
+        "ci_high": 0.09338412648099283,
+        "bootstrap_ci_low": -0.008704787736446977,
+        "bootstrap_ci_high": 0.09068019711944685
+      },
+      "released": {
+        "seeds": 30,
+        "mean_difference": 0.2999286322130414,
+        "ci_low": 0.2516193846658549,
+        "ci_high": 0.3482378797602279,
+        "bootstrap_ci_low": 0.25449306662617877,
+        "bootstrap_ci_high": 0.34480454047946985
+      },
+      "refilled": {
+        "seeds": 30,
+        "mean_difference": 0.5396627132787154,
+        "ci_low": 0.4791449646156776,
+        "ci_high": 0.6001804619417531,
+        "bootstrap_ci_low": 0.48373366749626856,
+        "bootstrap_ci_high": 0.5959425443504464
+      },
+      "refilled_standing": {
+        "seeds": 30,
+        "mean_difference": 0.21339591904818458,
+        "ci_low": 0.14038307697402494,
+        "ci_high": 0.28640876112234426,
+        "bootstrap_ci_low": 0.14582237731307252,
+        "bootstrap_ci_high": 0.28339129375108335
+      },
+      "residual": {
+        "seeds": 30,
+        "mean_difference": 0.19986759382281838,
+        "ci_low": 0.14077071711033146,
+        "ci_high": 0.2589644705353053,
+        "bootstrap_ci_low": 0.14272832905211166,
+        "bootstrap_ci_high": 0.25425899580083455
+      },
+      "residual_standing": {
+        "seeds": 30,
+        "mean_difference": -0.12639920040771233,
+        "ci_low": -0.22837046741192524,
+        "ci_high": -0.024427933403499413,
+        "bootstrap_ci_low": -0.22234822346412025,
+        "bootstrap_ci_high": -0.03050109151643826
+      },
+      "completed": {
+        "seeds": 30,
+        "mean_difference": -0.0456187162497353,
+        "ci_low": -0.08147401420859057,
+        "ci_high": -0.009763418290880024,
+        "bootstrap_ci_low": -0.07844150810991705,
+        "bootstrap_ci_high": -0.011921412650526406
+      }
+    },
+    {
+      "name": "B4[searches_per_day=30]",
+      "group": "demand-density-w05",
+      "run": "5eeb0000-0000-4000-8000-000000000016",
+      "policy": "B4[searches_per_day=30]",
+      "baseline_run": "5eeb0000-0000-4000-8000-000000000016",
+      "baseline": "B3[searches_per_day=30]",
+      "rho": 0.5,
+      "eta": 0.02,
+      "seeds": 30,
+      "r_early": 0.711450701634243,
+      "r_late": 0.43616065001773224,
+      "matched_share": 0.9653487338960463,
+      "asked_seats_per_100": {
+        "late": 1.8751388003369582,
+        "early": 3.237082567054341,
+        "travels": 10.45555742479596,
+        "withdrawn": 0.4250432482441217,
+        "unmatched": 0.5725767580053165
+      },
+      "ceiling_central": 0.6888598800751343,
+      "ceiling_terms": {
+        "late": 0.2672593394350653,
+        "early": 0.48408854753574626,
+        "travels": -0.062488006895677205
+      },
+      "ceiling_conservative": 0.7436059477581123,
+      "ceiling_rides": 0.5051394973863026,
+      "completed_share": 0.9794546487407688,
+      "seats_per_booking": 1.335684529445181,
+      "standing": {
+        "seeds": 30,
+        "mean_difference": 0.040976594431357656,
+        "ci_low": -0.038872239891979944,
+        "ci_high": 0.12082542875469526,
+        "bootstrap_ci_low": -0.03467096657083948,
+        "bootstrap_ci_high": 0.11585612054597931
+      },
+      "released": {
+        "seeds": 30,
+        "mean_difference": 0.2981658413588335,
+        "ci_low": 0.21777183997042177,
+        "ci_high": 0.37855984274724525,
+        "bootstrap_ci_low": 0.2231576084341491,
+        "bootstrap_ci_high": 0.3744968228422801
+      },
+      "refilled": {
+        "seeds": 30,
+        "mean_difference": 0.7753505298052391,
+        "ci_low": 0.6762104705966845,
+        "ci_high": 0.8744905890137937,
+        "bootstrap_ci_low": 0.6840157780092264,
+        "bootstrap_ci_high": 0.8705420993291962
+      },
+      "refilled_standing": {
+        "seeds": 30,
+        "mean_difference": 0.5494504741037102,
+        "ci_low": 0.4520364215379985,
+        "ci_high": 0.6468645266694218,
+        "bootstrap_ci_low": 0.4562714151719664,
+        "bootstrap_ci_high": 0.6415654839332045
+      },
+      "residual": {
+        "seeds": 30,
+        "mean_difference": 0.43620809401504795,
+        "ci_low": 0.3579085377400383,
+        "ci_high": 0.5145076502900576,
+        "bootstrap_ci_low": 0.3620806209430778,
+        "bootstrap_ci_high": 0.509392941506538
+      },
+      "residual_standing": {
+        "seeds": 30,
+        "mean_difference": 0.21030803831351905,
+        "ci_low": 0.12631472764586082,
+        "ci_high": 0.29430134898117727,
+        "bootstrap_ci_low": 0.13256796614122482,
+        "bootstrap_ci_high": 0.2895922177534452
+      },
+      "completed": {
+        "seeds": 30,
+        "mean_difference": -0.03158574490217111,
+        "ci_low": -0.09035396300363052,
+        "ci_high": 0.0271824731992883,
+        "bootstrap_ci_low": -0.0869789726782988,
+        "bootstrap_ci_high": 0.02337476732316683
+      }
+    },
+    {
+      "name": "B4[searches_per_day=60]",
+      "group": "demand-density-w05",
+      "run": "5eeb0000-0000-4000-8000-000000000016",
+      "policy": "B4[searches_per_day=60]",
+      "baseline_run": "5eeb0000-0000-4000-8000-000000000016",
+      "baseline": "B3[searches_per_day=60]",
+      "rho": 0.5,
+      "eta": 0.02,
+      "seeds": 30,
+      "r_early": 0.9201378351494376,
+      "r_late": 0.6604769825389613,
+      "matched_share": 0.9392348087021756,
+      "asked_seats_per_100": {
+        "late": 1.5729546311854532,
+        "early": 2.97285258965648,
+        "travels": 9.01692360486911,
+        "withdrawn": 0.3120052687255546,
+        "unmatched": 0.8972788811052881
+      },
+      "ceiling_central": 0.3285306695287129,
+      "ceiling_terms": {
+        "late": 0.21741488846930285,
+        "early": 0.12644859061586544,
+        "travels": -0.015332809556455431
+      },
+      "ceiling_conservative": 0.4250184709824366,
+      "ceiling_rides": 0.25045499499720303,
+      "completed_share": 0.9781495594189092,
+      "seats_per_booking": 1.283073350797809,
+      "standing": {
+        "seeds": 30,
+        "mean_difference": 0.18937899516168424,
+        "ci_low": 0.14000084716875547,
+        "ci_high": 0.23875714315461302,
+        "bootstrap_ci_low": 0.14262200778286785,
+        "bootstrap_ci_high": 0.2359060154506745
+      },
+      "released": {
+        "seeds": 30,
+        "mean_difference": 0.3613219444802526,
+        "ci_low": 0.29594707917771773,
+        "ci_high": 0.4266968097827875,
+        "bootstrap_ci_low": 0.29987395010098483,
+        "bootstrap_ci_high": 0.4226553174139033
+      },
+      "refilled": {
+        "seeds": 30,
+        "mean_difference": 0.6230166438780194,
+        "ci_low": 0.5352478523807833,
+        "ci_high": 0.7107854353752554,
+        "bootstrap_ci_low": 0.5417937858727867,
+        "bootstrap_ci_high": 0.705863647573238
+      },
+      "refilled_standing": {
+        "seeds": 30,
+        "mean_difference": 0.297402777800396,
+        "ci_low": 0.22051945379649385,
+        "ci_high": 0.3742861018042981,
+        "bootstrap_ci_low": 0.2259052845879649,
+        "bootstrap_ci_high": 0.37037423700479005
+      },
+      "residual": {
+        "seeds": 30,
+        "mean_difference": 0.07231570423608247,
+        "ci_low": 0.03375961698826641,
+        "ci_high": 0.11087179148389853,
+        "bootstrap_ci_low": 0.03702446134966524,
+        "bootstrap_ci_high": 0.10954503701459457
+      },
+      "residual_standing": {
+        "seeds": 30,
+        "mean_difference": -0.25329816184154086,
+        "ci_low": -0.3334723319694339,
+        "ci_high": -0.17312399171364784,
+        "bootstrap_ci_low": -0.32778887476069285,
+        "bootstrap_ci_high": -0.1769618751434917
+      },
+      "completed": {
+        "seeds": 30,
+        "mean_difference": 0.050401961130305865,
+        "ci_low": 0.0027508798954965497,
+        "ci_high": 0.09805304236511518,
+        "bootstrap_ci_low": 0.005665080507140676,
+        "bootstrap_ci_high": 0.09604503268980603
+      }
+    },
+    {
+      "name": "B4[searches_per_day=120]",
+      "group": "demand-density-w05",
+      "run": "5eeb0000-0000-4000-8000-000000000016",
+      "policy": "B4[searches_per_day=120]",
+      "baseline_run": "5eeb0000-0000-4000-8000-000000000016",
+      "baseline": "B3[searches_per_day=120]",
+      "rho": 0.5,
+      "eta": 0.02,
+      "seeds": 30,
+      "r_early": 0.9948086744933147,
+      "r_late": 0.8460414097769451,
+      "matched_share": 0.8847444842541957,
+      "asked_seats_per_100": {
+        "late": 1.2542942021724528,
+        "early": 2.378410899038639,
+        "travels": 6.948678576071943,
+        "withdrawn": 0.26438462969558435,
+        "unmatched": 1.4127246966104596
+      },
+      "ceiling_central": 0.11169096802852253,
+      "ceiling_terms": {
+        "late": 0.10551828225807852,
+        "early": 0.006987636803194258,
+        "travels": -0.000814951032750251
+      },
+      "ceiling_conservative": 0.20383464879558344,
+      "ceiling_rides": 0.08918798374572995,
+      "completed_share": 0.9798092557089815,
+      "seats_per_booking": 1.2270245346664401,
+      "standing": {
+        "seeds": 30,
+        "mean_difference": 0.17328676098431772,
+        "ci_low": 0.14725466625536401,
+        "ci_high": 0.19931885571327143,
+        "bootstrap_ci_low": 0.14947550307706908,
+        "bootstrap_ci_high": 0.19839890615358277
+      },
+      "released": {
+        "seeds": 30,
+        "mean_difference": 0.35980129114104575,
+        "ci_low": 0.319589546308697,
+        "ci_high": 0.4000130359733945,
+        "bootstrap_ci_low": 0.3222996874881169,
+        "bootstrap_ci_high": 0.3978302701926524
+      },
+      "refilled": {
+        "seeds": 30,
+        "mean_difference": 0.4586245459604233,
+        "ci_low": 0.41663193485844435,
+        "ci_high": 0.5006171570624022,
+        "bootstrap_ci_low": 0.4193471161431391,
+        "bootstrap_ci_high": 0.4980602939140688
+      },
+      "refilled_standing": {
+        "seeds": 30,
+        "mean_difference": 0.17135797694902843,
+        "ci_low": 0.12148381796557789,
+        "ci_high": 0.22123213593247898,
+        "bootstrap_ci_low": 0.12403992176401178,
+        "bootstrap_ci_high": 0.21828357105818827
+      },
+      "residual": {
+        "seeds": 30,
+        "mean_difference": -0.07446350616494016,
+        "ci_low": -0.09197369699032461,
+        "ci_high": -0.05695331533955571,
+        "bootstrap_ci_low": -0.09153438857458926,
+        "bootstrap_ci_high": -0.05851273636996665
+      },
+      "residual_standing": {
+        "seeds": 30,
+        "mean_difference": -0.36173007517633504,
+        "ci_low": -0.41639738538353543,
+        "ci_high": -0.30706276496913465,
+        "bootstrap_ci_low": -0.41317193591597834,
+        "bootstrap_ci_high": -0.3104078510014803
+      },
+      "completed": {
+        "seeds": 30,
+        "mean_difference": 0.014637168489850675,
+        "ci_low": -0.01517836912046004,
+        "ci_high": 0.04445270610016139,
+        "bootstrap_ci_low": -0.01287175191863443,
+        "bootstrap_ci_high": 0.04321603414641161
+      }
+    },
+    {
+      "name": "B4[scale=1]",
+      "group": "cancellation-scale-w05",
+      "run": "5eeb0000-0000-4000-8000-000000000017",
+      "policy": "B4[scale=1]",
+      "baseline_run": "5eeb0000-0000-4000-8000-000000000017",
+      "baseline": "B3[scale=1]",
+      "rho": 0.5,
+      "eta": 0.02,
+      "seeds": 30,
+      "r_early": 0.9201378351494376,
+      "r_late": 0.6604769825389613,
+      "matched_share": 0.9392348087021756,
+      "asked_seats_per_100": {
+        "late": 1.5729546311854532,
+        "early": 2.97285258965648,
+        "travels": 9.01692360486911,
+        "withdrawn": 0.3120052687255546,
+        "unmatched": 0.8972788811052881
+      },
+      "ceiling_central": 0.3285306695287129,
+      "ceiling_terms": {
+        "late": 0.21741488846930285,
+        "early": 0.12644859061586544,
+        "travels": -0.015332809556455431
+      },
+      "ceiling_conservative": 0.4250184709824366,
+      "ceiling_rides": 0.25045499499720303,
+      "completed_share": 0.9781495594189092,
+      "seats_per_booking": 1.283073350797809,
+      "standing": {
+        "seeds": 30,
+        "mean_difference": 0.18937899516168424,
+        "ci_low": 0.14000084716875547,
+        "ci_high": 0.23875714315461302,
+        "bootstrap_ci_low": 0.14262200778286785,
+        "bootstrap_ci_high": 0.2359060154506745
+      },
+      "released": {
+        "seeds": 30,
+        "mean_difference": 0.3613219444802526,
+        "ci_low": 0.29594707917771773,
+        "ci_high": 0.4266968097827875,
+        "bootstrap_ci_low": 0.29987395010098483,
+        "bootstrap_ci_high": 0.4226553174139033
+      },
+      "refilled": {
+        "seeds": 30,
+        "mean_difference": 0.6230166438780194,
+        "ci_low": 0.5352478523807833,
+        "ci_high": 0.7107854353752554,
+        "bootstrap_ci_low": 0.5417937858727867,
+        "bootstrap_ci_high": 0.705863647573238
+      },
+      "refilled_standing": {
+        "seeds": 30,
+        "mean_difference": 0.297402777800396,
+        "ci_low": 0.22051945379649385,
+        "ci_high": 0.3742861018042981,
+        "bootstrap_ci_low": 0.2259052845879649,
+        "bootstrap_ci_high": 0.37037423700479005
+      },
+      "residual": {
+        "seeds": 30,
+        "mean_difference": 0.07231570423608247,
+        "ci_low": 0.03375961698826641,
+        "ci_high": 0.11087179148389853,
+        "bootstrap_ci_low": 0.03702446134966524,
+        "bootstrap_ci_high": 0.10954503701459457
+      },
+      "residual_standing": {
+        "seeds": 30,
+        "mean_difference": -0.25329816184154086,
+        "ci_low": -0.3334723319694339,
+        "ci_high": -0.17312399171364784,
+        "bootstrap_ci_low": -0.32778887476069285,
+        "bootstrap_ci_high": -0.1769618751434917
+      },
+      "completed": {
+        "seeds": 30,
+        "mean_difference": 0.050401961130305865,
+        "ci_low": 0.0027508798954965497,
+        "ci_high": 0.09805304236511518,
+        "bootstrap_ci_low": 0.005665080507140676,
+        "bootstrap_ci_high": 0.09604503268980603
+      }
+    },
+    {
+      "name": "B4[scale=2]",
+      "group": "cancellation-scale-w05",
+      "run": "5eeb0000-0000-4000-8000-000000000017",
+      "policy": "B4[scale=2]",
+      "baseline_run": "5eeb0000-0000-4000-8000-000000000017",
+      "baseline": "B3[scale=2]",
+      "rho": 0.5,
+      "eta": 0.02,
+      "seeds": 30,
+      "r_early": 0.9220412324854041,
+      "r_late": 0.6611001679195105,
+      "matched_share": 0.9526987998202939,
+      "asked_seats_per_100": {
+        "late": 1.4057416335313302,
+        "early": 1.8202870300742442,
+        "travels": 10.14122707298526,
+        "withdrawn": 0.34161566063947746,
+        "unmatched": 0.6802487445094478
+      },
+      "ceiling_central": 0.25048090130225603,
+      "ceiling_terms": {
+        "late": 0.1925458671544305,
+        "early": 0.07453003254972798,
+        "travels": -0.016594998401902487
+      },
+      "ceiling_conservative": 0.3273019903798701,
+      "ceiling_rides": 0.1906576055894304,
+      "completed_share": 0.9766906558666706,
+      "seats_per_booking": 1.2831502578596194,
+      "standing": {
+        "seeds": 30,
+        "mean_difference": 0.1506681540075476,
+        "ci_low": 0.1052176511233164,
+        "ci_high": 0.19611865689177882,
+        "bootstrap_ci_low": 0.10830783789696752,
+        "bootstrap_ci_high": 0.19368213628644157
+      },
+      "released": {
+        "seeds": 30,
+        "mean_difference": 0.3174842008864525,
+        "ci_low": 0.2559750622195705,
+        "ci_high": 0.37899333955333453,
+        "bootstrap_ci_low": 0.2601211557644844,
+        "bootstrap_ci_high": 0.37497922668821687
+      },
+      "refilled": {
+        "seeds": 30,
+        "mean_difference": 0.5164900965089421,
+        "ci_low": 0.44454074434508495,
+        "ci_high": 0.5884394486727992,
+        "bootstrap_ci_low": 0.45042138466708,
+        "bootstrap_ci_high": 0.5855289044447446
+      },
+      "refilled_standing": {
+        "seeds": 30,
+        "mean_difference": 0.3578237956356076,
+        "ci_low": 0.27814691909882316,
+        "ci_high": 0.4375006721723921,
+        "bootstrap_ci_low": 0.2848907685398441,
+        "bootstrap_ci_high": 0.43526315168976304
+      },
+      "residual": {
+        "seeds": 30,
+        "mean_difference": 0.048337741614941955,
+        "ci_low": 0.013857037162694229,
+        "ci_high": 0.08281844606718969,
+        "bootstrap_ci_low": 0.017349057674254438,
+        "bootstrap_ci_high": 0.08127184822251263
+      },
+      "residual_standing": {
+        "seeds": 30,
+        "mean_difference": -0.11032855925839247,
+        "ci_low": -0.16705063168542764,
+        "ci_high": -0.05360648683135729,
+        "bootstrap_ci_low": -0.16404681069676103,
+        "bootstrap_ci_high": -0.05662646909850799
+      },
+      "completed": {
+        "seeds": 30,
+        "mean_difference": 0.03669109560170867,
+        "ci_low": -0.006694964094111543,
+        "ci_high": 0.08007715529752887,
+        "bootstrap_ci_low": -0.005062743216200604,
+        "bootstrap_ci_high": 0.07689378914141867
+      }
+    },
+    {
+      "name": "B4[scale=3]",
+      "group": "cancellation-scale-w05",
+      "run": "5eeb0000-0000-4000-8000-000000000017",
+      "policy": "B4[scale=3]",
+      "baseline_run": "5eeb0000-0000-4000-8000-000000000017",
+      "baseline": "B3[scale=3]",
+      "rho": 0.5,
+      "eta": 0.02,
+      "seeds": 30,
+      "r_early": 0.9270396893811971,
+      "r_late": 0.6518037577310789,
+      "matched_share": 0.9552442109359798,
+      "asked_seats_per_100": {
+        "late": 1.3125682417603968,
+        "early": 1.4192738130993212,
+        "travels": 10.525653071933702,
+        "withdrawn": 0.3434601216849567,
+        "unmatched": 0.6364786239939215
+      },
+      "ceiling_central": 0.22733480153375157,
+      "ceiling_terms": {
+        "late": 0.18916726160612535,
+        "early": 0.05424372501414178,
+        "travels": -0.016076185086515545
+      },
+      "ceiling_conservative": 0.3046400957393651,
+      "ceiling_rides": 0.17286057442590075,
+      "completed_share": 0.9764848976282181,
+      "seats_per_booking": 1.28420839245895,
+      "standing": {
+        "seeds": 30,
+        "mean_difference": 0.12848824792155017,
+        "ci_low": 0.07951399739926643,
+        "ci_high": 0.1774624984438339,
+        "bootstrap_ci_low": 0.08095847544583419,
+        "bootstrap_ci_high": 0.17404860842784925
+      },
+      "released": {
+        "seeds": 30,
+        "mean_difference": 0.3135286819848767,
+        "ci_low": 0.25484173033689517,
+        "ci_high": 0.37221563363285826,
+        "bootstrap_ci_low": 0.25905218888245474,
+        "bootstrap_ci_high": 0.36917487971824553
+      },
+      "refilled": {
+        "seeds": 30,
+        "mean_difference": 0.5171091156171389,
+        "ci_low": 0.4437643040237043,
+        "ci_high": 0.5904539272105735,
+        "bootstrap_ci_low": 0.4482716067069817,
+        "bootstrap_ci_high": 0.5863144002645363
+      },
+      "refilled_standing": {
+        "seeds": 30,
+        "mean_difference": 0.3369405903200989,
+        "ci_low": 0.2678954159847709,
+        "ci_high": 0.40598576465542685,
+        "bootstrap_ci_low": 0.2746054389234298,
+        "bootstrap_ci_high": 0.40510850653727737
+      },
+      "residual": {
+        "seeds": 30,
+        "mean_difference": 0.07509218571071194,
+        "ci_low": 0.0328900433491389,
+        "ci_high": 0.11729432807228499,
+        "bootstrap_ci_low": 0.03677764289396169,
+        "bootstrap_ci_high": 0.11662293086103466
+      },
+      "residual_standing": {
+        "seeds": 30,
+        "mean_difference": -0.10507633958632806,
+        "ci_low": -0.16424428839105812,
+        "ci_high": -0.045908390781597995,
+        "bootstrap_ci_low": -0.16168482102202494,
+        "bootstrap_ci_high": -0.04820062203294849
+      },
+      "completed": {
+        "seeds": 30,
+        "mean_difference": 0.0302464280133087,
+        "ci_low": -0.018679973343865806,
+        "ci_high": 0.0791728293704832,
+        "bootstrap_ci_low": -0.01532931201749552,
+        "bootstrap_ci_high": 0.07704471445257544
       }
     }
   ]

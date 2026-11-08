@@ -6,13 +6,13 @@ searches, on rides that departed; each cell is a policy minus the same ranking w
 
 | Hypothesis | Rule | Holds |
 |---|---|---|
-| H3.1 | at most 1 of 34 cells with the whole interval of ΔB above the ceiling | yes |
+| H3.1 | at most 2 of 43 cells with the whole interval of ΔB above the ceiling | yes |
 | H3.2 | ΔO, refills counted when they stand, has an interval reaching zero in every cell | NO |
 | H3.3 | Spearman between the ceiling in completed rides and the observed effect is at least 0.8 | NO |
 
-Breaches of the ceiling: B4[searches_per_day=120]. Cells with ΔO wholly below zero: B4 (run …004), B4-KM (run …004), B5 (run …004), B5-RANDOM (run …004), B4 (run …012), B4 (run …014), ORACLE (run …014), B4 (run …016), ORACLE (run …016), B4[early_release_probability=0.25,annoyed_cancel_probability=0.0], B4[early_release_probability=0.25,annoyed_cancel_probability=0.02], B4[early_release_probability=0.25,annoyed_cancel_probability=0.05], B4[early_release_probability=0.5,annoyed_cancel_probability=0.0], B4[early_release_probability=0.5,annoyed_cancel_probability=0.02], B4[early_release_probability=0.5,annoyed_cancel_probability=0.05], B4[early_release_probability=1.0,annoyed_cancel_probability=0.0], B4[early_release_probability=1.0,annoyed_cancel_probability=0.02], B4[early_release_probability=1.0,annoyed_cancel_probability=0.05], ORACLE[early_release_probability=1.0], B4[survival_threshold=0.6], B4[survival_threshold=0.7], B4[survival_threshold=0.8], B4[survival_threshold=0.9], B5[contacts_per_round=2], B5[contacts_per_round=4], B5[contacts_per_round=8], B4[searches_per_day=60], B4[searches_per_day=120]. Spearman: 0.622.
+Breaches of the ceiling: B4[searches_per_day=120], B4[searches_per_day=120]. Cells with ΔO wholly below zero: B4 (run …004), B4-KM (run …004), B5 (run …004), B5-RANDOM (run …004), B4 (run …012), B4 (run …014), ORACLE (run …014), B4 (run …016), ORACLE (run …016), B4[early_release_probability=0.25,annoyed_cancel_probability=0.0], B4[early_release_probability=0.25,annoyed_cancel_probability=0.02], B4[early_release_probability=0.25,annoyed_cancel_probability=0.05], B4[early_release_probability=0.5,annoyed_cancel_probability=0.0], B4[early_release_probability=0.5,annoyed_cancel_probability=0.02], B4[early_release_probability=0.5,annoyed_cancel_probability=0.05], B4[early_release_probability=1.0,annoyed_cancel_probability=0.0], B4[early_release_probability=1.0,annoyed_cancel_probability=0.02], B4[early_release_probability=1.0,annoyed_cancel_probability=0.05], ORACLE[early_release_probability=1.0], B4[survival_threshold=0.6], B4[survival_threshold=0.7], B4[survival_threshold=0.8], B4[survival_threshold=0.9], B5[contacts_per_round=2], B5[contacts_per_round=4], B5[contacts_per_round=8], B4[searches_per_day=60], B4[searches_per_day=120], B4[rides_per_day=6], B4[rides_per_day=12], B4[rides_per_day=20], B4[searches_per_day=60], B4[searches_per_day=120], B4[scale=1], B4[scale=2], B4[scale=3]. Spearman: 0.435.
 
-Exploratory, chosen after the hypotheses were judged: Spearman in seats 0.798; without the demand cells 0.727; over 27 distinct cells 0.590. The identity's exact residual (refills counted when requested) is wholly above zero in 23 cells, across zero in 10, and wholly below in: B4[searches_per_day=120].
+Exploratory, chosen after the hypotheses were judged: Spearman in seats 0.637; without the demand cells 0.493; over 33 distinct cells 0.372. The identity's exact residual (refills counted when requested) is wholly above zero in 30 cells, across zero in 10, and wholly below in: B4[searches_per_day=120], B4[rides_per_day=6], B4[searches_per_day=120].
 Baseline check: B4 in 5eeb0000-0000-4000-8000-000000000003 against 7a1c0de0-0000-4000-8000-000000000004: 30 of 30 seeds identical.
 
 | Cell | ρ | η | Twins found | ΔB observed (95% CI) | Ceiling, central | Ceiling, conservative | ΔO, refills standing (95% CI) | ΔO, refills requested | Completed rides, observed | Ceiling in rides |
@@ -51,6 +51,15 @@ Baseline check: B4 in 5eeb0000-0000-4000-8000-000000000003 against 7a1c0de0-0000
 | B4[searches_per_day=30] | 0.5 | 0.02 | 96.5% | +0.013 (-0.067 to +0.093) | +0.710 | +0.778 | +0.116 (+0.006 to +0.227) | +0.382 | -0.016 | +0.519 |
 | B4[searches_per_day=60] | 0.5 | 0.02 | 94.2% | +0.139 (+0.092 to +0.186) | +0.272 | +0.366 | -0.224 (-0.308 to -0.140) | +0.052 | +0.027 | +0.207 |
 | B4[searches_per_day=120] | 0.5 | 0.02 | 88.8% | +0.113 (+0.092 to +0.134) | +0.071 | +0.153 | -0.341 (-0.393 to -0.289) | -0.058 | -0.039 | +0.056 |
+| B4[rides_per_day=6] | 0.5 | 0.02 | 93.6% | +0.129 (+0.086 to +0.171) | +0.120 | +0.188 | -0.264 (-0.325 to -0.203) | -0.026 | +0.028 | +0.096 |
+| B4[rides_per_day=12] | 0.5 | 0.02 | 94.2% | +0.139 (+0.092 to +0.186) | +0.272 | +0.366 | -0.224 (-0.308 to -0.140) | +0.052 | +0.027 | +0.207 |
+| B4[rides_per_day=20] | 0.5 | 0.02 | 94.8% | +0.040 (-0.014 to +0.093) | +0.468 | +0.558 | -0.126 (-0.228 to -0.024) | +0.200 | -0.046 | +0.341 |
+| B4[searches_per_day=30] | 0.5 | 0.02 | 96.5% | +0.041 (-0.039 to +0.121) | +0.689 | +0.744 | +0.210 (+0.126 to +0.294) | +0.436 | -0.032 | +0.505 |
+| B4[searches_per_day=60] | 0.5 | 0.02 | 93.9% | +0.189 (+0.140 to +0.239) | +0.329 | +0.425 | -0.253 (-0.333 to -0.173) | +0.072 | +0.050 | +0.250 |
+| B4[searches_per_day=120] | 0.5 | 0.02 | 88.5% | +0.173 (+0.147 to +0.199) | +0.112 | +0.204 | -0.362 (-0.416 to -0.307) | -0.074 | +0.015 | +0.089 |
+| B4[scale=1] | 0.5 | 0.02 | 93.9% | +0.189 (+0.140 to +0.239) | +0.329 | +0.425 | -0.253 (-0.333 to -0.173) | +0.072 | +0.050 | +0.250 |
+| B4[scale=2] | 0.5 | 0.02 | 95.3% | +0.151 (+0.105 to +0.196) | +0.250 | +0.327 | -0.110 (-0.167 to -0.054) | +0.048 | +0.037 | +0.191 |
+| B4[scale=3] | 0.5 | 0.02 | 95.5% | +0.128 (+0.080 to +0.177) | +0.227 | +0.305 | -0.105 (-0.164 to -0.046) | +0.075 | +0.030 | +0.173 |
 
 ## Who was asked, seats per 100 searches, by what the booking would have done unasked
 
@@ -90,3 +99,12 @@ Baseline check: B4 in 5eeb0000-0000-4000-8000-000000000003 against 7a1c0de0-0000
 | B4[searches_per_day=30] | 1.19 | 4.21 | 9.35 | 0.33 | 0.54 |
 | B4[searches_per_day=60] | 1.06 | 3.64 | 8.19 | 0.30 | 0.80 |
 | B4[searches_per_day=120] | 0.82 | 3.05 | 6.46 | 0.25 | 1.33 |
+| B4[rides_per_day=6] | 0.68 | 2.35 | 5.48 | 0.23 | 0.60 |
+| B4[rides_per_day=12] | 1.06 | 3.64 | 8.19 | 0.30 | 0.80 |
+| B4[rides_per_day=20] | 1.25 | 4.53 | 9.98 | 0.36 | 0.88 |
+| B4[searches_per_day=30] | 1.88 | 3.24 | 10.46 | 0.43 | 0.57 |
+| B4[searches_per_day=60] | 1.57 | 2.97 | 9.02 | 0.31 | 0.90 |
+| B4[searches_per_day=120] | 1.25 | 2.38 | 6.95 | 0.26 | 1.41 |
+| B4[scale=1] | 1.57 | 2.97 | 9.02 | 0.31 | 0.90 |
+| B4[scale=2] | 1.41 | 1.82 | 10.14 | 0.34 | 0.68 |
+| B4[scale=3] | 1.31 | 1.42 | 10.53 | 0.34 | 0.64 |

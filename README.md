@@ -24,7 +24,7 @@ more bookings and still move fewer people.
 | Features | 84 verified and 5 partial of the 89 still in scope, the team having removed 6 of the original 95 on 2026-11-02: about 97% counting a partial feature as half. The five need accounts, a native speaker or real data, not more code ([feature matrix](docs/FEATURE_MATRIX.md)) |
 | Routes | Any route in India in the app, from 126 listed cities or a point on the map. Road distances between Kolhapur and Pune; elsewhere a labelled straight line until a bigger map is built ([how](docs/DEPLOYMENT.md#road-routes-across-india)) |
 | Interface | A side bar, or tabs on a phone, in light and dark, each role with its own tint. Screens keep themselves current without a reload |
-| Tests | 310 Java, 293 web, 300 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
+| Tests | 310 Java, 293 web, 305 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
 | Languages | English, Hindi and Marathi, on every screen, notification and error message |
 | Research | On Kolhapur to Pune alone. A SimPy simulator of the corridor: 60 simulated days, 30 seeds per variant, train and validation on disjoint seeds |
 | Data | All synthetic, plus one public dataset of real hotel cancellations used as a check |
@@ -71,11 +71,14 @@ reproduces the earlier world's committed numbers (B0 30.77, B3 31.11) to every d
   soonest-ride gain shrinks steadily. At 0.03 per hour it is a sixth of its size and no longer
   distinguishable from zero. Shorter exposure explains only about a tenth of it, and survival ranking
   stays equivalent to soonest-first throughout.
-- **A ceiling a platform can compute from its own logs holds.** In 33 of 34 settings tried, no
+- **A ceiling a platform can compute from its own logs holds.** In 41 of 43 settings tried, no
   reconfirmation policy added more standing seats than the paper's first-order ceiling allows
-  (experiment X3, protocol section 29). The one exception, at the heaviest demand, is the one setting
-  where the ceiling's own assumption fails. Even the oracle reaches only 78% of its ceiling in the
-  base world.
+  (experiments X3 and X5, protocol sections 29 and 31). Both exceptions, at the heaviest demand, are
+  settings where the ceiling's own assumption fails. Even the oracle reaches only 78% of its ceiling
+  in the base world.
+- **None of this depends on the supply, demand or cancellation rate assumed** (experiment X5):
+  reconfirmation's effect stays within ±0.10 of zero in all nine settings tried, and survival ranking
+  keeps its gain at 6, 12 and 20 rides a day.
 - **On real hotel cancellations, features do help.** The same kinds of model rank who
   cancels better than lead time alone (concordance 0.597 for Cox and 0.653 for gradient
   boosting, against 0.544), which suggests the simulated world understates what booking

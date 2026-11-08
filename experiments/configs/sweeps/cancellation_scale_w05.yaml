@@ -1,0 +1,25 @@
+# Experiment X5 (EXPERIMENT_PROTOCOL.md sections 26 and 31): reconfirmation in X1's world at w = 0.5 as
+# cancellations become rarer: every type's Weibull scale multiplied by 1, 2 and 3, as in the h3 worlds
+# worlds/cancellation_scale_*.yaml. The hazard tied to departure keeps its calibrated rates, so the
+# rarer cancellations lean further towards departure. Each cell has its own baseline. Not offered in the
+# what-if explorer.
+name: cancellation-scale-w05
+world: worlds/proximity_w0.5.yaml
+baseline: variants/h4/B3.yaml
+variant: variants/h4/B4.yaml
+baseline_per_cell: true
+cells:
+  - name: scale=1
+    set: {}
+  - name: scale=2
+    set: 
+      demand.types.committed.weibull_scale_hours: 5000
+      demand.types.flexible.weibull_scale_hours: 800
+      demand.types.opportunistic.weibull_scale_hours: 220
+      demand.types.deadline_bound.weibull_scale_hours: 1200
+  - name: scale=3
+    set: 
+      demand.types.committed.weibull_scale_hours: 7500
+      demand.types.flexible.weibull_scale_hours: 1200
+      demand.types.opportunistic.weibull_scale_hours: 330
+      demand.types.deadline_bound.weibull_scale_hours: 1800

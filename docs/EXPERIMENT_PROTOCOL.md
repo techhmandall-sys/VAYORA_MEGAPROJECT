@@ -1417,7 +1417,8 @@ computation. Judged by `python -m experiments.analysis.ceiling`, which writes
     ORACLE never gets that part.
 
 **Not done here.**
-- X5's cells.
+- X5's cells. *Added 2026-11-07, see section 31:* with them, 43 cells, the ceiling holds in 41, and both
+  breaches are at the heaviest demand.
 - Seats on rides withdrawn with no booking left on them cannot be told apart in the log. Rides
   treated as withdrawn are those with a driver cancellation in either run of a pair.
 
@@ -1491,3 +1492,74 @@ existed). `configs/x4.yaml` fixed settings and readings first. Judged by
 **Not done here.**
 - Intervals for Uno's concordance and the AUC; they are point estimates.
 - No forest or tuned model was tried as the platform's model in the simulator's policy runs.
+
+## 31. Experiment X5: robustness, and X3 with its cells
+
+Run on 2026-11-07 against the hypotheses of section 26 (committed in `66d73cc` before any run).
+`configs/x5.yaml` fixed the sweeps and readings first. Judged by `python -m experiments.analysis.robustness`,
+which writes `experiments/reports/x5-robustness.md` and `.json`.
+
+**What was run.** Five sweeps, 30 paired seeds, each cell against its own baseline.
+
+| Sweep | World | Cells | Comparison | Run |
+|---|---|---|---|---|
+| `supply_density` | h3 | 6, 12, 20 rides a day | B4 against B3 | `5eeb…014` |
+| `supply_density_ranking` | h3 | the same | B3 against B0 | `…015` |
+| `demand_density_w05` | X1, w = 0.5 | 30, 60, 120 searches a day | B4 against B3, model h4 | `…016` |
+| `cancellation_scale_w05` | X1, w = 0.5 | every Weibull scale ×1, ×2, ×3 | B4 against B3, model h4 | `…017` |
+| `cancellation_scale_w05_ranking` | X1, w = 0.5 | the same | B3 (h4) against B0 | `…018` |
+
+- **The supply sweep was rebuilt under a new run id.** Run `5eeb…002` was made with earlier code. Its
+  events and report are left as they were, and run `…014` replaces it.
+- **B0 runs in the supply cells too.** Section 26 put B0 only in the scale cells, but H5.2 is about
+  world h3.
+- **The scale cells multiply every type's Weibull scale, as the h3 worlds do.** The hazard tied to
+  departure keeps its calibrated rates, so rarer cancellations lean further towards departure.
+- **The sweep runner was extended for this.**
+  - A config may name its world.
+  - It may list named cells that set several values together.
+  - Parameter paths now reach into the passenger types (`demand.types.committed.weibull_scale_hours`).
+
+**Results.** Completed rides per 100 searches.
+
+| Cell | B4 − B3 (equivalence p) | B3 − B0 |
+|---|---|---|
+| h3, 6 rides a day | +0.028 (−0.008 to +0.063; p 0.0001) | +0.115 (+0.052 to +0.179) |
+| h3, 12 rides a day | +0.027 (−0.018 to +0.072; p 0.0012) | +0.319 (+0.220 to +0.417) |
+| h3, 20 rides a day | −0.046 (−0.081 to −0.010; p 0.0021) | +0.283 (+0.191 to +0.375) |
+| w = 0.5, 30 searches a day | −0.032 (−0.090 to +0.027; p 0.012) | — |
+| w = 0.5, 60 searches a day | +0.050 (+0.003 to +0.098; p 0.021) | — |
+| w = 0.5, 120 searches a day | +0.015 (−0.015 to +0.044; p < 0.0001) | — |
+| w = 0.5, scale ×1 | +0.050 (+0.003 to +0.098; p 0.021) | +0.357 (+0.284 to +0.431) |
+| w = 0.5, scale ×2 | +0.037 (−0.007 to +0.080; p 0.0029) | +0.365 (+0.284 to +0.445) |
+| w = 0.5, scale ×3 | +0.030 (−0.019 to +0.079; p 0.0034) | +0.361 (+0.273 to +0.449) |
+
+| | Result | Holds |
+|---|---|---|
+| H5.1 | B4 − B3 is within ±0.10 in all nine cells | yes |
+| H5.2 | B3 − B0 is wholly above zero at 6, 12 and 20 rides a day | yes |
+
+**What the results say.**
+- **Reconfirmation stays within the margin everywhere.** Where seats are plentiful (20 rides a day) it
+  even costs a little, −0.046 (−0.081 to −0.010), still inside ±0.10.
+- **Survival ranking keeps its gain at every supply tried.** It is smallest where rides are scarcest:
+  +0.115 at 6 a day, with fewer rides to rank among. In the shifted world it holds steady as
+  cancellations grow rarer.
+- **The cells shared with earlier runs reproduce them exactly:**
+  - 12 rides a day: +0.027 and +0.319, as in the ladder;
+  - w = 0.5 at 60 searches and at scale ×1: +0.050, as in X1.
+
+**X3 with X5's cells.** X3 now covers 43 cells (`x3-ceiling.md`, rebuilt).
+- **H3.1 still holds:** two breaches in 43, with two allowed. Both are at 120 searches a day:
+  - world h3: +0.113 against a central ceiling of 0.071;
+  - w = 0.5: +0.173 (+0.147 to +0.199) against 0.112.
+- **The identity's exact residual is below zero in three cells, all where seats are scarce for the
+  demand:** the two heavy-demand cells, and 6 rides a day (−0.026, −0.047 to −0.004). The two breaches
+  are among them. At 6 rides a day the observed change sits at the ceiling (+0.129 against 0.120)
+  without breaking it. The ceiling fails only where its own assumption does, and that assumption
+  fails where seats are scarce.
+- **H3.2 as written is now negative in 36 of 43 cells.** It is still the wrong quantity (section 29).
+- **H3.3 falls further:** Spearman 0.435 in completed rides, 0.637 in seats (exploratory).
+
+**Not done here.** No supply cell was run in the shifted world, and no demand cell at 6 rides a day.
+

@@ -4,8 +4,9 @@
 #
 # Supply changes the baseline as well as the variant, so each cell gets its own.
 #
-# The model (h2) was trained at 12 rides a day. At 6 and 20 it is being used outside
-# the world it learnt from, which is itself part of what this sweep shows.
+# The model (h3) was trained at 12 rides a day. At 6 and 20 it is being used outside
+# the world it learnt from, which is itself part of what this sweep shows. Run 5eeb...002 was
+# made with earlier code (model h2); experiment X5 rebuilt it as run 5eeb...014.
 name: supply-density
 baseline: variants/B3.yaml
 variant: variants/B4.yaml
