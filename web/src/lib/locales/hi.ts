@@ -2383,4 +2383,9 @@ export const hi: Record<string, string> = {
   // Creating an account: its lead
   'It is free to join.':
     'जुड़ना मुफ़्त है।',
+  // Search results: the price of one seat, and the next day
+  '{price} a seat':
+    '{price} प्रति सीट',
+  'Try the next day':
+    'अगले दिन देखें',
 };

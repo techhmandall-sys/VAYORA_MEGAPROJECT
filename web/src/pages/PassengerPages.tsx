@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
-import { Armchair, ArrowUpDown, Award, BadgeCheck, Car, CarTaxiFront, Check, Clock, Flag, Footprints, Hourglass, Map as MapIcon, MessagesSquare, Route as RouteIcon, Search, Send, ShieldCheck, Shuffle, SlidersHorizontal, Sparkles, Ticket, TriangleAlert, Undo2, UserRound, Users, Wallet, Zap } from 'lucide-react';
+import { Armchair, ArrowUpDown, CalendarPlus, Award, BadgeCheck, Car, CarTaxiFront, Check, Clock, Flag, Footprints, Hourglass, Map as MapIcon, MessagesSquare, Route as RouteIcon, Search, Send, ShieldCheck, Shuffle, SlidersHorizontal, Sparkles, Ticket, TriangleAlert, Undo2, UserRound, Users, Wallet, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { LeavesIn, LiveDot, LiveStatus, useTimeAhead } from '../components/live';
@@ -26,6 +26,8 @@ import { answerBy, formatDate, formatDateTime, formatDayMonth, formatRupees, for
 import { clockFace, LIVE_MS, owedNow, useNow } from '../lib/live';
 import { takeWantedRoute } from '../lib/recent';
 import { useScrollFade } from '../lib/scrollFade';
+import { PHONE, useMediaQuery } from '../lib/media';
+import { Sheet } from '../components/sheet';
 import { msg, useT, useUnits } from '../lib/i18n';
 import { matchReasonLabels } from '../lib/match';
 import { comfortLabels, luggageLabels, vehiclePhrases } from '../lib/vehicle';
@@ -281,6 +283,8 @@ export function SearchPage() {
   const [sorting, startSorting] = useTransition();
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const phone = useMediaQuery(PHONE);
+  const searchForm = useRef<HTMLFormElement>(null);
   // Once searched, the form steps aside for a one-line summary, so the results start at the top.
   const [editing, setEditing] = useState(true);
   const changeSearch = useRef<HTMLButtonElement>(null);
@@ -425,6 +429,90 @@ export function SearchPage() {
     );
   };
 
+  /** The same search, a day later: the first thing to try when nothing was found. */
+  const tryNextDay = () => {
+    if (!criteria) return;
+    const next = todayInIndia(new Date(Date.parse(`${criteria.form.date}T12:00:00+05:30`) + 86_400_000));
+    setValue('date', next);
+    setCriteria({ ...criteria, form: { ...criteria.form, date: next } });
+  };
+
+  const filterFields = (
+    <fieldset className="grid gap-4 rounded-2xl border border-slate-200 p-4 sm:grid-cols-2">
+      <legend className="px-1 text-sm font-medium text-slate-700">{t('Show only rides that')}</legend>
+      <SelectField label={t('Leave in the')} value={filters.dayPart} onChange={(event) => setFilters({ ...filters, dayPart: event.target.value as Filters['dayPart'] })}>
+        <option value="ANY">{t('Any time of day')}</option>
+        <option value="MORNING">{t('Morning, before 12')}</option>
+        <option value="AFTERNOON">{t('Afternoon, 12 to 5')}</option>
+        <option value="EVENING">{t('Evening, from 5')}</option>
+      </SelectField>
+      <TextField
+        label={t('Cost at most, per seat (₹)')}
+        type="number"
+        min={0}
+        value={filters.maxPrice}
+        onChange={(event) => setFilters({ ...filters, maxPrice: event.target.value })}
+      />
+      <TextField
+        label={t('Cost at least, per seat (₹)')}
+        type="number"
+        min={0}
+        value={filters.minPrice}
+        onChange={(event) => setFilters({ ...filters, minPrice: event.target.value })}
+      />
+      <SelectField
+        label={t('Comfort at least')}
+        value={filters.comfortAtLeast}
+        onChange={(event) => setFilters({ ...filters, comfortAtLeast: event.target.value as Comfort | '' })}
+      >
+        <option value="">{t('Any')}</option>
+        {(Object.keys(comfortLabels) as Comfort[]).map((key) => (
+          <option key={key} value={key}>
+            {t(comfortLabels[key])}
+          </option>
+        ))}
+      </SelectField>
+      <SelectField
+        label={t('Room for luggage, at least')}
+        value={filters.luggageAtLeast}
+        onChange={(event) => setFilters({ ...filters, luggageAtLeast: event.target.value as Luggage | '' })}
+      >
+        <option value="">{t('Any')}</option>
+        {(Object.keys(luggageLabels) as Luggage[]).map((key) => (
+          <option key={key} value={key}>
+            {t(luggageLabels[key])}
+          </option>
+        ))}
+      </SelectField>
+      {(
+        [
+          ['instantOnly', msg('Confirm instantly')],
+          ['confirmedDriver', msg('Have a driver with a confirmed email or phone')],
+          ['idCheckedDriver', msg('Have a driver whose identity VAYORA staff have checked')],
+          ['maxTwoInBack', msg('Promise at most two in the back')],
+          ['smokeFree', msg('Have a driver who said no smoking')],
+          ['petsWelcome', msg('Have a driver who said pets are welcome')],
+          ['musicWelcome', msg('Have a driver who likes music on the way')],
+          ['quietRide', msg('Have a driver who prefers a quiet ride')],
+        ] as const
+      ).map(([flag, label]) => (
+        <label key={flag} className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={filters[flag]} onChange={(event) => setFilters({ ...filters, [flag]: event.target.checked })} />
+          {t(label)}
+        </label>
+      ))}
+      {me.data?.gender === 'FEMALE' && (
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={filters.womenOnly} onChange={(event) => setFilters({ ...filters, womenOnly: event.target.checked })} />
+          {t('Are for women only')}
+        </label>
+      )}
+      <p className="text-sm text-slate-600 sm:col-span-2">
+        {t('The last two leave out drivers who have not said either way. Filters apply when you press Search.')}
+      </p>
+    </fieldset>
+  );
+
   return (
     <Page title={t('Find a ride')}>
       {criteria && !editing && (
@@ -447,6 +535,7 @@ export function SearchPage() {
       )}
       <Card hidden={Boolean(criteria) && !editing}>
         <form
+          ref={searchForm}
           onSubmit={handleSubmit((form) => {
             setBooked(null);
             book.reset();
@@ -516,7 +605,7 @@ export function SearchPage() {
             </Button>
             <Button tone="secondary" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>
               <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
-              {filtersOpen ? t('Hide filters') : t('Filters')}
+              {filtersOpen && !phone ? t('Hide filters') : t('Filters')}
               {filtersSet > 0 && (
                 <span key={filtersSet} aria-hidden="true" className="inline-flex min-w-[1.25rem] animate-badge-pop items-center justify-center rounded-full bg-tint px-1.5 text-[11px] font-bold leading-5 text-white">
                   {filtersSet}
@@ -559,84 +648,28 @@ export function SearchPage() {
             </Collapse>
           </div>
 
-          <div className="sm:col-span-2">
-            <Collapse open={filtersOpen}>
-              <fieldset className="grid gap-4 rounded-2xl border border-slate-200 p-4 sm:grid-cols-2">
-                <legend className="px-1 text-sm font-medium text-slate-700">{t('Show only rides that')}</legend>
-                <SelectField label={t('Leave in the')} value={filters.dayPart} onChange={(event) => setFilters({ ...filters, dayPart: event.target.value as Filters['dayPart'] })}>
-                  <option value="ANY">{t('Any time of day')}</option>
-                  <option value="MORNING">{t('Morning, before 12')}</option>
-                  <option value="AFTERNOON">{t('Afternoon, 12 to 5')}</option>
-                  <option value="EVENING">{t('Evening, from 5')}</option>
-                </SelectField>
-                <TextField
-                  label={t('Cost at most, per seat (₹)')}
-                  type="number"
-                  min={0}
-                  value={filters.maxPrice}
-                  onChange={(event) => setFilters({ ...filters, maxPrice: event.target.value })}
-                />
-                <TextField
-                  label={t('Cost at least, per seat (₹)')}
-                  type="number"
-                  min={0}
-                  value={filters.minPrice}
-                  onChange={(event) => setFilters({ ...filters, minPrice: event.target.value })}
-                />
-                <SelectField
-                  label={t('Comfort at least')}
-                  value={filters.comfortAtLeast}
-                  onChange={(event) => setFilters({ ...filters, comfortAtLeast: event.target.value as Comfort | '' })}
-                >
-                  <option value="">{t('Any')}</option>
-                  {(Object.keys(comfortLabels) as Comfort[]).map((key) => (
-                    <option key={key} value={key}>
-                      {t(comfortLabels[key])}
-                    </option>
-                  ))}
-                </SelectField>
-                <SelectField
-                  label={t('Room for luggage, at least')}
-                  value={filters.luggageAtLeast}
-                  onChange={(event) => setFilters({ ...filters, luggageAtLeast: event.target.value as Luggage | '' })}
-                >
-                  <option value="">{t('Any')}</option>
-                  {(Object.keys(luggageLabels) as Luggage[]).map((key) => (
-                    <option key={key} value={key}>
-                      {t(luggageLabels[key])}
-                    </option>
-                  ))}
-                </SelectField>
-                {(
-                  [
-                    ['instantOnly', msg('Confirm instantly')],
-                    ['confirmedDriver', msg('Have a driver with a confirmed email or phone')],
-                    ['idCheckedDriver', msg('Have a driver whose identity VAYORA staff have checked')],
-                    ['maxTwoInBack', msg('Promise at most two in the back')],
-                    ['smokeFree', msg('Have a driver who said no smoking')],
-                    ['petsWelcome', msg('Have a driver who said pets are welcome')],
-                    ['musicWelcome', msg('Have a driver who likes music on the way')],
-                    ['quietRide', msg('Have a driver who prefers a quiet ride')],
-                  ] as const
-                ).map(([flag, label]) => (
-                  <label key={flag} className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={filters[flag]} onChange={(event) => setFilters({ ...filters, [flag]: event.target.checked })} />
-                    {t(label)}
-                  </label>
-                ))}
-                {me.data?.gender === 'FEMALE' && (
-                  <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={filters.womenOnly} onChange={(event) => setFilters({ ...filters, womenOnly: event.target.checked })} />
-                    {t('Are for women only')}
-                  </label>
-                )}
-                <p className="text-sm text-slate-600 sm:col-span-2">
-                  {t('The last two leave out drivers who have not said either way. Filters apply when you press Search.')}
-                </p>
-              </fieldset>
-            </Collapse>
-          </div>
+          {/* On a phone the filters open in a sheet (below); here they open in place. */}
+          {!phone && (
+            <div className="sm:col-span-2">
+              <Collapse open={filtersOpen}>{filterFields}</Collapse>
+            </div>
+          )}
         </form>
+        {phone && (
+          <Sheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title={t('Filters')} swipe={false}>
+            <div className="max-h-[60vh] overflow-y-auto overscroll-contain">{filterFields}</div>
+            <Button
+              className="mt-4 w-full"
+              onClick={() => {
+                setFiltersOpen(false);
+                searchForm.current?.requestSubmit();
+              }}
+            >
+              <Search aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
+              {t('Search')}
+            </Button>
+          </Sheet>
+        )}
       </Card>
 
       {booked && (
@@ -667,6 +700,12 @@ export function SearchPage() {
             }
             onRetry={() => void results.refetch()}
           />
+          {results.data?.length === 0 && (
+            <Button tone="secondary" onClick={tryNextDay}>
+              <CalendarPlus aria-hidden="true" className="h-4 w-4" />
+              {t('Try the next day')}
+            </Button>
+          )}
           {results.data?.length === 0 && <BusAlternatives from={criteria.form.origin} to={criteria.form.destination} />}
           {results.data && results.data.length > 0 && (
             <>
@@ -736,6 +775,9 @@ export function SearchPage() {
                   <div className="flex flex-col items-end gap-1 text-right">
                     <p className="text-right">
                       <span className="block text-2xl font-bold tracking-tight text-slate-900">{formatRupees(candidate.fare)}</span>
+                      {Number(criteria.form.seats) > 1 && (
+                        <span className="block text-xs text-slate-600">{t('{price} a seat', { price: formatRupees(candidate.pricePerSeat) })}</span>
+                      )}
                       <span className="block text-xs text-slate-500">{t('Pay after the ride')}</span>
                     </p>
                     <Button
@@ -764,6 +806,8 @@ export function SearchPage() {
                     <span className="block text-slate-600">
                       <RatingSummary average={candidate.driverRating} count={candidate.driverRatingCount} />
                     </span>
+                    {/* What the driver typed, shown as text, not translated. */}
+                    {candidate.vehicle && <span className="block truncate text-slate-500">{candidate.vehicle}</span>}
                   </p>
                 </div>
 

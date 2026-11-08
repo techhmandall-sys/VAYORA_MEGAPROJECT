@@ -358,6 +358,8 @@ describe('finding and booking a ride', () => {
     expect(within(results).getByText(/4\.7 out of 5 · 3 ratings/)).toBeInTheDocument();
     expect(within(results).getByText(/3 seats left/)).toBeInTheDocument();
     expect(within(results).getByText('₹1,040')).toBeInTheDocument();
+    // For a party, the price of one seat too, and the car on the card itself.
+    expect(within(results).getByText('₹520 a seat')).toBeInTheDocument();
     // The form has stepped aside for a summary, so the results start near the top.
     expect(screen.getByRole('button', { name: 'Change search' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
@@ -380,6 +382,23 @@ describe('finding and booking a ride', () => {
       lastMileModeShown: 'walk',
     });
     expect((post[1]!.headers as Record<string, string>)['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('offers the next day when nothing is found, and searches it', async () => {
+    signIn('PASSENGER');
+    const fetchMock = serve({ 'GET /rides/search': () => json([]) });
+    open('/search');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Try the next day' }));
+
+    const tomorrow = todayInIndia(new Date(Date.now() + 86_400_000));
+    await waitFor(() => {
+      const dates = fetchMock.mock.calls
+        .filter(([url]) => String(url).includes('/rides/search'))
+        .map(([url]) => new URL(String(url)).searchParams.get('date'));
+      expect(dates).toEqual([todayInIndia(), tomorrow]);
+    });
   });
 
   it('says so when nothing matches, and offers a retry when the search fails', async () => {
