@@ -4000,6 +4000,42 @@ describe('the assistant', () => {
     expect(screen.getByLabelText('Your question')).toHaveValue('How do I pay?');
   });
 
+  it('is one tap away on any screen, opening over it, with the same conversation as its page', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /bookings': () => json([]),
+      'GET /v1/assistant': () => json(on),
+      'POST /v1/assistant/reply': () => json({ reply: 'Cash or UPI, to your driver.', declined: false }),
+    });
+    open('/bookings');
+
+    expect(await screen.findByRole('heading', { name: 'My bookings' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Open the assistant' }));
+    const panel = screen.getByRole('dialog', { name: 'Assistant' });
+    await userEvent.click(await within(panel).findByRole('button', { name: 'How do I pay my driver?' }));
+    expect(await within(panel).findByText('Cash or UPI, to your driver.')).toBeInTheDocument();
+    // The screen under it is still there, behind the panel.
+    expect(screen.getByText('My bookings', { selector: 'h1' })).toBeInTheDocument();
+
+    // A panel that cannot be swiped away has a button to close it.
+    await userEvent.click(within(panel).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Assistant' })).not.toBeInTheDocument());
+
+    // On its own page the conversation goes on, and the button steps aside.
+    await userEvent.click(screen.getAllByRole('link', { name: 'Assistant' })[0]);
+    expect(await screen.findByRole('heading', { name: 'Assistant' })).toBeInTheDocument();
+    expect(screen.getByText('Cash or UPI, to your driver.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open the assistant' })).not.toBeInTheDocument();
+  });
+
+  it('is there for an administrator too', async () => {
+    signIn('ADMIN');
+    serve({ 'GET /notifications': () => json([]) });
+    open('/notifications');
+
+    expect(await screen.findByRole('button', { name: 'Open the assistant' })).toBeInTheDocument();
+  });
+
   it("starts a driver from a driver's questions, and is in the driver's pages", async () => {
     signIn('DRIVER');
     serve({ 'GET /v1/assistant': () => json({ ...on, provider: 'claude' }) });

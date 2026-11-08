@@ -42,6 +42,8 @@ import { themeLabels, useTheme, type ThemeChoice } from '../lib/theme';
 import { preload } from '../pageLoaders';
 import { BarTitle, BarTitleContext, useScrolled } from './pageTitle';
 import type { Role } from '../lib/types';
+import { AssistantProvider } from '../lib/assistant';
+import { AssistantBubble } from './assistantBubble';
 import { NotificationBell } from './bell';
 import { ErrorBoundary } from './ErrorBoundary';
 import { NotificationWatcher, OfflineBanner, useUnread } from './live';
@@ -394,6 +396,8 @@ export function Layout() {
   }, [user]);
 
   return (
+    // One conversation with the assistant per signed-in member: it starts afresh for the next.
+    <AssistantProvider key={user?.id ?? 'signed-out'}>
     <div className="ambient min-h-screen text-slate-900">
       <a
         href="#main"
@@ -452,7 +456,9 @@ export function Layout() {
         </main>
       </div>
       {user && phone && <PhoneTabBar role={user.role} onSignOut={logout} />}
+      {user && <AssistantBubble />}
     </div>
+    </AssistantProvider>
   );
 }
 

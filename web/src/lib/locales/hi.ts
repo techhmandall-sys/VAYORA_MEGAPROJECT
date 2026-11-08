@@ -2310,4 +2310,7 @@ export const hi: Record<string, string> = {
   // The assistant on Gemini's free tier: where the questions go
   'What you type is sent to Google, whose AI writes the answers. On its free service Google may use it to improve its products, and people there may read it, so do not type personal details. VAYORA keeps none of it. An answer can be wrong: check anything important on the screen it is about.':
     'आप जो लिखते हैं वह Google को भेजा जाता है, जिसका AI जवाब लिखता है। अपनी मुफ़्त सेवा पर Google इसे अपने उत्पाद बेहतर बनाने में इस्तेमाल कर सकता है और वहाँ लोग इसे पढ़ सकते हैं, इसलिए कोई निजी जानकारी न लिखें। VAYORA इसमें से कुछ नहीं रखता। जवाब गलत भी हो सकता है: कोई भी ज़रूरी बात उसी स्क्रीन पर जाँच लें जिसके बारे में वह है।',
+  // The chat button on every screen
+  'Open the assistant':
+    'सहायक खोलें',
 };
