@@ -1,5 +1,46 @@
 # Progress
 
+## 2026-11-08 — easier on a phone
+
+- **Measured on a phone profile** (390 px wide, touch), on a throwaway backend with made-up
+  accounts. A control counts as small under 44 px tall; links inside a sentence are exempt.
+
+  | Screen | Before | After |
+  |---|---|---|
+  | Search results | 27 of 36 controls small, 18 texts under 13 px | 1 small (the refresh icon, whose tap area is 44 px though its circle is 24), none under 13 px |
+  | My bookings | 8 of 9 controls small | 1 small (the same icon) |
+  | Driver's rides | 16 of 21 controls small | 1 small (the same icon) |
+  | My account | 3.3 screens long | 1.0 screen |
+  | Publish a ride | 3.5 screens long | 2.8 screens |
+
+  The review script had measured every screen after the first as if on a desktop: a full-page
+  screenshot drops touch emulation. It now re-applies it before each measure and refuses to
+  measure without it. The "before" column predates any touch sizing, so it stands.
+- **Sizes**: on a touch screen every button, chip, field and row is at least 44 px tall
+  (Tailwind's `touch:` is `(pointer: coarse)`), and the smallest text is 13 px. The map's
+  zoom buttons grow to 44 px too.
+- **Find a ride**: once searched, the form folds into one line (route, date, seats, filters) with
+  "Change search", so the results start at the top; focus moves to that button. "If the driver
+  withdraws" is chosen in the form. A pickup at your own point says so in words. Sort chips fade
+  at the edge that scrolls.
+- **My bookings**: a booking's actions are a row of tiles (meeting point, chat, call); cancelling
+  is red text, and its sheet says what it costs now and the rules. The rules on the page sit behind
+  "What cancelling costs".
+- **My rides**: "Start ride" shows only from when the server lets it start; before that, the time.
+  core-api's ride now says so (`startsFrom`, one hour before departure by
+  `vayora.trip.early-start`). Passengers show from the start for a ride under way or leaving
+  within a day.
+- **Publish a ride**: the time chosen is said back in words; prices start empty and must be
+  entered, 0 for a free ride; "Who rides, and how" and "Return and repeat" start folded and open
+  themselves when they hold a mistake.
+- **My account**: grouped rows as iOS Settings has them, each saying where it stands (confirmed,
+  how many contacts, the UPI ID); a link to `/account#payment` or `#contact` opens that row,
+  which the driver's checklist now uses.
+- **Not done**: publishing route first (prices and times from the worked-out route) is a larger
+  change, left for later. The emergency button is the team's decision and is unchanged. The front
+  page's illustration labels and the map's credit line stay under 13 px.
+- **Verified**: web 300 tests (7 new), core-api 310, type check, ESLint and the production build.
+
 ## 2026-11-03 — faster first screens, iOS type and titles, and a driver's checklist
 
 - **Measured first, on a phone profile** (390 px, a slow 4G link, a CPU four times slower), against
