@@ -19,7 +19,7 @@ function RouteHero() {
   return (
     <div
       aria-hidden="true"
-      className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#14b8a6] via-[#0f766e] to-[#134e4a] px-5 pb-4 pt-3 text-white shadow-float"
+      className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy via-navy to-accent px-5 pb-4 pt-3 text-white shadow-float"
     >
       <div className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
       <svg viewBox="0 0 320 86" className="relative h-24 w-full">

@@ -25,6 +25,7 @@ export default {
         amber: shades('amber', [50, 100, 200, 500, 800, 900]),
         sky: shades('sky', [100, 900]),
         canvas: token('canvas'),
+        navy: token('navy'),
         surface: token('surface'),
         // Filled controls keep white text readable in both themes.
         accent: { DEFAULT: token('accent'), strong: token('accent-strong') },

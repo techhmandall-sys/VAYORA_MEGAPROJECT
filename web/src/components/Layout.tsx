@@ -31,7 +31,7 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
-import { Suspense, useEffect, useState, type MouseEvent } from 'react';
+import { Suspense, useState, type MouseEvent } from 'react';
 import { flushSync } from 'react-dom';
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
@@ -387,13 +387,6 @@ export function Layout() {
   const scrolled = useScrolled();
   // A screen's title once its large title has scrolled under the bar.
   const [barTitle, setBarTitle] = useState<string | null>(null);
-
-  // Each role has its own tint (index.css): the whole app takes it on.
-  useEffect(() => {
-    const root = document.documentElement;
-    if (user) root.dataset.role = user.role;
-    else delete root.dataset.role;
-  }, [user]);
 
   return (
     // One conversation with the assistant per signed-in member: it starts afresh for the next.

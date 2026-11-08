@@ -19,36 +19,42 @@
 }
 
 /*
- * The VAYORA theme: iOS's grouped greys and system colours, with VAYORA teal as the tint.
- * Every colour class in the app reads one of these variables (tailwind.config.js), so the
- * dark values below restyle every screen at once. Values are "r g b" for Tailwind's opacity
- * modifiers. Print always uses the light set.
+ * The VAYORA brand: navy and green on a cool grey canvas ("Your Journey. Shared Better.").
+ * Every colour class in the app reads one of these variables (tailwind.config.js), so this
+ * block, and the dark one below, restyle every screen at once. Values are "r g b" for
+ * Tailwind's opacity modifiers. Print always uses the light set.
+ *
+ * The brand sheet's secondary text, #718096, is 4.0:1 on white and 3.7:1 on the canvas, under
+ * the 4.5:1 small text needs; it is kept for icons and hints (slate-400), and text uses #5F6E84
+ * (slate-500: 5.2:1 on white, 4.8:1 on the canvas). White on brand green #16865A is 4.57:1.
+ * Class names stay "slate" and "teal": they are the neutral and the tint slots.
  */
 @layer base {
   :root {
     color-scheme: light;
-    --canvas: 242 242 247;
+    --canvas: 245 247 249; /* #F5F7F9 */
     --surface: 255 255 255;
+    --navy: 16 33 58; /* #10213A: brand surfaces and large titles */
 
-    --slate-50: 247 247 250;
-    --slate-100: 238 238 242;
-    --slate-200: 226 226 231;
-    --slate-300: 204 204 210;
-    --slate-400: 170 170 177;
-    --slate-500: 110 110 116;
-    --slate-600: 84 84 90;
-    --slate-700: 58 58 63;
-    --slate-800: 40 40 44;
-    --slate-900: 20 20 22;
-    --slate-950: 8 8 10;
+    --slate-50: 248 250 252;
+    --slate-100: 238 242 246;
+    --slate-200: 226 231 238;
+    --slate-300: 203 211 222;
+    --slate-400: 113 128 150; /* #718096 */
+    --slate-500: 95 110 132; /* #5F6E84 */
+    --slate-600: 78 92 112;
+    --slate-700: 58 72 92;
+    --slate-800: 37 54 74; /* #25364A: primary text */
+    --slate-900: 22 38 62;
+    --slate-950: 16 33 58;
 
-    --teal-50: 238 251 248;
-    --teal-100: 206 244 237;
-    --teal-200: 160 230 219;
-    --teal-600: 13 148 136;
-    --teal-700: 15 118 110;
-    --teal-800: 15 98 91;
-    --teal-900: 17 78 73;
+    --teal-50: 230 244 236; /* #E6F4EC: soft green */
+    --teal-100: 205 234 217;
+    --teal-200: 160 214 186;
+    --teal-600: 22 134 90; /* #16865A: brand green */
+    --teal-700: 18 122 81;
+    --teal-800: 14 111 73; /* links: 6.2:1 on white, 5.5:1 on soft green */
+    --teal-900: 11 80 53;
 
     --red-50: 255 242 241;
     --red-100: 255 228 226;
@@ -77,38 +83,40 @@
     --sky-100: 222 240 255;
     --sky-900: 10 72 120;
 
-    --accent: 15 118 110;
-    --accent-strong: 13 99 92;
+    --accent: 22 134 90;
+    --accent-strong: 18 116 77;
     --danger: 215 0 21;
     --danger-strong: 185 0 18;
   }
 
-  /* Dark, when the reader chose it or the device asks for it (lib/theme.tsx sets data-theme). */
+  /* Dark, when the reader chose it or the device asks for it (lib/theme.tsx sets data-theme):
+     a deep navy, light cool text, and a brighter green for text on it. */
   @media screen {
     :root[data-theme='dark'] {
       color-scheme: dark;
-      --canvas: 0 0 0;
-      --surface: 28 28 30;
+      --canvas: 11 18 32;
+      --surface: 19 29 46;
+      --navy: 16 33 58;
 
-      --slate-50: 22 22 24;
-      --slate-100: 38 38 41;
-      --slate-200: 52 52 56;
-      --slate-300: 72 72 76;
-      --slate-400: 99 99 104;
-      --slate-500: 152 152 159;
-      --slate-600: 174 174 180;
-      --slate-700: 205 205 210;
-      --slate-800: 229 229 234;
-      --slate-900: 245 245 247;
-      --slate-950: 255 255 255;
+      --slate-50: 25 36 53;
+      --slate-100: 33 45 64;
+      --slate-200: 46 59 79;
+      --slate-300: 66 80 101;
+      --slate-400: 110 125 146;
+      --slate-500: 140 154 173;
+      --slate-600: 166 179 196;
+      --slate-700: 190 200 213;
+      --slate-800: 214 221 231;
+      --slate-900: 232 237 243;
+      --slate-950: 248 250 252;
 
-      --teal-50: 6 34 31;
-      --teal-100: 10 52 47;
-      --teal-200: 16 84 76;
-      --teal-600: 48 209 186;
-      --teal-700: 64 220 199;
-      --teal-800: 110 231 213;
-      --teal-900: 160 241 229;
+      --teal-50: 10 40 29;
+      --teal-100: 14 56 40;
+      --teal-200: 20 86 60;
+      --teal-600: 46 179 120;
+      --teal-700: 61 190 133;
+      --teal-800: 98 207 158;
+      --teal-900: 150 226 190;
 
       --red-50: 52 14 14;
       --red-100: 70 18 18;
@@ -137,37 +145,16 @@
       --sky-100: 10 44 70;
       --sky-900: 150 210 255;
 
-      --accent: 15 128 118;
-      --accent-strong: 20 148 136;
+      /* The light fill: white text on anything brighter would fall under 4.5:1. */
+      --accent: 22 134 90;
+      --accent-strong: 30 150 100;
       --danger: 215 0 21;
       --danger-strong: 235 20 40;
     }
   }
 
-  /* Each role has its own tint, so a driver or an administrator always knows where they are.
-     Class names stay "teal": it is the tint slot, whatever colour fills it. */
-  :root[data-role='DRIVER'] {
-    --teal-50: 238 242 255; --teal-100: 224 231 255; --teal-200: 199 210 254; --teal-600: 79 70 229;
-    --teal-700: 67 56 202; --teal-800: 55 48 163; --teal-900: 49 46 129;
-    --accent: 79 70 229; --accent-strong: 67 56 202;
-  }
-  :root[data-role='ADMIN'] {
-    --teal-50: 245 243 255; --teal-100: 237 233 254; --teal-200: 221 214 254; --teal-600: 124 58 237;
-    --teal-700: 109 40 217; --teal-800: 91 33 182; --teal-900: 76 29 149;
-    --accent: 124 58 237; --accent-strong: 109 40 217;
-  }
-  @media screen {
-    :root[data-theme='dark'][data-role='DRIVER'] {
-      --teal-50: 22 22 52; --teal-100: 30 30 70; --teal-200: 45 45 100; --teal-600: 129 140 248;
-      --teal-700: 150 160 250; --teal-800: 165 180 252; --teal-900: 199 210 254;
-      --accent: 99 102 241; --accent-strong: 120 120 245;
-    }
-    :root[data-theme='dark'][data-role='ADMIN'] {
-      --teal-50: 30 18 52; --teal-100: 42 24 74; --teal-200: 62 36 110; --teal-600: 167 139 250;
-      --teal-700: 180 155 252; --teal-800: 196 181 253; --teal-900: 221 214 254;
-      --accent: 124 58 237; --accent-strong: 139 92 246;
-    }
-  }
+  /* One brand for every role (from 2026-11-08): the screen's own name and the sidebar say
+     whose it is, where three tints once did. */
 
   html {
     -webkit-text-size-adjust: 100%;

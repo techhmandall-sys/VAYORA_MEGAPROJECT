@@ -41,7 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const dark = choice === 'dark' || (choice === 'system' && Boolean(query?.matches));
       const root = document.documentElement;
       root.dataset.theme = dark ? 'dark' : 'light';
-      document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute('content', dark ? '#000000' : '#f2f2f7'));
+      document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute('content', dark ? '#0b1220' : '#f5f7f9'));
     };
     apply();
     if (choice !== 'system' || !query) return undefined;
