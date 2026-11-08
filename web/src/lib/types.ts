@@ -97,14 +97,23 @@ export interface AssistantStatus {
   enabled: boolean;
   /** Who writes the answers, and so where members' questions go. */
   provider: 'gemini' | 'claude';
+  /** Whether that service can take a question asked out loud. */
+  voice: boolean;
   max_messages: number;
   max_message_chars: number;
+  max_voice_seconds: number;
 }
 
 export interface AssistantReply {
   /** null when the assistant declined to answer. */
   reply: string | null;
   declined: boolean;
+}
+
+/** The answer to a question asked out loud, with the question as it was heard. */
+export interface AssistantHeard extends AssistantReply {
+  /** null when the assistant declined to answer. */
+  heard: string | null;
 }
 
 export type RouteSource = 'OSRM' | 'STRAIGHT_LINE';

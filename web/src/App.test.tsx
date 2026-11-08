@@ -9,7 +9,16 @@ import { AuthProvider } from './lib/auth';
 import { setFormatLanguage, todayInIndia } from './lib/format';
 import { placeNamed } from './lib/places';
 import { LanguageProvider, type Language } from './lib/i18n';
+import { startRecording } from './lib/recorder';
 import type { Booking, Candidate, Role, Session } from './lib/types';
+
+// A test has no microphone: recording is whatever a test makes it. Where a test makes nothing,
+// no microphone is offered, as the services in most tests cannot listen anyway.
+vi.mock('./lib/recorder', async (original) => ({
+  ...(await original<typeof import('./lib/recorder')>()),
+  canRecord: () => true,
+  startRecording: vi.fn(),
+}));
 
 function signIn(role: Role) {
   const session: Session = {
@@ -4034,6 +4043,91 @@ describe('the assistant', () => {
     open('/notifications');
 
     expect(await screen.findByRole('button', { name: 'Open the assistant' })).toBeInTheDocument();
+  });
+
+  describe('asked out loud', () => {
+    const listening = { ...on, voice: true, max_voice_seconds: 30 };
+    const recorded = () => {
+      const take = { stop: vi.fn(async () => new Blob(['voice'], { type: 'audio/webm;codecs=opus' })), cancel: vi.fn() };
+      vi.mocked(startRecording).mockResolvedValue(take);
+      return take;
+    };
+    const spoken = (fetchMock: ReturnType<typeof serve>) =>
+      fetchMock.mock.calls
+        .filter(([url]) => String(url).endsWith('/v1/assistant/voice'))
+        .map(([, init]) => JSON.parse(String(init?.body)));
+
+    it('shows the question as it was heard, with its answer, and the conversation goes on in writing', async () => {
+      signIn('PASSENGER');
+      recorded();
+      const fetchMock = serve({
+        'GET /v1/assistant': () => json(listening),
+        'POST /v1/assistant/voice': () => json({ heard: 'How do I pay my driver?', reply: 'Cash or UPI, to your driver.', declined: false }),
+        'POST /v1/assistant/reply': () => json({ reply: 'UPI to the ID the app shows.', declined: false }),
+      });
+      open('/assistant');
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Ask out loud' }));
+      expect(await screen.findByRole('status')).toHaveTextContent('Listening…');
+      await userEvent.click(screen.getByRole('button', { name: 'Stop and send' }));
+
+      expect(await screen.findByText('Cash or UPI, to your driver.')).toBeInTheDocument();
+      expect(screen.getByText('How do I pay my driver?')).toBeInTheDocument();
+      // The recording goes as the browser made it, with the conversation before it.
+      expect(spoken(fetchMock)).toEqual([{ history: [], language: 'en', mime_type: 'audio/webm;codecs=opus', audio: btoa('voice') }]);
+
+      // What was heard is the question from then on: a written follow-up carries it as text.
+      await userEvent.type(screen.getByLabelText('Your question'), 'By UPI?{Enter}');
+      expect(await screen.findByText('UPI to the ID the app shows.')).toBeInTheDocument();
+      expect(replies(fetchMock)[0].messages).toEqual([
+        { role: 'user', content: 'How do I pay my driver?' },
+        { role: 'assistant', content: 'Cash or UPI, to your driver.' },
+        { role: 'user', content: 'By UPI?' },
+      ]);
+    });
+
+    it('sends nothing when the recording is cancelled, and says how to ask when the microphone is refused', async () => {
+      signIn('PASSENGER');
+      const take = recorded();
+      const fetchMock = serve({ 'GET /v1/assistant': () => json(listening) });
+      open('/assistant');
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Ask out loud' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+      expect(take.cancel).toHaveBeenCalled();
+      expect(spoken(fetchMock)).toEqual([]);
+      expect(screen.getByLabelText('Your question')).toBeInTheDocument();
+
+      vi.mocked(startRecording).mockRejectedValue(new DOMException('Permission denied', 'NotAllowedError'));
+      await userEvent.click(screen.getByRole('button', { name: 'Ask out loud' }));
+      expect(await screen.findByText('Allow the microphone to ask out loud, or type your question.')).toBeInTheDocument();
+    });
+
+    it('gives the reason when no question could be heard, and leaves nothing behind', async () => {
+      signIn('PASSENGER');
+      recorded();
+      serve({
+        'GET /v1/assistant': () => json(listening),
+        'POST /v1/assistant/voice': () => json({ detail: 'The assistant could not hear a question. Try again, or type it.' }, 422),
+      });
+      open('/assistant');
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Ask out loud' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Stop and send' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('The assistant could not hear a question. Try again, or type it.');
+      expect(screen.queryByText('(spoken question)')).not.toBeInTheDocument();
+    });
+
+    it('offers no microphone where the service cannot listen', async () => {
+      signIn('PASSENGER');
+      recorded();
+      serve({ 'GET /v1/assistant': () => json({ ...listening, provider: 'claude', voice: false }) });
+      open('/assistant');
+
+      expect(await screen.findByLabelText('Your question')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Ask out loud' })).not.toBeInTheDocument();
+    });
   });
 
   it("starts a driver from a driver's questions, and is in the driver's pages", async () => {

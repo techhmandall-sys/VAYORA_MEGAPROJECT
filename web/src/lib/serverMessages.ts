@@ -134,6 +134,11 @@ export const SERVER_MESSAGES = [
   msg('The assistant is busy. Try again in a minute.'),
   msg('The assistant cannot be reached just now. Try again later.'),
   msg('The assistant could not answer that. Try asking another way.'),
+  // And for a question asked out loud.
+  msg('This assistant cannot listen. Type your question.'),
+  msg('That recording cannot be read. Type your question.'),
+  msg('That recording is too long. Ask in a shorter one.'),
+  msg('The assistant could not hear a question. Try again, or type it.'),
 ];
 
 // The messages core-api builds from values, as templates: a message that fits one is shown

@@ -2308,9 +2308,30 @@ export const hi: Record<string, string> = {
   'The assistant could not answer that. Try asking another way.':
     'सहायक इसका जवाब नहीं दे सका। किसी और तरह से पूछकर देखें।',
   // The assistant on Gemini's free tier: where the questions go
-  'What you type is sent to Google, whose AI writes the answers. On its free service Google may use it to improve its products, and people there may read it, so do not type personal details. VAYORA keeps none of it. An answer can be wrong: check anything important on the screen it is about.':
-    'आप जो लिखते हैं वह Google को भेजा जाता है, जिसका AI जवाब लिखता है। अपनी मुफ़्त सेवा पर Google इसे अपने उत्पाद बेहतर बनाने में इस्तेमाल कर सकता है और वहाँ लोग इसे पढ़ सकते हैं, इसलिए कोई निजी जानकारी न लिखें। VAYORA इसमें से कुछ नहीं रखता। जवाब गलत भी हो सकता है: कोई भी ज़रूरी बात उसी स्क्रीन पर जाँच लें जिसके बारे में वह है।',
   // The chat button on every screen
   'Open the assistant':
     'सहायक खोलें',
+  // The assistant listens: asking out loud, and intel's reasons when it cannot
+  'What you type or say is sent to Google, whose AI writes the answers. On its free service Google may use it to improve its products, and people there may read or hear it, so do not type or say personal details. VAYORA keeps none of it. An answer can be wrong: check anything important on the screen it is about.':
+    'आप जो लिखते या बोलते हैं वह Google को भेजा जाता है, जिसका AI जवाब लिखता है। अपनी मुफ़्त सेवा पर Google इसे अपने उत्पाद बेहतर बनाने में इस्तेमाल कर सकता है और वहाँ लोग इसे पढ़ या सुन सकते हैं, इसलिए कोई निजी जानकारी न लिखें, न बोलें। VAYORA इसमें से कुछ नहीं रखता। जवाब गलत भी हो सकता है: कोई भी ज़रूरी बात उसी स्क्रीन पर जाँच लें जिसके बारे में वह है।',
+  'Ask out loud':
+    'बोलकर पूछें',
+  'Stop and send':
+    'रोकें और भेजें',
+  'Listening…':
+    'सुन रहा है…',
+  'Cancel':
+    'रद्द करें',
+  'Allow the microphone to ask out loud, or type your question.':
+    'बोलकर पूछने के लिए माइक्रोफ़ोन की अनुमति दें, या अपना सवाल लिखें।',
+  '(spoken question)':
+    '(बोला गया सवाल)',
+  'This assistant cannot listen. Type your question.':
+    'यह सहायक सुन नहीं सकता। अपना सवाल लिखें।',
+  'That recording cannot be read. Type your question.':
+    'यह रिकॉर्डिंग पढ़ी नहीं जा सकती। अपना सवाल लिखें।',
+  'That recording is too long. Ask in a shorter one.':
+    'यह रिकॉर्डिंग बहुत लंबी है। छोटी रिकॉर्डिंग में पूछें।',
+  'The assistant could not hear a question. Try again, or type it.':
+    'सहायक को कोई सवाल सुनाई नहीं दिया। फिर से कोशिश करें, या उसे लिखें।',
 };
