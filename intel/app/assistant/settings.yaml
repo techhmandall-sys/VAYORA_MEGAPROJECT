@@ -16,9 +16,13 @@ gemini:
   thinking_level: low
   # The most one answer may use: a cap on what one question can take from the daily allowance.
   max_tokens: 4000
-  # How long one question may take. Google ends a request at about this time too, so a stuck one
+  # How long one attempt may take. Google ends a request at about this time too, so a stuck one
   # fails here rather than keeping the member waiting.
-  timeout_seconds: 15
+  timeout_seconds: 10
+  # Tries in all when Google stalls or fails (a timeout, a 5xx). The free tier's stalls are
+  # brief: on 2026-11-08 a question that timed out was answered in 2.3 s straight after. A
+  # member waits at most attempts times timeout_seconds.
+  attempts: 2
 
 claude:
   # Claude Opus 5.5. Its thinking is always on; effort is the only control.
@@ -36,3 +40,10 @@ claude:
 # intel keeps none of it; it keeps the latest messages when there are more.
 max_messages: 20
 max_message_chars: 2000
+
+# A question asked out loud (Gemini only: Claude's API takes no audio). The browser stops
+# recording at max_seconds; Gemini counts 32 tokens a second, so 30 s is about 960 tokens.
+voice:
+  max_seconds: 30
+  # A browser's 30 s of speech is well under 1 MB; anything bigger is refused unread.
+  max_bytes: 2000000
