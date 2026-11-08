@@ -30,7 +30,7 @@ export function BoardingPassView({ bookingId }: { bookingId: number }) {
         type="button"
         disabled={pass.isPending}
         onClick={() => pass.mutate()}
-        className="text-sm font-medium text-teal-800 underline underline-offset-2 disabled:opacity-50"
+        className="inline-flex items-center text-sm font-medium text-teal-800 underline underline-offset-2 touch:min-h-11 disabled:opacity-50"
       >
         {t('Show my boarding code')}
       </button>
@@ -69,7 +69,7 @@ export function CheckCode({ bookingId }: { bookingId: number }) {
             setCode(event.target.value.replace(/\D/g, ''));
             check.reset();
           }}
-          className="w-24 rounded-xl border border-slate-200 bg-surface px-3 py-1.5 font-mono shadow-sm focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-600/15"
+          className="w-24 rounded-xl border border-slate-200 bg-surface px-3 py-1.5 font-mono shadow-sm touch:min-h-11 focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-600/15"
         />
       </label>
       <Button tone="secondary" type="submit" disabled={code.length !== 4 || check.isPending}>

@@ -44,7 +44,7 @@ function UpiId({ upiId, name, amount }: { upiId: string; name: string; amount: n
         {copied ? t('Copied') : t('Copy')}
       </Button>
       {onPhone && (
-        <a href={link} className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-800 underline underline-offset-2">
+        <a href={link} className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-800 underline underline-offset-2 touch:min-h-11">
           <Smartphone aria-hidden="true" className="h-4 w-4" />
           {t('Open in my UPI app')}
         </a>

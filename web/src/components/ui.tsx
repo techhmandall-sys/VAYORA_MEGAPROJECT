@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { forwardRef, useId, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 
 import { msg, useT } from '../lib/i18n';
+import { useScrollFade } from '../lib/scrollFade';
 import { translateServerMessage } from '../lib/serverMessages';
 import type { BookingStatus, RideStatus } from '../lib/types';
 import { useLargeTitle } from './pageTitle';
@@ -112,14 +113,18 @@ const tones: Record<Tone, string> = {
  *
  * @param busy the button's action is under way: it shows a spinner and cannot be pressed again
  */
-export function Button({ tone = 'primary', className = '', busy = false, disabled, children, ...button }: { tone?: Tone; busy?: boolean } & ButtonHTMLAttributes<HTMLButtonElement>) {
+export const Button = forwardRef<HTMLButtonElement, { tone?: Tone; busy?: boolean } & ButtonHTMLAttributes<HTMLButtonElement>>(function Button(
+  { tone = 'primary', className = '', busy = false, disabled, children, ...button },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       type="button"
       disabled={disabled || busy}
       aria-busy={busy || undefined}
       className={
-        `inline-flex select-none items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ` +
+        `inline-flex select-none items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold touch:min-h-11 ` +
         `transition-[transform,background-color,box-shadow,opacity] duration-150 ease-settle active:scale-[0.96] ` +
         `focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 ` +
         `disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none ${tones[tone]} ${className}`
@@ -128,6 +133,30 @@ export function Button({ tone = 'primary', className = '', busy = false, disable
     >
       {busy && <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />}
       {children}
+    </button>
+  );
+});
+
+/**
+ * One of a card's main actions, laid out as iOS does in a row: an icon over a short label, a
+ * whole tile to tap. A row of these replaces a stack of full-width buttons.
+ */
+export function ActionTile({ icon: Icon, label, active = false, className = '', ...button }: {
+  icon: LucideIcon;
+  label: string;
+  /** Pressed in: the panel it opens is showing. */
+  active?: boolean;
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className={`flex min-h-[3.75rem] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-[13px] font-semibold leading-tight transition-[transform,background-color] duration-150 ease-settle active:scale-[0.96] focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 disabled:opacity-40 ${
+        active ? 'bg-accent text-white shadow-md shadow-accent/25' : 'bg-slate-900/[0.05] text-slate-900 hover:bg-slate-900/[0.08]'
+      } ${className}`}
+      {...button}
+    >
+      <Icon aria-hidden="true" className="h-5 w-5" />
+      <span>{label}</span>
     </button>
   );
 }
@@ -150,12 +179,13 @@ export function Segmented<T extends string>({ label, value, options, onChange }:
   onChange: (value: T) => void;
 }) {
   const id = useId();
+  const row = useScrollFade<HTMLDivElement>();
   return (
     <div>
       <p id={id} className="text-[13px] font-medium text-slate-600">
         {label}
       </p>
-      <div role="radiogroup" aria-labelledby={id} className="no-scrollbar mt-1.5 flex gap-1 overflow-x-auto rounded-full bg-slate-900/[0.05] p-1">
+      <div ref={row} role="radiogroup" aria-labelledby={id} className="no-scrollbar scroll-fade mt-1.5 flex gap-1 overflow-x-auto rounded-full bg-slate-900/[0.05] p-1">
         {options.map((option) => {
           const chosen = option.value === value;
           return (
@@ -165,7 +195,7 @@ export function Segmented<T extends string>({ label, value, options, onChange }:
               role="radio"
               aria-checked={chosen}
               onClick={() => onChange(option.value)}
-              className={`relative shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 ${
+              className={`relative shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium touch:min-h-11 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 ${
                 chosen ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -214,7 +244,7 @@ export function Stat({ icon: Icon, label, tone = 'bg-teal-100 text-teal-900', ch
 export function More({ label, children }: { label: string; children: ReactNode }) {
   return (
     <details className="more">
-      <summary className="inline-flex items-center gap-1 rounded-full py-1 text-sm font-medium text-teal-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30">
+      <summary className="inline-flex items-center gap-1 rounded-full py-1 text-sm font-medium text-teal-800 touch:min-h-11 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30">
         {label}
         <ChevronDown aria-hidden="true" className="more-chevron h-4 w-4" />
       </summary>
@@ -224,21 +254,37 @@ export function More({ label, children }: { label: string; children: ReactNode }
 }
 
 /** A button for actions that cannot be undone: it asks first, in a sheet, and acts only on yes. */
-export function ConfirmButton({ label, confirmLabel, onConfirm, disabled, tone = 'danger' }: {
+export function ConfirmButton({ label, confirmLabel, onConfirm, disabled, tone = 'danger', quiet = false, children }: {
   label: string;
   confirmLabel: string;
   onConfirm: () => void;
   disabled?: boolean;
   tone?: Tone;
+  /** Shown as red text rather than a button, for an action that should not draw the eye. */
+  quiet?: boolean;
+  /** What confirming will do, shown above the choice. */
+  children?: ReactNode;
 }) {
   const t = useT();
   const [asking, setAsking] = useState(false);
   return (
     <>
-      <Button tone="secondary" disabled={disabled} onClick={() => setAsking(true)}>
-        {label}
-      </Button>
+      {quiet ? (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setAsking(true)}
+          className="inline-flex min-h-11 items-center rounded-full px-2 text-sm font-semibold text-danger hover:underline focus:outline-none focus-visible:ring-4 focus-visible:ring-red-500/30 disabled:opacity-40"
+        >
+          {label}
+        </button>
+      ) : (
+        <Button tone="secondary" disabled={disabled} onClick={() => setAsking(true)}>
+          {label}
+        </Button>
+      )}
       <Sheet open={asking} onClose={() => setAsking(false)} title={label}>
+        {children && <div className="mb-4 space-y-3 text-sm text-slate-700">{children}</div>}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button tone="secondary" className="w-full py-3 sm:w-auto sm:py-2" onClick={() => setAsking(false)}>
             {t('Keep it')}
@@ -433,9 +479,11 @@ export function Page({ title, aside, children }: { title: string; aside?: ReactN
 }
 
 /** @param glow what is under way right now stands out, in the role's tint */
-export function Card({ children, glow = false }: { children: ReactNode; glow?: boolean }) {
+/** @param hidden kept in the page but out of sight, so what was typed into it survives */
+export function Card({ children, glow = false, hidden = false }: { children: ReactNode; glow?: boolean; hidden?: boolean }) {
   return (
     <div
+      hidden={hidden}
       className={`rounded-2xl bg-surface p-4 transition-shadow duration-300 sm:p-5 ${
         glow ? 'shadow-glow ring-2 ring-teal-600/40' : 'shadow-card ring-1 ring-slate-900/[0.04] hover:shadow-float'
       }`}

@@ -13,6 +13,10 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // A finger, not a mouse: phones and tablets. Controls there get Apple's 44 px minimum.
+      screens: { touch: { raw: '(pointer: coarse)' } },
+      // The smallest text is 13 px, iOS's footnote size, not Tailwind's 12.
+      fontSize: { xs: ['0.8125rem', { lineHeight: '1.125rem' }] },
       colors: {
         slate: shades('slate', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]),
         teal: shades('teal', [50, 100, 200, 600, 700, 800, 900]),

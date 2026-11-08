@@ -48,7 +48,7 @@ export function LiveStatus({ query, label }: {
         aria-label={t('Refresh now')}
         title={t('Refresh now')}
         onClick={() => void query.refetch()}
-        className="flex h-6 w-6 items-center justify-center rounded-full text-slate-500 hover:bg-slate-900/[0.06] hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30"
+        className="relative flex h-6 w-6 items-center justify-center rounded-full text-slate-500 touch:after:absolute touch:after:-inset-2.5 touch:after:content-[''] hover:bg-slate-900/[0.06] hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30"
       >
         <RefreshCw aria-hidden="true" className={`h-3.5 w-3.5 ${query.isFetching ? 'animate-spin' : ''}`} />
       </button>

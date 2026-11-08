@@ -488,7 +488,7 @@ function Side({ title, points, action, to, gradient }: { title: string; points: 
       </ul>
       <Link
         to={to}
-        className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-white px-5 py-2.5 text-[15px] font-bold text-[#18181b] shadow-lg shadow-black/10 transition-transform hover:-translate-y-0.5 active:scale-[0.97] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/50"
+        className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-white px-5 py-2.5 text-[15px] font-bold touch:min-h-11 text-[#18181b] shadow-lg shadow-black/10 transition-transform hover:-translate-y-0.5 active:scale-[0.97] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/50"
       >
         {action}
         <ArrowRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />

@@ -183,6 +183,20 @@
     letter-spacing: -0.011em;
   }
 
+  /* A row that scrolls sideways fades at whichever end has more (lib/scrollFade.ts). */
+  .scroll-fade[data-fade-end='true'] {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  }
+  .scroll-fade[data-fade-start='true'] {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 32px);
+    mask-image: linear-gradient(to right, transparent, #000 32px);
+  }
+  .scroll-fade[data-fade-start='true'][data-fade-end='true'] {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+  }
+
   ::selection {
     background: rgb(var(--teal-600) / 0.25);
   }
@@ -376,6 +390,19 @@
   }
   :root[data-theme='dark'] .leaflet-control-attribution a {
     color: rgb(var(--teal-800));
+  }
+}
+
+/*
+ * The map's zoom buttons, 30 pixels in Leaflet's own touch style, at the 44 a finger needs.
+ * Leaflet's stylesheet loads with the map, after this one, so the selector carries one class
+ * more than Leaflet's to win.
+ */
+@media (pointer: coarse) {
+  .leaflet-container.leaflet-touch .leaflet-bar a {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
   }
 }
 
