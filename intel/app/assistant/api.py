@@ -26,14 +26,15 @@ class Question(BaseModel):
 
 
 def asker() -> service.Asker:
-    """Who answers: Claude, unless a test says otherwise."""
-    return service.ask_claude
+    """Who answers: the service settings.yaml names, unless a test says otherwise."""
+    return service.ask
 
 
 @router.get("")
 def status(_: int = Depends(member)) -> dict[str, Any]:
-    """Whether the assistant is on, and how much one question may carry."""
-    return {"enabled": service.enabled(), "max_messages": LIMITS["max_messages"],
+    """Whether the assistant is on, which service answers (the page says where questions go), and
+    how much one question may carry."""
+    return {"enabled": service.enabled(), "provider": service.provider(), "max_messages": LIMITS["max_messages"],
             "max_message_chars": LIMITS["max_message_chars"]}
 
 

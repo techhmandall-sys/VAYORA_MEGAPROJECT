@@ -166,7 +166,8 @@ services:
       # what-if run, anyone's for the assistant.
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-dev-only-change-me}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
-      # The assistant is off unless set (.env.example).
+      # The assistant is off unless the key of the service it uses is set (.env.example).
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "${INTEL_PORT:-8000}:8000"

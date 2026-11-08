@@ -24,3 +24,5 @@ httpx==0.28.1
 PyJWT==2.10.1
 # Lets the research suite check how intel asks Claude for the assistant's answers.
 anthropic==2.6.0
+# And how it asks Gemini, which answers by default.
+google-genai==2.34.0

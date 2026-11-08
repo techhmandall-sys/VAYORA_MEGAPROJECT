@@ -51,7 +51,8 @@ def answering(reply=None, error=None):
 @pytest.fixture(autouse=True)
 def configured(monkeypatch):
     monkeypatch.setenv("JWT_SECRET", SECRET)
-    # Never sent anywhere: every test answers in Claude's place or replaces the client.
+    # Never sent anywhere: every test answers in the service's place or replaces its client.
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key-never-sent")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-never-sent")
     yield
     app.dependency_overrides.clear()
@@ -70,17 +71,32 @@ def test_any_signed_in_member_may_ask_and_no_one_else():
         assert ask(QUESTION, bearer=forged).status_code == 401
 
 
-def test_it_says_whether_it_is_on_and_how_much_one_question_may_carry(monkeypatch):
+def test_it_says_whether_it_is_on_which_service_answers_and_how_much_one_question_may_carry(monkeypatch):
     assert client.get("/v1/assistant", headers=as_(token())).json() == {
-        "enabled": True, "max_messages": 20, "max_message_chars": 2000}
+        "enabled": True, "provider": "gemini", "max_messages": 20, "max_message_chars": 2000}
 
-    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    # Off without the key of the service that answers, whatever other keys there are.
+    monkeypatch.delenv("GEMINI_API_KEY")
     assert client.get("/v1/assistant", headers=as_(token())).json()["enabled"] is False
+    monkeypatch.setitem(service.settings(), "provider", "claude")
+    assert client.get("/v1/assistant", headers=as_(token())).json() == {
+        "enabled": True, "provider": "claude", "max_messages": 20, "max_message_chars": 2000}
+
+
+def test_the_service_settings_name_is_the_one_asked(monkeypatch):
+    asked = []
+    monkeypatch.setattr(service, "ask_gemini", lambda messages, language: asked.append("gemini") or "From Gemini")
+    monkeypatch.setattr(service, "ask_claude", lambda messages, language: asked.append("claude") or "From Claude")
+
+    assert service.ask(QUESTION, "en") == "From Gemini"
+    monkeypatch.setitem(service.settings(), "provider", "claude")
+    assert service.ask(QUESTION, "en") == "From Claude"
+    assert asked == ["gemini", "claude"]
 
 
 def test_switched_off_it_asks_nobody_and_says_so(monkeypatch):
     asked = answering("never shown")
-    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    monkeypatch.delenv("GEMINI_API_KEY")
 
     response = ask(QUESTION)
 
@@ -209,3 +225,47 @@ def test_claude_is_asked_with_the_rules_cached_low_effort_and_the_fallback_on(mo
     monkeypatch.setattr(service, "_client", lambda: SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=unreachable))))
     with pytest.raises(service.Unavailable, match="cannot be reached"):
         service.ask_claude(QUESTION, "en")
+
+
+def test_gemini_is_asked_with_the_rules_the_language_and_little_thinking(monkeypatch):
+    pytest.importorskip("google.genai")
+    from google.genai import errors, types
+
+    sent = {}
+    answer = SimpleNamespace(prompt_feedback=None, candidates=[SimpleNamespace(finish_reason=types.FinishReason.STOP)],
+                             text=" Nothing to pay if you cancel early. ")
+
+    def generate_content(**request):
+        sent.update(request)
+        return answer
+
+    monkeypatch.setattr(service, "_gemini_client", lambda: SimpleNamespace(models=SimpleNamespace(generate_content=generate_content)))
+    conversation = [*QUESTION, {"role": "assistant", "content": "How long before boarding?"},
+                    {"role": "user", "content": "Three days"}]
+
+    assert service.ask_gemini(conversation, "mr") == "Nothing to pay if you cancel early."
+    assert sent["model"] == "gemini-3.5-flash-lite"
+    assert [(c.role, c.parts[0].text) for c in sent["contents"]] == [
+        ("user", "What does cancelling cost?"), ("model", "How long before boarding?"), ("user", "Three days")]
+    config = sent["config"]
+    assert config.system_instruction == f"{service.rules()}\n\n{service.in_language('mr')}"
+    assert "Marathi" in config.system_instruction
+    assert config.max_output_tokens == 4000
+    assert config.thinking_config.thinking_level == types.ThinkingLevel.LOW
+
+    # Blocked, a question is declined rather than answered with nothing.
+    answer.candidates = [SimpleNamespace(finish_reason=types.FinishReason.SAFETY)]
+    with pytest.raises(service.Declined):
+        service.ask_gemini(QUESTION, "en")
+    answer.candidates, answer.prompt_feedback = [], SimpleNamespace(block_reason=types.BlockedReason.SAFETY)
+    with pytest.raises(service.Declined):
+        service.ask_gemini(QUESTION, "en")
+
+    # The free tier's limits, a refused key, an outage and a refused request each say so in the app's words.
+    for code, said in [(429, service.BUSY), (403, service.MISCONFIGURED), (503, service.UNREACHABLE), (400, service.NO_ANSWER)]:
+        def refused(code=code, **_):
+            raise errors.APIError(code, {"error": {"code": code, "message": "refused", "status": "REFUSED"}})
+
+        monkeypatch.setattr(service, "_gemini_client", lambda refused=refused: SimpleNamespace(models=SimpleNamespace(generate_content=refused)))
+        with pytest.raises(service.Unavailable, match=re.escape(said)):
+            service.ask_gemini(QUESTION, "en")

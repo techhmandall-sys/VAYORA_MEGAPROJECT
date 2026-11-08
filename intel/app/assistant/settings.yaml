@@ -1,16 +1,36 @@
 # The assistant's settings. They are the app's, not research parameters, so they live here
 # rather than in experiments/configs.
 
-# Claude Opus 5.5. Its thinking is always on; effort is the only control.
-model: claude-opus-5-5
-# Answers about the app's rules do well at low effort, which also keeps them quick and cheap.
-# Claude Opus 5.5 would otherwise run at medium.
-effort: low
-# The most one answer may use, thinking included: a cap on what one question can cost.
-max_tokens: 4000
-# How long one attempt may take. The SDK tries twice more on its own after a timeout, so a
-# member waits at most three times this before being told the assistant cannot be reached.
-timeout_seconds: 30
+# Which service writes the answers: gemini, Google's free tier (the team's choice on
+# 2026-11-08), or claude, Anthropic's paid API. Its key comes from .env: GEMINI_API_KEY or
+# ANTHROPIC_API_KEY. Without it the assistant says it is off.
+provider: gemini
+
+gemini:
+  # Free of charge on Gemini's free tier, where Google may use what is sent to improve its products.
+  # Flash-Lite: on 2026-11-08 it answered the rules in 1 to 2.5 s, while gemini-3.8-flash timed
+  # out on 6 of 8 free-tier questions.
+  model: gemini-3.5-flash-lite
+  # Answers about the app's rules need little thinking, which also keeps them quick. (minimal was
+  # refused, by gemini-3.8-flash at least.)
+  thinking_level: low
+  # The most one answer may use: a cap on what one question can take from the daily allowance.
+  max_tokens: 4000
+  # How long one question may take. Google ends a request at about this time too, so a stuck one
+  # fails here rather than keeping the member waiting.
+  timeout_seconds: 15
+
+claude:
+  # Claude Opus 5.5. Its thinking is always on; effort is the only control.
+  model: claude-opus-5-5
+  # Answers about the app's rules do well at low effort, which also keeps them quick and cheap.
+  # Claude Opus 5.5 would otherwise run at medium.
+  effort: low
+  # The most one answer may use, thinking included: a cap on what one question can cost.
+  max_tokens: 4000
+  # How long one attempt may take. Claude's SDK tries twice more on its own after a timeout, so
+  # a member waits at most three times this before being told the assistant cannot be reached.
+  timeout_seconds: 30
 
 # What one request may carry. The browser sends the whole conversation each time, since
 # intel keeps none of it; it keeps the latest messages when there are more.

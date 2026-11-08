@@ -9,3 +9,5 @@ PyYAML==6.0.3
 PyJWT==2.10.1
 # The official SDK for Claude, which writes the assistant's answers (intel/app/assistant).
 anthropic==2.6.0
+# Google's SDK for Gemini, whose free tier writes the assistant's answers (the team's choice).
+google-genai==2.34.0
