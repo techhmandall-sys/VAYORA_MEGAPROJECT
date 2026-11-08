@@ -2258,4 +2258,53 @@ export const mr: Record<string, string> = {
     'मार्ग निघताच हे त्यावरून भरले जातात. यापैकी काहीही बदला: तुम्ही लिहिलेले तसेच राहील.',
   'The route could not be worked out by itself. Enter the times and prices, or try again.':
     'मार्ग आपोआप काढता आला नाही. वेळा आणि किमती स्वतः भरा, किंवा पुन्हा प्रयत्न करा.',
+  // The assistant: what it says, the questions it starts from, and intel's reasons
+  'Assistant':
+    'सहाय्यक',
+  'Ask how VAYORA works: booking, cancelling, paying your driver, safety. It cannot see your bookings or change anything.':
+    'VAYORA कसे चालते ते विचारा: बुकिंग, रद्द करणे, ड्रायव्हरला पैसे देणे, सुरक्षा. ते तुमच्या बुकिंग पाहू शकत नाही आणि काहीही बदलू शकत नाही.',
+  'What you type is sent to Anthropic, whose AI writes the answers. VAYORA keeps none of it. An answer can be wrong: check anything important on the screen it is about.':
+    'तुम्ही जे लिहिता ते Anthropic कडे पाठवले जाते, ज्यांचे AI उत्तरे लिहिते. VAYORA यातील काहीही ठेवत नाही. उत्तर चुकीचेही असू शकते: कोणतीही महत्त्वाची गोष्ट ती ज्या स्क्रीनबद्दल आहे तिथेच तपासा.',
+  'The assistant is switched off on this server.':
+    'या सर्व्हरवर सहाय्यक बंद आहे.',
+  'Try asking':
+    'असे विचारून पाहा',
+  'The assistant cannot help with that. Ask about how VAYORA works.':
+    'सहाय्यक यात मदत करू शकत नाही. VAYORA कसे चालते याबद्दल विचारा.',
+  'Writing an answer…':
+    'उत्तर लिहिले जात आहे…',
+  'Your question':
+    'तुमचा प्रश्न',
+  'Start over':
+    'पुन्हा सुरू करा',
+  'What does cancelling cost?':
+    'रद्द केल्यास किती द्यावे लागते?',
+  'How do I pay my driver?':
+    'मी माझ्या ड्रायव्हरला पैसे कसे देऊ?',
+  'What happens if my driver cancels?':
+    'माझ्या ड्रायव्हरने रद्द केले तर काय होते?',
+  'What is a women-only ride?':
+    'फक्त महिला प्रवाशांसाठीची राइड म्हणजे काय?',
+  'How do I publish a ride?':
+    'मी राइड कशी प्रकाशित करू?',
+  'When can I start my ride?':
+    'राइड केव्हा सुरू करता येते?',
+  'How do passengers pay me?':
+    'प्रवासी मला पैसे कसे देतात?',
+  'What if a passenger does not turn up?':
+    'प्रवासी आला नाही तर काय होते?',
+  'The assistant is not set up on this server':
+    'या सर्व्हरवर सहाय्यक सेट केलेला नाही',
+  'The assistant is switched off on this server':
+    'या सर्व्हरवर सहाय्यक बंद आहे',
+  'The last message must be a question':
+    'शेवटचा संदेश प्रश्न असला पाहिजे',
+  'The assistant is not set up correctly on this server':
+    'या सर्व्हरवर सहाय्यक नीट सेट केलेला नाही',
+  'The assistant is busy. Try again in a minute.':
+    'सहाय्यक सध्या व्यस्त आहे. एका मिनिटाने पुन्हा प्रयत्न करा.',
+  'The assistant cannot be reached just now. Try again later.':
+    'सहाय्यकापर्यंत सध्या पोहोचता येत नाही. नंतर पुन्हा प्रयत्न करा.',
+  'The assistant could not answer that. Try asking another way.':
+    'सहाय्यकाला याचे उत्तर देता आले नाही. दुसऱ्या प्रकारे विचारून पाहा.',
 };

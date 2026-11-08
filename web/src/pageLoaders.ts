@@ -14,6 +14,7 @@ export const load = {
   safety: () => import('./pages/SafetyAdminPages'),
   durability: () => import('./pages/AdminPages'),
   whatIf: () => import('./pages/WhatIfPage'),
+  assistant: () => import('./pages/AssistantPage'),
 };
 
 const byPath: Record<string, () => Promise<unknown>> = {
@@ -29,6 +30,7 @@ const byPath: Record<string, () => Promise<unknown>> = {
   '/record': load.reliability,
   '/notifications': load.notifications,
   '/account': load.account,
+  '/assistant': load.assistant,
   '/admin/emergencies': load.safety,
   '/admin/durability': load.durability,
   '/admin/what-if': load.whatIf,

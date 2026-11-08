@@ -47,6 +47,7 @@ const DocumentChecksPage = page(backOffice, 'DocumentChecksPage');
 const EmergenciesPage = page(load.safety, 'EmergenciesPage');
 const DurabilityPage = page(load.durability, 'DurabilityPage');
 const WhatIfPage = page(load.whatIf, 'WhatIfPage');
+const AssistantPage = page(load.assistant, 'AssistantPage');
 
 function Home() {
   const { user } = useAuth();
@@ -90,6 +91,7 @@ export function AppRoutes() {
           <Route path="users/:id" element={<ProfilePage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="account" element={<AccountPage />} />
+          <Route path="assistant" element={<AssistantPage />} />
         </Route>
         <Route element={<RequireRole role="ADMIN" />}>
           <Route path="admin" element={<OverviewPage />} />

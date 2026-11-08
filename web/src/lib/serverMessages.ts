@@ -126,6 +126,14 @@ export const SERVER_MESSAGES = [
   msg('Only an administrator can run the simulator'),
   msg('Live runs are not set up on this server'),
   msg('No such sweep can be run live'),
+  // intel's fixed reasons for an assistant that could not answer.
+  msg('The assistant is not set up on this server'),
+  msg('The assistant is switched off on this server'),
+  msg('The last message must be a question'),
+  msg('The assistant is not set up correctly on this server'),
+  msg('The assistant is busy. Try again in a minute.'),
+  msg('The assistant cannot be reached just now. Try again later.'),
+  msg('The assistant could not answer that. Try asking another way.'),
 ];
 
 // The messages core-api builds from values, as templates: a message that fits one is shown

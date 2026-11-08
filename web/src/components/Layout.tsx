@@ -22,6 +22,7 @@ import {
   ScrollText,
   Search,
   Siren,
+  Sparkles,
   Sun,
   Ticket,
   TrendingUp,
@@ -67,6 +68,7 @@ const links: Record<Role, Section[]> = {
     { to: '/search', label: msg('Find a ride'), icon: Search },
     { to: '/bookings', label: msg('My bookings'), icon: Ticket },
     { to: '/payments', label: msg('Payments'), icon: Wallet },
+    { to: '/assistant', label: msg('Assistant'), icon: Sparkles },
   ],
   DRIVER: [
     { to: '/rides', label: msg('My rides'), icon: Car },
@@ -74,6 +76,7 @@ const links: Record<Role, Section[]> = {
     { to: '/vehicles', label: msg('My vehicles'), icon: CarFront },
     { to: '/earnings', label: msg('Earnings'), icon: IndianRupee },
     { to: '/record', label: msg('My record'), icon: Award },
+    { to: '/assistant', label: msg('Assistant'), icon: Sparkles },
   ],
   ADMIN: [
     { to: '/admin', label: msg('Overview'), icon: LayoutDashboard, group: OPERATIONS },

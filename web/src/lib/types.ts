@@ -92,6 +92,19 @@ export interface Ride {
   startsFrom?: string;
 }
 
+/** Whether intel's assistant is on, and how much one question may carry. */
+export interface AssistantStatus {
+  enabled: boolean;
+  max_messages: number;
+  max_message_chars: number;
+}
+
+export interface AssistantReply {
+  /** null when the assistant declined to answer. */
+  reply: string | null;
+  declined: boolean;
+}
+
 export type RouteSource = 'OSRM' | 'STRAIGHT_LINE';
 
 export type SearchSort = 'TIME' | 'PRICE' | 'RATING' | 'PROXIMITY' | 'BEST_MATCH';

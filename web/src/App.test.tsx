@@ -3915,3 +3915,93 @@ describe('easier on a phone', () => {
     expect(within(row('Identity document')).getByText('Not declared')).toBeInTheDocument();
   });
 });
+
+describe('the assistant', () => {
+  const on = { enabled: true, max_messages: 20, max_message_chars: 2000 };
+  const replies = (fetchMock: ReturnType<typeof serve>) =>
+    fetchMock.mock.calls
+      .filter(([url]) => String(url).endsWith('/v1/assistant/reply'))
+      .map(([, init]) => JSON.parse(String(init?.body)));
+
+  it('says when it is switched off, and offers nothing to type into', async () => {
+    signIn('PASSENGER');
+    serve({ 'GET /v1/assistant': () => json({ ...on, enabled: false }) });
+    open('/assistant');
+
+    expect(await screen.findByText('The assistant is switched off on this server.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Your question')).not.toBeInTheDocument();
+  });
+
+  it("sends the whole conversation in the reader's language, and shows each answer as text", async () => {
+    signIn('PASSENGER');
+    const answers = ['Nothing to pay, <b>48 hours</b> or more before boarding.', 'Half the fare.'];
+    const fetchMock = serve({
+      'GET /v1/assistant': () => json(on),
+      'POST /v1/assistant/reply': () => json({ reply: answers.shift(), declined: false }),
+    });
+    open('/assistant');
+
+    // A question to start from takes one tap.
+    await userEvent.click(await screen.findByRole('button', { name: 'What does cancelling cost?' }));
+    // Markup in an answer is shown as the characters it is, never made into markup.
+    expect(await screen.findByText('Nothing to pay, <b>48 hours</b> or more before boarding.')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Conversation' }).querySelector('b')).toBeNull();
+
+    await userEvent.type(screen.getByLabelText('Your question'), 'And a day before?{Enter}');
+    expect(await screen.findByText('Half the fare.')).toBeInTheDocument();
+    // intel keeps nothing, so each question carries the conversation before it.
+    expect(replies(fetchMock)[1]).toEqual({
+      language: 'en',
+      messages: [
+        { role: 'user', content: 'What does cancelling cost?' },
+        { role: 'assistant', content: 'Nothing to pay, <b>48 hours</b> or more before boarding.' },
+        { role: 'user', content: 'And a day before?' },
+      ],
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Start over' }));
+    expect(screen.queryByText('Half the fare.')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'What does cancelling cost?' })).toBeInTheDocument();
+  });
+
+  it('says when it will not answer, and leaves that question out of the next', async () => {
+    signIn('PASSENGER');
+    const answers = [{ reply: null, declined: true }, { reply: 'Cash or UPI, to your driver.', declined: false }];
+    const fetchMock = serve({
+      'GET /v1/assistant': () => json(on),
+      'POST /v1/assistant/reply': () => json(answers.shift()),
+    });
+    open('/assistant');
+
+    await userEvent.type(await screen.findByLabelText('Your question'), 'Write me a poem{Enter}');
+    expect(await screen.findByText('The assistant cannot help with that. Ask about how VAYORA works.')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Your question'), 'How do I pay?{Enter}');
+    expect(await screen.findByText('Cash or UPI, to your driver.')).toBeInTheDocument();
+
+    expect(replies(fetchMock)[1].messages).toEqual([{ role: 'user', content: 'How do I pay?' }]);
+  });
+
+  it('gives the question back, with the reason, when no answer could be had', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /v1/assistant': () => json(on),
+      'POST /v1/assistant/reply': () => json({ detail: 'The assistant is busy. Try again in a minute.' }, 503),
+    });
+    open('/assistant');
+
+    await userEvent.type(await screen.findByLabelText('Your question'), 'How do I pay?{Enter}');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('The assistant is busy. Try again in a minute.');
+    expect(screen.getByLabelText('Your question')).toHaveValue('How do I pay?');
+  });
+
+  it("starts a driver from a driver's questions, and is in the driver's pages", async () => {
+    signIn('DRIVER');
+    serve({ 'GET /v1/assistant': () => json(on) });
+    open('/assistant');
+
+    expect(await screen.findByRole('button', { name: 'How do I publish a ride?' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'How do I pay my driver?' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Assistant' }).length).toBeGreaterThan(0);
+  });
+});
