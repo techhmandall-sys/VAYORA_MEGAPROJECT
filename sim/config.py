@@ -384,6 +384,9 @@ VARIANT_PREFIX = "variant."
 def with_parameter(target: Any, path: str, value: Any) -> Any:
     """A copy of a world or a variant with the dotted `path` (e.g. ``demand.shock.rate_per_day``) set."""
     head, _, rest = path.partition(".")
+    if isinstance(target, Mapping) and head in target:
+        # A keyed collection, such as demand.types: the passenger type by name.
+        return {**target, head: with_parameter(target[head], rest, value) if rest else value}
     if not dataclasses.is_dataclass(target) or not hasattr(target, head):
         raise KeyError(f"no such {type(target).__name__.lower()} parameter: {path}")
     current = getattr(target, head)

@@ -40,7 +40,7 @@ from experiments.analysis.compare import REPORTS, load_analysis
 from experiments.analysis.proximity import summary
 from experiments.analysis.queries import run_query
 from experiments.analysis.time_cost import same_events
-from experiments.sweep import cell_label, cells as sweep_cells
+from experiments.sweep import cell_label, named_cells, sweep_world
 from sim.config import apply_cell, load_variant, load_world
 
 CONFIGS = Path(__file__).resolve().parents[1] / "configs"
@@ -73,20 +73,20 @@ def cells_from(config: dict[str, Any]) -> list[Cell]:
             out.append(Cell(f"{policy} (run …{ladder['run'][-3:]})", "ladder", ladder["run"], policy,
                             ladder["run"], ladder["baseline"], response.early_release_probability,
                             response.annoyed_cancel_probability))
-    world = load_world(CONFIGS / "world.yaml")
     for entry in config["sweeps"]:
         sweep = yaml.safe_load((CONFIGS / entry["config"]).read_text(encoding="utf-8"))
+        world = load_world(sweep_world(sweep))
         variant = load_variant(CONFIGS / sweep["variant"])
         baseline = load_variant(CONFIGS / sweep["baseline"]).name
-        for cell in sweep_cells(sweep["parameters"]):
+        for name, cell in named_cells(sweep):
             changed, _ = apply_cell(world, variant, cell)
             response = changed.demand.intervention_response
             if "baseline_from" in entry:
                 base_run, base_label = entry["baseline_from"]["run"], entry["baseline_from"]["variant"]
             else:
                 base_run = entry["run"]
-                base_label = cell_label(baseline, cell) if sweep.get("baseline_per_cell") else baseline
-            label = cell_label(variant.name, cell)
+                base_label = cell_label(baseline, cell, name) if sweep.get("baseline_per_cell") else baseline
+            label = cell_label(variant.name, cell, name)
             out.append(Cell(label, sweep["name"], entry["run"], label, base_run, base_label,
                             response.early_release_probability, response.annoyed_cancel_probability))
     return out

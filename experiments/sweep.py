@@ -10,6 +10,9 @@ unmodified world, which is only right when the swept parameters cannot affect it
 and each cell is compared with its own. Everything is paired by
 seed and every figure is read back from the event log through metrics.sql.
 
+A config may name the world it varies (``world: worlds/...yaml``; world.yaml otherwise), and may list
+named ``cells``, each setting several values together, instead of a grid of ``parameters``.
+
 Writes experiments/reports/sweep-<name>-<run id>.json and .md.
 """
 
@@ -54,10 +57,29 @@ def cells(parameters: dict[str, list[Any]]) -> list[dict[str, Any]]:
     return [dict(zip(names, values, strict=True)) for values in itertools.product(*(parameters[n] for n in names))]
 
 
-def cell_label(variant: str, cell: dict[str, Any]) -> str:
-    """The name a cell's events are stored under, e.g. ``B4[early_release_probability=0.5]``."""
+def named_cells(config: dict[str, Any]) -> list[tuple[str | None, dict[str, Any]]]:
+    """A sweep's cells: every combination of `parameters`, or the `cells` it lists by name.
+
+    A named cell sets several values together, e.g. every type's Weibull scale at once:
+    ``cells: [{name: "scale=2", set: {demand.types.committed.weibull_scale_hours: 5000, ...}}]``.
+    """
+    if "cells" in config:
+        return [(c["name"], dict(c["set"])) for c in config["cells"]]
+    return [(None, cell) for cell in cells(config["parameters"])]
+
+
+def cell_label(variant: str, cell: dict[str, Any], name: str | None = None) -> str:
+    """The name a cell's events are stored under, e.g. ``B4[early_release_probability=0.5]``,
+    or ``B4[scale=2]`` for a named cell."""
+    if name is not None:
+        return f"{variant}[{name}]"
     settings = [path.rsplit(".", 1)[-1] + "=" + str(value) for path, value in cell.items()]
     return variant + "[" + ",".join(settings) + "]"
+
+
+def sweep_world(config: dict[str, Any]) -> Path:
+    """The world a sweep varies: the one its config names, or world.yaml."""
+    return CONFIGS / config.get("world", "world.yaml")
 
 
 def run(conn: psycopg.Connection, world: World, variant: Variant, label: str, seeds: range,
@@ -69,44 +91,44 @@ def run(conn: psycopg.Connection, world: World, variant: Variant, label: str, se
 
 
 def run_sweep(conn: psycopg.Connection, config: dict[str, Any], world: World, seeds: range,
-              run_id: uuid.UUID) -> list[tuple[str, dict[str, Any]]]:
+              run_id: uuid.UUID) -> list[tuple[str, dict[str, Any], str | None]]:
     baseline = load_variant(CONFIGS / config["baseline"])
     variant = load_variant(CONFIGS / config["variant"])
     per_cell = config.get("baseline_per_cell", False)
     if not per_cell:
         run(conn, world, baseline, baseline.name, seeds, run_id)
     labelled = []
-    for cell in cells(config["parameters"]):
+    for name, cell in named_cells(config):
         changed, varied = apply_cell(world, variant, cell)
         validate(changed)
         validate_variant(varied)
         if per_cell:
-            run(conn, changed, baseline, cell_label(baseline.name, cell), seeds, run_id)
-        label = cell_label(variant.name, cell)
+            run(conn, changed, baseline, cell_label(baseline.name, cell, name), seeds, run_id)
+        label = cell_label(variant.name, cell, name)
         run(conn, changed, varied, label, seeds, run_id)
-        labelled.append((label, cell))
+        labelled.append((label, cell, name))
     return labelled
 
 
-def build_report(conn: Connection, config: dict[str, Any], labelled: list[tuple[str, dict[str, Any]]],
-                 run_id: uuid.UUID) -> dict[str, Any]:
+def build_report(conn: Connection, config: dict[str, Any],
+                 labelled: list[tuple[str, dict[str, Any], str | None]], run_id: uuid.UUID) -> dict[str, Any]:
     baseline = load_variant(CONFIGS / config["baseline"]).name
     per_cell = config.get("baseline_per_cell", False)
     shared = None if per_cell else per_seed(conn, run_id, baseline)
     report: dict[str, Any] = {
         "name": config["name"], "run_id": str(run_id), "data": "synthetic (simulator)",
         "baseline": baseline, "baseline_per_cell": per_cell,
-        "parameters": config["parameters"],
+        "parameters": config.get("parameters") or {"cell": [name for name, _ in named_cells(config)]},
         "baseline_means": {} if per_cell else {
             column: statistics.fmean(shared[column].values())
             for column, _, _ in MEASURES if shared[column]},
         "cells": [],
     }
-    for label, cell in labelled:
-        reference = per_seed(conn, run_id, cell_label(baseline, cell)) if per_cell else shared
+    for label, cell, name in labelled:
+        reference = per_seed(conn, run_id, cell_label(baseline, cell, name)) if per_cell else shared
         values = per_seed(conn, run_id, label)
         report["cells"].append({
-            "variant": label, "parameters": cell,
+            "variant": label, "parameters": cell if name is None else {"cell": name}, "settings": cell,
             "measures": {
                 column: {"mean": statistics.fmean(values[column].values()),
                          "baseline_mean": statistics.fmean(reference[column].values())
@@ -155,7 +177,8 @@ def to_markdown(report: dict[str, Any]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("config", type=Path)
-    parser.add_argument("--world", type=Path, default=CONFIGS / "world.yaml")
+    parser.add_argument("--world", type=Path, default=None,
+                        help="the world to vary; by default the one the config names, else world.yaml")
     parser.add_argument("--run-id", type=uuid.UUID, default=None)
     args = parser.parse_args()
 
@@ -168,7 +191,7 @@ def main() -> None:
 
     dsn = make_url(url).set(drivername="postgresql").render_as_string(hide_password=False)
     with psycopg.connect(dsn) as conn:
-        labelled = run_sweep(conn, config, load_world(args.world), seeds, run_id)
+        labelled = run_sweep(conn, config, load_world(args.world or sweep_world(config)), seeds, run_id)
     engine = create_engine(make_url(url).set(drivername="postgresql+psycopg"))
     with engine.connect() as conn:
         report = build_report(conn, config, labelled, run_id)

@@ -4,7 +4,8 @@ import uuid
 import pytest
 import yaml
 
-from experiments.sweep import CONFIGS, build_report, cell_label, cells, run_sweep, to_markdown
+from experiments.sweep import (CONFIGS, build_report, cell_label, cells, named_cells, run_sweep,
+                               sweep_world, to_markdown)
 from sim.config import apply_cell, load_variant, load_world, with_parameter
 
 WORLD = load_world(CONFIGS / "world.yaml")
@@ -70,9 +71,9 @@ def test_every_shipped_sweep_names_real_variants_and_real_parameters():
         config = yaml.safe_load(path.read_text(encoding="utf-8"))
         load_variant(CONFIGS / config["baseline"])
         variant = load_variant(CONFIGS / config["variant"])
-        for parameter, values in config["parameters"].items():
-            for value in values:
-                apply_cell(WORLD, variant, {parameter: value})
+        world = load_world(sweep_world(config))
+        for _, cell in named_cells(config):
+            apply_cell(world, variant, cell)
 
 
 def test_a_sweep_runs_each_cell_and_reports_it_against_the_baseline(pg_conn, sa_conn):
@@ -135,3 +136,22 @@ def test_a_tighter_budget_sends_fewer_requests_against_one_shared_baseline(pg_co
     variants = {row[0] for row in pg_conn.execute(
         "SELECT DISTINCT variant FROM events WHERE run_id = %s", (run_id,)).fetchall()}
     assert variants == {"B4", "B5[contacts_per_round=1]", "B5[contacts_per_round=50]"}
+
+
+def test_a_named_cell_sets_several_values_at_once_and_is_stored_under_its_name():
+    config = {"cells": [{"name": "scale=2", "set": {"demand.types.committed.weibull_scale_hours": 5000,
+                                                     "demand.types.flexible.weibull_scale_hours": 800}}]}
+
+    ((name, cell),) = named_cells(config)
+    changed, _ = apply_cell(WORLD, load_variant(CONFIGS / "variants" / "B4.yaml"), cell)
+
+    assert cell_label("B4", cell, name) == "B4[scale=2]"
+    assert changed.demand.types["committed"].weibull_scale_hours == 5000
+    assert changed.demand.types["flexible"].weibull_scale_hours == 800
+    assert changed.demand.types["opportunistic"] == WORLD.demand.types["opportunistic"]
+    assert WORLD.demand.types["committed"].weibull_scale_hours == 2500
+
+
+def test_a_sweep_varies_the_world_its_config_names():
+    assert sweep_world({}) == CONFIGS / "world.yaml"
+    assert sweep_world({"world": "worlds/proximity_w0.5.yaml"}) == CONFIGS / "worlds" / "proximity_w0.5.yaml"
