@@ -348,7 +348,6 @@ export const mr: Record<string, string> = {
   "In your device's local time.": 'तुमच्या डिव्हाइसच्या स्थानिक वेळेनुसार.',
   'Seats offered': 'देऊ केलेल्या जागा',
   'Confirm bookings instantly, without asking me': 'मला न विचारता बुकिंग लगेच निश्चित करा',
-  'Stops and price per seat': 'थांबे आणि प्रति जागा किंमत',
   'Passengers can book between any two of your stops. Each price is for the stretch that ends at that stop.':
     'प्रवासी तुमच्या कोणत्याही दोन थांब्यांदरम्यान बुकिंग करू शकतात. प्रत्येक किंमत त्या थांब्यावर संपणाऱ्या टप्प्याची आहे.',
   'Price to {town} (₹)': '{town} पर्यंतची किंमत (₹)',
@@ -2252,4 +2251,11 @@ export const mr: Record<string, string> = {
     'ड्रॉप तुमच्या गंतव्यस्थानापासून {dropoff}',
   'What cancelling costs':
     'रद्द करण्याचा खर्च',
+  // Publishing route first: the route works itself out and fills the times and prices
+  'Times and price per seat':
+    'वेळा आणि प्रति जागा किंमत',
+  'Filled in from the route as soon as it is worked out. Change any of them: what you type is kept.':
+    'मार्ग निघताच हे त्यावरून भरले जातात. यापैकी काहीही बदला: तुम्ही लिहिलेले तसेच राहील.',
+  'The route could not be worked out by itself. Enter the times and prices, or try again.':
+    'मार्ग आपोआप काढता आला नाही. वेळा आणि किमती स्वतः भरा, किंवा पुन्हा प्रयत्न करा.',
 };

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Car, CarFront, Check, ChevronDown, ChevronRight, IndianRupee, MessagesSquare, Users } from 'lucide-react';
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -158,16 +158,26 @@ export function VehiclesPage() {
   );
 }
 
+/** How long the stops must stay as they are before their route is worked out, so moving a pin asks once. */
+const AUTO_ROUTE_MS = 400;
+
+/** Where the stops are, as one string: two equal strings mean the same route. */
+const pinsOf = (stops: Pick<RideForm['stops'][number], 'lat' | 'lon'>[]) => stops.map((stop) => `${stop.lat},${stop.lon}`).join(' ');
+
 /**
  * Shows the road route through the chosen stops, lets the driver move a meeting point by
- * clicking the map, and offers prices and timings worked out from the route.
+ * clicking the map, and offers prices and timings worked out from the route. The route is
+ * worked out by itself as soon as two stops have places, and again whenever they change.
  */
-function RoutePlanner({ stops, rangeKm, onMove, onUse }: {
+function RoutePlanner({ stops, rangeKm, onMove, onUse, onRoute }: {
   stops: RideForm['stops'];
   /** The chosen vehicle's range on a full charge, from the driver's own figures; null if not electric. */
   rangeKm: number | null;
   onMove: (index: number, lat: number, lon: number) => void;
+  /** The driver asked for the suggestion: it replaces what they typed. */
   onUse: (included: number[], preview: RoutePreview) => void;
+  /** A route was worked out: it fills what the driver has not typed. */
+  onRoute: (included: number[], preview: RoutePreview) => void;
 }) {
   const t = useT();
   const units = useUnits();
@@ -177,17 +187,42 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse }: {
   const target = included.some((stop) => stop.index === moving) ? moving! : included[0]?.index;
   const town = (index: number) => t(stops[index].name);
   const preview = useMutation({
-    mutationFn: () =>
-      api<RoutePreview>('/rides/route-preview', {
-        method: 'POST',
-        body: { stops: included.map((stop) => ({ lat: Number(stop.lat), lon: Number(stop.lon) })) },
-      }),
+    mutationFn: (asked: { lat: number; lon: number }[]) => api<RoutePreview>('/rides/route-preview', { method: 'POST', body: { stops: asked } }),
   });
-
+  // Only a failure the driver asked for interrupts them; one that came by itself is said quietly.
+  const [byHand, setByHand] = useState(false);
+  const pins = pinsOf(included);
+  // The stops as they stand now, for an answer that arrives later.
+  const latest = useRef({ included, onRoute });
+  useEffect(() => {
+    latest.current = { included, onRoute };
+  });
+  const { reset, mutate } = preview;
+  const workOut = useCallback(
+    (pressed: boolean) => {
+      const asked = latest.current.included;
+      setByHand(pressed);
+      mutate(
+        asked.map((stop) => ({ lat: Number(stop.lat), lon: Number(stop.lon) })),
+        {
+          // An answer for stops that have changed since is no answer for these.
+          onSuccess: (route) => {
+            if (pinsOf(latest.current.included) === pinsOf(asked)) latest.current.onRoute(asked.map((stop) => stop.index), route);
+          },
+        },
+      );
+    },
+    [mutate],
+  );
+  const timer = useRef<number | undefined>(undefined);
+  const ready = included.length >= 2;
   // A route worked out for other stops is no route for these, however they changed.
-  const pins = included.map((stop) => `${stop.lat},${stop.lon}`).join(' ');
-  const { reset } = preview;
-  useEffect(() => reset(), [pins, reset]);
+  useEffect(() => {
+    reset();
+    if (!ready) return;
+    timer.current = window.setTimeout(() => workOut(false), AUTO_ROUTE_MS);
+    return () => window.clearTimeout(timer.current);
+  }, [pins, ready, reset, workOut]);
 
   if (included.length < 2) return null;
   // The first stretch between stops longer than a full charge: the server refuses to publish it.
@@ -227,7 +262,14 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse }: {
         describe={t('Map of your stops: {stops}', { stops: included.map((stop) => town(stop.index)).join(', ') })}
       />
       <div className="flex flex-wrap items-center gap-3">
-        <Button tone="secondary" disabled={preview.isPending} onClick={() => preview.mutate()}>
+        <Button
+          tone="secondary"
+          disabled={preview.isPending}
+          onClick={() => {
+            window.clearTimeout(timer.current);
+            workOut(true);
+          }}
+        >
           {preview.isPending ? t('Working out the route…') : t('Work out the route')}
         </Button>
         {preview.data && (
@@ -236,7 +278,12 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse }: {
           </Button>
         )}
       </div>
-      {preview.error && <Notice tone="error">{preview.error.message}</Notice>}
+      {preview.error &&
+        (byHand ? (
+          <Notice tone="error">{preview.error.message}</Notice>
+        ) : (
+          <p className="text-sm text-slate-600">{t('The route could not be worked out by itself. Enter the times and prices, or try again.')}</p>
+        ))}
       {preview.data && (
         <div className="text-sm text-slate-700">
           <p role="status">
@@ -369,6 +416,33 @@ export function PublishRidePage() {
     remove(index);
     retime(index);
   };
+
+  // Times and prices the driver typed are theirs: a route worked out by itself fills only the rest.
+  const typed = useRef(new Set<string>());
+  /**
+   * Fills the times and prices of the stops a route went through. Each time runs on from the stop
+   * before as it now stands, so a time the driver typed carries on to the stops after it.
+   * @param all over what the driver typed as well: they asked for the suggestion
+   */
+  const fillFromRoute = (chosen: number[], route: RoutePreview, all: boolean) => {
+    const current = getValues('stops');
+    let minutes = Number(current[chosen[0]].offsetMinutes);
+    route.legs.forEach((leg, i) => {
+      const index = chosen[i + 1];
+      const id = fields[index]?.id;
+      minutes += leg.durationMinutes;
+      if (all || !typed.current.has(`${id}:minutes`)) {
+        setValue(`stops.${index}.offsetMinutes`, minutes, { shouldValidate: formState.isSubmitted });
+        typed.current.delete(`${id}:minutes`);
+      } else {
+        minutes = Number(current[index].offsetMinutes);
+      }
+      if (all || !typed.current.has(`${id}:price`)) {
+        setValue(`stops.${index}.priceFromPrevious`, leg.suggestedPrice, { shouldValidate: formState.isSubmitted });
+        typed.current.delete(`${id}:price`);
+      }
+    });
+  };
   const publish = useMutation({
     mutationFn: (form: RideForm) => api<Ride>('/rides', { method: 'POST', body: toPublishRequest(form) }),
     onSuccess: () => {
@@ -453,11 +527,8 @@ export function PublishRidePage() {
             </FormStep>
 
             <FormStep n={2} title={t('Where you stop')}>
-            <fieldset>
-              <legend className="text-sm font-medium text-slate-700">{t('Stops and price per seat')}</legend>
-              <p className="mt-1 text-sm text-slate-500">
-                {t('Passengers can book between any two of your stops. Each price is for the stretch that ends at that stop.')}
-              </p>
+            {/* The places first: the route follows from them, and the times and prices from the route. */}
+            <div>
               {stopsMessage && (
                 <p className="mt-2 text-sm text-red-700" role="alert">
                   {t(stopsMessage)}
@@ -468,32 +539,13 @@ export function PublishRidePage() {
                   const stop = stops[index];
                   const between = index > 0 && index < fields.length - 1;
                   return (
-                    <div key={field.id} className="grid items-end gap-3 rounded-2xl border border-slate-200 p-3 sm:grid-cols-3">
+                    <div key={field.id} className="grid items-end gap-3 rounded-2xl border border-slate-200 p-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                       <PlaceField
                         label={index === 0 ? t('From') : between ? t('Stop on the way {n}', { n: index }) : t('To')}
                         value={stop?.name ?? ''}
                         error={formState.errors.stops?.[index]?.name?.message}
                         onChange={(name) => choosePlace(index, name)}
                       />
-                      {/* The first stop is where the ride leaves at the time above: it has no minutes or price of its own. */}
-                      {index > 0 && stop?.name && (
-                        <>
-                          <TextField
-                            label={t('Minutes from {start} to {town}', { start: t(stops[0].name), town: t(stop.name) })}
-                            type="number"
-                            min={0}
-                            error={formState.errors.stops?.[index]?.offsetMinutes?.message}
-                            {...register(`stops.${index}.offsetMinutes`)}
-                          />
-                          <TextField
-                            label={t('Price to {town} (₹)', { town: t(stop.name) })}
-                            type="number"
-                            min={0}
-                            error={formState.errors.stops?.[index]?.priceFromPrevious?.message}
-                            {...register(`stops.${index}.priceFromPrevious`)}
-                          />
-                        </>
-                      )}
                       {between && (
                         <Button tone="secondary" className="justify-self-start" onClick={() => removeStop(index)}>
                           {t('Remove this stop')}
@@ -513,7 +565,7 @@ export function PublishRidePage() {
                   {t('Add a stop on the way')}
                 </Button>
               )}
-            </fieldset>
+            </div>
 
             <div className="mt-5">
             <RoutePlanner
@@ -527,17 +579,43 @@ export function PublishRidePage() {
                 setValue(`stops.${index}.lat`, lat);
                 setValue(`stops.${index}.lon`, lon);
               }}
-              onUse={(chosen, preview) => {
-                // Timings run on from the first stop's own offset; prices are per leg.
-                let minutes = Number(stops[chosen[0]].offsetMinutes);
-                preview.legs.forEach((leg, i) => {
-                  minutes += leg.durationMinutes;
-                  setValue(`stops.${chosen[i + 1]}.offsetMinutes`, minutes);
-                  setValue(`stops.${chosen[i + 1]}.priceFromPrevious`, leg.suggestedPrice);
-                });
-              }}
+              onUse={(chosen, preview) => fillFromRoute(chosen, preview, true)}
+              onRoute={(chosen, preview) => fillFromRoute(chosen, preview, false)}
             />
             </div>
+
+            <fieldset className="mt-5">
+              <legend className="text-sm font-medium text-slate-700">{t('Times and price per seat')}</legend>
+              <p className="mt-1 text-sm text-slate-500">
+                {t('Filled in from the route as soon as it is worked out. Change any of them: what you type is kept.')}{' '}
+                {t('Passengers can book between any two of your stops. Each price is for the stretch that ends at that stop.')}
+              </p>
+              <div className="mt-3 space-y-3">
+                {fields.map((field, index) => {
+                  const stop = stops[index];
+                  // The first stop is where the ride leaves at the time above: it has no minutes or price of its own.
+                  if (index === 0 || !stop?.name) return null;
+                  return (
+                    <div key={field.id} className="grid items-end gap-3 rounded-2xl border border-slate-200 p-3 sm:grid-cols-2">
+                      <TextField
+                        label={t('Minutes from {start} to {town}', { start: t(stops[0].name), town: t(stop.name) })}
+                        type="number"
+                        min={0}
+                        error={formState.errors.stops?.[index]?.offsetMinutes?.message}
+                        {...register(`stops.${index}.offsetMinutes`, { onChange: () => typed.current.add(`${field.id}:minutes`) })}
+                      />
+                      <TextField
+                        label={t('Price to {town} (₹)', { town: t(stop.name) })}
+                        type="number"
+                        min={0}
+                        error={formState.errors.stops?.[index]?.priceFromPrevious?.message}
+                        {...register(`stops.${index}.priceFromPrevious`, { onChange: () => typed.current.add(`${field.id}:price`) })}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </fieldset>
             </FormStep>
 
             <FormStep n={3} title={t('Who rides, and how')} optional hasError={Boolean(formState.errors.maxDetourMinutes || formState.errors.notes)}>

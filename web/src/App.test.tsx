@@ -47,7 +47,12 @@ function serve(routes: Record<string, () => Response>) {
     // A photo is answered only by a route written for it, never by a shorter prefix such as
     // GET /vehicles, which would hand a page a list where it expects an image.
     const photo = key.endsWith('/photo');
-    const match = Object.keys(routes).find((route) => key.startsWith(route) && (!photo || route.endsWith('/photo')));
+    // Likewise a route preview, which the publish page asks for by itself, never by POST /rides.
+    const routing = key === 'POST /rides/route-preview';
+    const match = Object.keys(routes).find(
+      (route) => key.startsWith(route) && (!photo || route.endsWith('/photo')) && (!routing || route === key),
+    );
+    if (!match && routing) return json({ detail: 'No route in this test' }, 503);
     // Any signed-in page may ask for the payment terms.
     if (!match && key === 'GET /payment-terms') return json(terms);
     // And the bookings page for how long a driver has to answer.
@@ -676,7 +681,7 @@ describe('maps, routes and location search', () => {
     expect(screen.getByText(/Board at Kolhapur, leaving/)).toBeInTheDocument();
   });
 
-  it('lets a driver work out the route, take the suggested prices, and move a meeting point', async () => {
+  it('works out the route once the stops have places, fills the times and prices, and keeps what the driver types', async () => {
     signIn('DRIVER');
     const fetchMock = serve({
       'GET /vehicles': () => json([{ id: 3, make: 'Maruti', model: 'Ertiga', year: 2022, colour: 'Silver', seats: 7 }]),
@@ -695,32 +700,56 @@ describe('maps, routes and location search', () => {
     });
     open('/rides/new');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Work out the route' }));
+    // Nothing to press: both ends have places, so the route follows, and the times and prices from it.
     expect(await screen.findByText('230 km by road, about 3 h 11 min of driving.')).toBeInTheDocument();
     expect(screen.getByText(/Kolhapur to Pune: 230 km, 3 h 11 min, suggested ₹460 a seat/)).toBeInTheDocument();
-    const asked = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/rides/route-preview'))!;
-    expect(JSON.parse(asked[1]!.body as string)).toEqual({
+    const routes = () => fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/rides/route-preview'));
+    expect(JSON.parse(routes()[0][1]!.body as string)).toEqual({
       stops: [
         { lat: 16.705, lon: 74.2433 },
         { lat: 18.5204, lon: 73.8567 },
       ],
     });
-
-    const summary = within(screen.getByRole('complementary', { name: 'Your ride' }));
-    expect(summary.getByText('Kolhapur → Pune')).toBeInTheDocument();
-    expect(summary.getAllByText('Not chosen yet')).toHaveLength(2);
-
-    await userEvent.click(screen.getByRole('button', { name: 'Use the suggested prices and times' }));
     expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(460);
     expect(screen.getByLabelText('Minutes from Kolhapur to Pune')).toHaveValue(191);
-    // The summary follows the form: the whole way now has a price.
+    // The summary follows the form: the whole way has a price, and only the time is left to choose.
+    const summary = within(screen.getByRole('complementary', { name: 'Your ride' }));
+    expect(summary.getByText('Kolhapur → Pune')).toBeInTheDocument();
     expect(summary.getByText('₹460')).toBeInTheDocument();
     expect(summary.getAllByText('Not chosen yet')).toHaveLength(1);
 
-    // Moving a pin invalidates the route that was shown.
+    // A price the driver types stays theirs through every route worked out after it.
+    await userEvent.clear(screen.getByLabelText('Price to Pune (₹)'));
+    await userEvent.type(screen.getByLabelText('Price to Pune (₹)'), '500');
+    // Moving a pin invalidates the route that was shown, and it is worked out again.
     // The map's code arrives when it is first shown.
     await userEvent.click(await screen.findByRole('button', { name: 'click the map' }));
     expect(screen.queryByText(/230 km by road/)).not.toBeInTheDocument();
+    expect(await screen.findByText('230 km by road, about 3 h 11 min of driving.')).toBeInTheDocument();
+    expect(routes()).toHaveLength(2);
+    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(500);
+
+    // Asked for, the suggestion replaces it.
+    await userEvent.click(screen.getByRole('button', { name: 'Use the suggested prices and times' }));
+    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(460);
+  });
+
+  it('says quietly when the route could not be worked out by itself, and leaves the prices to type', async () => {
+    signIn('DRIVER');
+    serve({
+      'GET /vehicles': () => json([{ id: 3, make: 'Maruti', model: 'Ertiga', year: 2022, colour: 'Silver', seats: 7 }]),
+      'POST /rides/route-preview': () => json({ detail: 'Routing is not available' }, 503),
+    });
+    open('/rides/new');
+
+    expect(await screen.findByText('The route could not be worked out by itself. Enter the times and prices, or try again.')).toBeInTheDocument();
+    // Nobody asked, so nothing interrupts a screen reader.
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(null);
+
+    // Asked for, a failure is said as one.
+    await userEvent.click(screen.getByRole('button', { name: 'Work out the route' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Routing is not available');
   });
 });
 
@@ -3861,7 +3890,7 @@ describe('easier on a phone', () => {
     expect(await screen.findByText('Enter a price, or 0 for a free ride')).toBeInTheDocument();
     expect(screen.getByText('At most 30 minutes')).toBeInTheDocument();
     await waitFor(() => expect(optional).toHaveAttribute('open'));
-    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+    expect(fetchMock.mock.calls.some(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith('/rides'))).toBe(false);
   });
 
   it('lists the account as rows that say where each stands, and opens the one a link points at', async () => {
