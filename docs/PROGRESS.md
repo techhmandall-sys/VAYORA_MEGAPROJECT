@@ -1,5 +1,17 @@
 # Progress
 
+## 2026-11-08 (evening) — the assistant on every screen
+
+- **It could not be found.** The Assistant page was in the menu for passengers and drivers only, and
+  on a phone under More. Now a chat button sits on every screen for everyone signed in,
+  administrators included: bottom right, above a phone's tab bar. It opens the conversation over the
+  screen, so asking costs no one their place, and the conversation is the same one the page shows.
+- **The panel scrolls the conversation inside itself**, so it cannot be swiped away on a phone (the
+  same gesture); it has a close button instead. The chat's code still loads only when first opened.
+- **Checked in Edge** at 390 px and 1366 px: the button clear of the tab bar, the panel within the
+  screen, the question box and the latest answer in view.
+- **Verified**: web 308 tests, type check, ESLint and the production build.
+
 ## 2026-11-08 (latest) — the assistant answers, on Gemini's free tier
 
 - **The team asked for a free service.** Anthropic has no free tier, so the assistant now asks
