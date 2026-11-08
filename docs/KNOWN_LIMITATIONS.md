@@ -90,11 +90,14 @@ mistake for more. Updated 2026-11-01.
   check is lenient and a suggested price low. A whole-India graph has not been built or tried.
 - **The research says nothing about other routes.** Every number in the report comes from the
   simulated Kolhapur to Pune corridor.
-- **The assistant has never answered a real question.** No API key exists yet: the tests answer in
-  Claude's place and check the request intel would send. Its answers can be wrong, and the page
-  says so. What a member types goes to Anthropic. Nothing limits how often one member asks, since
-  intel keeps no state to count with; each answer is capped instead, and every question costs a
-  little on the team's account.
+- **The assistant runs on Gemini's free tier.** Google may use what members type to improve its
+  products, and people there may read it; the page says so and asks for no personal details.
+  Google no longer publishes the free tier's limits, and once they are reached members are told the
+  assistant is busy. On 2026-11-08 twelve real questions to Flash-Lite were answered in line with
+  the rules, in English, Hindi and Marathi, in 1 to 3.5 s, including a refusal of an unrelated question and 112 first for
+  danger; that is a spot check, not an evaluation. Its answers can be wrong, and the page says
+  so. Nothing limits how often one member asks, since intel keeps no state to count with; each
+  answer is capped instead. Claude has never answered: no Anthropic key exists.
 - **The places are a list:** 126 cities in 34 states and union territories, with Andaman and Nicobar
   and Lakshadweep left out for having no road link. Their coordinates are town centres entered by
   hand and checked only to lie in India, not against a survey. A town not listed is reached by a map

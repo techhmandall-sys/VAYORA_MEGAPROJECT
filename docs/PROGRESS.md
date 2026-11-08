@@ -1,5 +1,21 @@
 # Progress
 
+## 2026-11-08 (latest) — the assistant answers, on Gemini's free tier
+
+- **The team asked for a free service.** Anthropic has no free tier, so the assistant now asks
+  Google's Gemini by default (`provider: gemini` in `intel/app/assistant/settings.yaml`), with
+  Claude one setting away. Key: `GEMINI_API_KEY` in `.env`.
+- **Model**: gemini-3.8-flash, the free tier's flagship, timed out on 6 of 8 questions that day
+  (Google's 504, at whatever deadline the request set); gemini-3.5-flash-lite answered every one in
+  1 to 3.5 s. Flash-Lite it is, with a 15 s limit so a stuck request fails quickly.
+- **The page names the service**: on Gemini it says Google may use what is typed to improve its
+  products and people there may read it, so type no personal details.
+- **Tried for real** through the signed-in path: a follow-up about cancelling a day before (50%), three
+  days before (nothing), payment in Hindi, starting a ride in Marathi, a poem (declined: VAYORA
+  only), a dangerous driver (112 first), and a dog (does not know, says where to look). One line
+  added to its instructions after it listed every cancellation rule instead of the one that applied.
+- **Verified**: intel 93 tests, web 306, type check and ESLint.
+
 ## 2026-11-08 (later) — publishing works the route out first, and an assistant
 
 - **Publishing, route first.** Once two stops have places, the route is worked out by itself, again
