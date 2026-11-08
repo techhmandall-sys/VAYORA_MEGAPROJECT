@@ -1,5 +1,19 @@
 # Progress
 
+## 2026-11-08 (night) — search results and ride details
+
+- **Results**: the car under its driver on the card; for a party, the price of one seat under the
+  fare; on a phone, the filters in a sheet that scrolls, with one Search button under them; and when
+  nothing is found, the next day one tap away, beside the buses.
+- **Ride details**, a sheet from each result: every stop of the ride with its time, the passenger's
+  own boarding and getting off marked; the driver, record, car and note; the fare as the server sent
+  it (a seat, seats, total, recomputed nowhere); what cancelling costs; and the card's own booking
+  button, kept in view under it all, so there is one booking rule wherever it is pressed.
+- **Checked in Edge** at 390 and 1440 px on a throwaway backend with made-up rides: no sideways
+  scroll; the filters sheet and the details sheet fit a phone, the booking button in view.
+- **Verified**: web 318 tests, type check, ESLint and the production build. 8 new lines in Hindi and
+  Marathi.
+
 ## 2026-11-08 (later still) — signing in and signing up, in the brand
 
 - **Beside the brand**: the front page's photograph and promise next to the form on a wide screen,
