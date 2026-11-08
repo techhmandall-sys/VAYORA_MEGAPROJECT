@@ -1,5 +1,25 @@
 # Progress
 
+## 2026-11-08 (later) — publishing works the route out first, and an assistant
+
+- **Publishing, route first.** Once two stops have places, the route is worked out by itself, again
+  each time the stops settle, and fills the minutes and prices the driver has not typed. The
+  minutes and prices now come after the map. What a driver types is kept; "Use the suggested
+  prices and times" still replaces everything. A failure nobody asked for is said quietly; pressed
+  for, it is an alert. Without a route, prices stay empty and must be typed.
+- **An assistant** (team's choice: questions about how VAYORA works only, and Claude with the
+  team's own key). Members ask on a new Assistant page, in their own language, starting from a
+  few questions for passengers or drivers. intel answers from a fixed text of the rules
+  (`intel/app/assistant/knowledge.md`) with Claude Opus 5.5 at low effort, Anthropic's default
+  fallback on a refusal, and the rules marked for caching; the browser sends the conversation each
+  time, and nothing is kept. It sees no booking, ride or account. A test reads core-api's
+  `application.yml` and fails if the rules state other numbers. Without `ANTHROPIC_API_KEY` the
+  page says it is off. **Never tried with a real key.**
+- **Docker Desktop stopped by itself** during the work, ending the four research runs in progress;
+  it was restarted.
+- **Verified**: web 306 tests, type check, ESLint and the production build; intel's 91 tests in a
+  container of their own. core-api did not change.
+
 ## 2026-11-08 — easier on a phone
 
 - **Measured on a phone profile** (390 px wide, touch), on a throwaway backend with made-up

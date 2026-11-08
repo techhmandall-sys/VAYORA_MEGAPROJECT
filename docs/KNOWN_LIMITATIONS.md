@@ -90,6 +90,11 @@ mistake for more. Updated 2026-11-01.
   check is lenient and a suggested price low. A whole-India graph has not been built or tried.
 - **The research says nothing about other routes.** Every number in the report comes from the
   simulated Kolhapur to Pune corridor.
+- **The assistant has never answered a real question.** No API key exists yet: the tests answer in
+  Claude's place and check the request intel would send. Its answers can be wrong, and the page
+  says so. What a member types goes to Anthropic. Nothing limits how often one member asks, since
+  intel keeps no state to count with; each answer is capped instead, and every question costs a
+  little on the team's account.
 - **The places are a list:** 126 cities in 34 states and union territories, with Andaman and Nicobar
   and Lakshadweep left out for having no road link. Their coordinates are town centres entered by
   hand and checked only to lie in India, not against a survey. A town not listed is reached by a map
