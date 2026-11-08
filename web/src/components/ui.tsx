@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, ChevronDown, Inbox, Info, Loader2, Minus, Plus, type LucideIcon } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, Eye, EyeOff, Inbox, Info, Loader2, Minus, Plus, type LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { forwardRef, useId, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 
@@ -57,6 +57,43 @@ export const TextField = forwardRef<HTMLInputElement, FieldShell & InputHTMLAttr
     return (
       <FieldFrame id={id} label={label} error={error} hint={hint}>
         <input ref={ref} id={id} aria-invalid={Boolean(error)} aria-describedby={describedBy} className={control} {...input} />
+      </FieldFrame>
+    );
+  },
+);
+
+/**
+ * A password, with a button to show what was typed: on a phone keyboard a mistake hides behind
+ * the dots. The button is a toggle, pressed while the password shows.
+ */
+export const PasswordField = forwardRef<HTMLInputElement, FieldShell & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>>(
+  function PasswordField({ label, error, hint, ...input }, ref) {
+    const t = useT();
+    const { id, describedBy } = useFieldIds(error, hint);
+    const [shown, setShown] = useState(false);
+    return (
+      <FieldFrame id={id} label={label} error={error} hint={hint}>
+        <div className="relative mt-1.5">
+          <input
+            ref={ref}
+            id={id}
+            type={shown ? 'text' : 'password'}
+            aria-invalid={Boolean(error)}
+            aria-describedby={describedBy}
+            className={`${controlBase} pr-12`}
+            {...input}
+          />
+          <button
+            type="button"
+            aria-label={t('Show password')}
+            aria-pressed={shown}
+            aria-controls={id}
+            onClick={() => setShown(!shown)}
+            className="absolute inset-y-0 right-1 my-auto flex h-10 w-10 items-center justify-center rounded-full text-slate-500 touch:h-11 touch:w-11 hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30"
+          >
+            {shown ? <EyeOff aria-hidden="true" className="h-[18px] w-[18px]" /> : <Eye aria-hidden="true" className="h-[18px] w-[18px]" />}
+          </button>
+        </div>
       </FieldFrame>
     );
   },

@@ -2373,4 +2373,14 @@ export const hi: Record<string, string> = {
     'पूरे भारत में VAYORA के {n} शहरों में से किन्हीं भी दो के बीच। सड़क की दूरी और समय कोल्हापुर और पुणे के बीच निकाले जाते हैं; बाकी जगह ये सीधी रेखा का अनुमान होते हैं, और ऐसा बताया जाता है।',
   'Photo: {name} on Unsplash':
     'फ़ोटो: {name}, Unsplash पर',
+  // Signing in and up: the password shown, the welcome, the invitation tucked away
+  'Show password':
+    'पासवर्ड दिखाएँ',
+  'Welcome back. Your bookings and rides are where you left them.':
+    'फिर से स्वागत है। आपकी बुकिंग और राइड वहीं हैं जहाँ आपने छोड़ी थीं।',
+  'Have an invitation code?':
+    'आपके पास आमंत्रण कोड है?',
+  // Creating an account: its lead
+  'It is free to join.':
+    'जुड़ना मुफ़्त है।',
 };

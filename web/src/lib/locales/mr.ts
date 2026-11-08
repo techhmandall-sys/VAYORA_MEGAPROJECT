@@ -2373,4 +2373,14 @@ export const mr: Record<string, string> = {
     'संपूर्ण भारतातील VAYORA वरील {n} शहरांपैकी कोणत्याही दोन शहरांदरम्यान. रस्त्याचे अंतर आणि वेळ कोल्हापूर आणि पुणे दरम्यान मोजले जातात; इतरत्र ते सरळ रेषेतील अंदाज असतात, आणि तसे सांगितले जाते.',
   'Photo: {name} on Unsplash':
     'छायाचित्र: {name}, Unsplash वर',
+  // Signing in and up: the password shown, the welcome, the invitation tucked away
+  'Show password':
+    'पासवर्ड दाखवा',
+  'Welcome back. Your bookings and rides are where you left them.':
+    'पुन्हा स्वागत आहे. तुमच्या बुकिंग आणि राइड तुम्ही सोडल्या तिथेच आहेत.',
+  'Have an invitation code?':
+    'तुमच्याकडे निमंत्रण कोड आहे का?',
+  // Creating an account: its lead
+  'It is free to join.':
+    'सामील होणे मोफत आहे.',
 };

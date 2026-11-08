@@ -192,7 +192,8 @@ describe('access', () => {
     await userEvent.click(screen.getAllByRole('link', { name: 'Offer a ride' })[0]);
 
     expect(await screen.findByRole('heading', { name: 'Create an account' })).toBeInTheDocument();
-    expect(screen.getByLabelText('I want to')).toHaveValue('DRIVER');
+    // The choice made on the front page arrives made.
+    expect(screen.getByRole('radio', { name: /^Offer rides as a driver/ })).toBeChecked();
   });
 
   it('carries a search from the front page, with its date and seats, past signing up', async () => {
@@ -2501,7 +2502,7 @@ describe('phone sign-up', () => {
     expect(screen.queryByRole('textbox', { name: 'Email' })).not.toBeInTheDocument();
     await userEvent.type(screen.getByRole('textbox', { name: 'Phone number' }), '9800000009');
     await userEvent.type(screen.getByLabelText('Password'), 'correct-horse-battery');
-    await userEvent.selectOptions(screen.getByLabelText('I want to'), 'PASSENGER');
+    await userEvent.click(screen.getByRole('radio', { name: /^Find rides as a passenger/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
 
     expect(await screen.findByRole('heading', { name: 'Find a ride' })).toBeInTheDocument();
@@ -2509,6 +2510,42 @@ describe('phone sign-up', () => {
     expect(body).toMatchObject({ phone: '9800000009', fullName: 'Meera Kulkarni', role: 'PASSENGER' });
     expect(body).not.toHaveProperty('email');
     expect(body).not.toHaveProperty('method');
+  });
+
+  it('asks which kind of account first, and sends an invitation code given', async () => {
+    const fetchMock = serve({ 'POST /auth/register': () => json(session, 201), 'GET /rides/search': () => json([]) });
+    open('/register');
+
+    await userEvent.type(await screen.findByLabelText('Full name'), 'Meera Kulkarni');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), 'meera@example.test');
+    await userEvent.type(screen.getByLabelText('Password'), 'correct-horse-battery');
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    // Passenger or driver, which cannot be changed later, is asked before anything is sent.
+    expect(await screen.findByText('Choose how you will use VAYORA')).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+
+    await userEvent.click(screen.getByRole('radio', { name: /^Offer rides as a driver/ }));
+    await userEvent.click(screen.getByText('Have an invitation code?'));
+    await userEvent.type(screen.getByLabelText('Invitation code (optional)'), 'K7QX2M');
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    await waitFor(() =>
+      expect(bodyOf(fetchMock, 'POST', '/auth/register')).toMatchObject({ email: 'meera@example.test', role: 'DRIVER', referralCode: 'K7QX2M' }),
+    );
+  });
+
+  it('shows the password typed when asked, and hides it again', async () => {
+    serve({});
+    open('/login');
+
+    const password = await screen.findByLabelText('Password');
+    await userEvent.type(password, 'secret-words');
+    expect(password).toHaveAttribute('type', 'password');
+    const toggle = screen.getByRole('button', { name: 'Show password' });
+    await userEvent.click(toggle);
+    expect(password).toHaveAttribute('type', 'text');
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(toggle);
+    expect(password).toHaveAttribute('type', 'password');
   });
 });
 
@@ -3743,7 +3780,7 @@ describe('choosing a place', () => {
     await pickPlace('To', 'Mumbai');
     await userEvent.click(screen.getByRole('button', { name: 'Find a ride' }));
     expect(await screen.findByRole('heading', { name: 'Create an account' })).toBeInTheDocument();
-    expect(screen.getByLabelText('I want to')).toHaveValue('PASSENGER');
+    expect(screen.getByRole('radio', { name: /^Find rides as a passenger/ })).toBeChecked();
     cleanup();
 
     signIn('PASSENGER');
