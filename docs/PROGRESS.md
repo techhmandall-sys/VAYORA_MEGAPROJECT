@@ -1,5 +1,23 @@
 # Progress
 
+## 2026-11-08 (night) — asking the assistant out loud
+
+- **The team chose speech** from three ways to go beyond text (speaking, answers read aloud,
+  photos). A microphone button beside Send: tap, ask, tap to send, or Cancel; it stops itself at
+  30 s. One request to Gemini writes down what it heard and answers; the question shows as heard,
+  with a microphone mark, and the conversation goes on in writing. No recording is kept.
+- **The browser records in its own format** (WebM in Chrome and Edge, Ogg in Firefox, MP4 in Safari),
+  all of which Gemini reads. The web server's permissions policy refused the microphone to every
+  page; it now allows VAYORA's own. Offered only where the service can listen (Gemini) and the
+  browser can record (https or localhost).
+- **Tried for real**: Windows' voice spoke "If I cancel my booking one day before the ride, how much
+  do I have to pay?" into Edge's microphone; Gemini wrote it down word for word and answered 50% of
+  the fare, in 3.5 s at phone size and 3.9 s at laptop size. Two seconds of silence: "could not hear
+  a question". Hindi and Marathi speech are untried (no such voice on Windows to test with).
+- **Gemini is asked once more after a stall**: one live question timed out and the next answered in
+  2.3 s. Attempts now 10 s each, two at most; never again after its limit (429).
+- **Verified**: intel 104 tests, web 312, type check, ESLint and the production build.
+
 ## 2026-11-08 (evening) — the assistant on every screen
 
 - **It could not be found.** The Assistant page was in the menu for passengers and drivers only, and

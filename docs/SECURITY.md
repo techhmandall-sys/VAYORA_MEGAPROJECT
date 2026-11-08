@@ -69,8 +69,9 @@ test. It must not be put on the public internet as it stands; the last section s
 - No cookies are used, so there is no cross-site request forgery surface; CSRF protection
   is off for that reason, not by oversight.
 - The web server sends `X-Content-Type-Options: nosniff`, a referrer policy,
-  `X-Frame-Options: DENY` and a permissions policy that refuses the camera and microphone,
-  and does not name its version.
+  `X-Frame-Options: DENY` and a permissions policy that refuses the camera, and the microphone
+  to anything but VAYORA's own pages (for a question asked out loud to the assistant, from
+  2026-11-08), and does not name its version.
 
 ### Containers
 
