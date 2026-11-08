@@ -22,3 +22,5 @@ fastapi==0.143.0
 httpx==0.28.1
 # Signs the tokens intel's live what-if tests present, as core-api would.
 PyJWT==2.10.1
+# Lets the research suite check how intel asks Claude for the assistant's answers.
+anthropic==2.6.0

@@ -1,0 +1,18 @@
+# The assistant's settings. They are the app's, not research parameters, so they live here
+# rather than in experiments/configs.
+
+# Claude Opus 5.5. Its thinking is always on; effort is the only control.
+model: claude-opus-5-5
+# Answers about the app's rules do well at low effort, which also keeps them quick and cheap.
+# Claude Opus 5.5 would otherwise run at medium.
+effort: low
+# The most one answer may use, thinking included: a cap on what one question can cost.
+max_tokens: 4000
+# How long one attempt may take. The SDK tries twice more on its own after a timeout, so a
+# member waits at most three times this before being told the assistant cannot be reached.
+timeout_seconds: 30
+
+# What one request may carry. The browser sends the whole conversation each time, since
+# intel keeps none of it; it keeps the latest messages when there are more.
+max_messages: 20
+max_message_chars: 2000

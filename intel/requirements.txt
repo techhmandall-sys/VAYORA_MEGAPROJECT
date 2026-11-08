@@ -7,3 +7,5 @@ simpy==4.1.2
 PyYAML==6.0.3
 # Checks an administrator's session token for a live what-if run, as the gateway does.
 PyJWT==2.10.1
+# The official SDK for Claude, which writes the assistant's answers (intel/app/assistant).
+anthropic==2.6.0

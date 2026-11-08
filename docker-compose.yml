@@ -162,9 +162,12 @@ services:
       context: .
       dockerfile: intel/Dockerfile
     environment:
-      # Checks an administrator's token for a live what-if run, as the gateway checks tokens.
+      # Checks a member's token, as the gateway checks tokens: an administrator's for a live
+      # what-if run, anyone's for the assistant.
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-dev-only-change-me}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      # The assistant is off unless set (.env.example).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "${INTEL_PORT:-8000}:8000"
     healthcheck:
