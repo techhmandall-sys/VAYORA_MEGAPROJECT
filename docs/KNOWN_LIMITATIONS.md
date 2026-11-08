@@ -103,6 +103,9 @@ mistake for more. Updated 2026-11-01.
   down word for word and answered, through Edge at phone and laptop size, in 3.5 to 3.9 s.
   Hindi and Marathi speech, real microphones and noisy streets are untried. Recordings go to
   Google like typed questions, and the page says so. The microphone needs https (or localhost).
+- **There is no way to reset a forgotten password.** core-api has no reset: it would need a
+  code sent by email or text, which are simulated unless real services are connected, and a
+  table of reset codes. The sign-in page offers none rather than a link that leads nowhere.
 - **The front page shows no live rides.** Only signing in and signing up are open to visitors, so
   listing real rides there would need a public endpoint, and a decision on how much of a ride a
   stranger may see. Until then it offers routes to start a search from, and the visitor's own

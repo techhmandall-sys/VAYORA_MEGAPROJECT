@@ -1,5 +1,18 @@
 # Progress
 
+## 2026-11-08 (later still) — signing in and signing up, in the brand
+
+- **Beside the brand**: the front page's photograph and promise next to the form on a wide screen,
+  a strip above it on a phone, so the form comes first there.
+- **Signing up**: passenger or driver as two cards to choose, first, since it cannot be changed
+  later and is asked before anything is sent; email or phone as a switch; the invitation code
+  folded away; one full-width button. **Signing in**: a password can be shown, with a toggle
+  button (new `PasswordField`, used by both).
+- **Not added**: a forgotten-password link. core-api has no reset (KNOWN_LIMITATIONS).
+- **Checked in Edge** at 390 px (light and dark) and 1440 px: no sideways scroll, no text under
+  13 px, nothing under 44 px on a touch screen. 4 new lines in Hindi and Marathi.
+- **Verified**: web 316 tests, type check, ESLint and the production build.
+
 ## 2026-11-08 (late) — the brand and the front page, first of the redesign
 
 - **The team's brief** asks for the whole app redesigned in VAYORA's brand, phase by phase, keeping
