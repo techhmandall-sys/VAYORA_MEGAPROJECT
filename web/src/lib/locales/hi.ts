@@ -2388,4 +2388,17 @@ export const hi: Record<string, string> = {
     '{price} प्रति सीट',
   'Try the next day':
     'अगले दिन देखें',
+  // Ride details: the stops, the fare, the total
+  'Ride details':
+    'राइड का विवरण',
+  'Stops on this ride':
+    'इस राइड के पड़ाव',
+  'You board here':
+    'आप यहाँ बैठेंगे',
+  'You get off here':
+    'आप यहाँ उतरेंगे',
+  'Price a seat':
+    'प्रति सीट कीमत',
+  'Total':
+    'कुल',
 };

@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
-import { Armchair, ArrowUpDown, CalendarPlus, Award, BadgeCheck, Car, CarTaxiFront, Check, Clock, Flag, Footprints, Hourglass, Map as MapIcon, MessagesSquare, Route as RouteIcon, Search, Send, ShieldCheck, Shuffle, SlidersHorizontal, Sparkles, Ticket, TriangleAlert, Undo2, UserRound, Users, Wallet, Zap } from 'lucide-react';
+import { Armchair, ArrowUpDown, CalendarPlus, Info, Award, BadgeCheck, Car, CarTaxiFront, Check, Clock, Flag, Footprints, Hourglass, Map as MapIcon, MessagesSquare, Route as RouteIcon, Search, Send, ShieldCheck, Shuffle, SlidersHorizontal, Sparkles, Ticket, TriangleAlert, Undo2, UserRound, Users, Wallet, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { LeavesIn, LiveDot, LiveStatus, useTimeAhead } from '../components/live';
@@ -219,6 +219,122 @@ function RideRoute({ rideId, fromSeq, toSeq, pickup }: { rideId: number; fromSeq
 }
 
 /** The next seven days as a press each, the horizon rides are booked within. */
+/**
+ * Everything about one result in one place, over the results: the ride's stops with the
+ * passenger's own stretch marked, the driver and car, what the seats cost, what cancelling
+ * costs, and the same booking button as the card, kept in view under it all.
+ */
+function RideDetails({ candidate, seats, open, onClose, action }: {
+  candidate: Candidate;
+  seats: number;
+  open: boolean;
+  onClose: () => void;
+  /** The card's own booking button: one booking rule, wherever it is pressed. */
+  action: ReactNode;
+}) {
+  const t = useT();
+  const ride = useQuery({ queryKey: ['ride', candidate.rideId], queryFn: () => api<Ride>(`/rides/${candidate.rideId}`), enabled: open });
+  const heading = 'text-[13px] font-semibold uppercase tracking-wide text-slate-500';
+  return (
+    <Sheet open={open} onClose={onClose} title={t('Ride details')} swipe={false}>
+      <div className="max-h-[60vh] space-y-6 overflow-y-auto overscroll-contain pr-1">
+        <section aria-labelledby={`stops-${candidate.rideId}`}>
+          <h3 id={`stops-${candidate.rideId}`} className={heading}>
+            {t('Stops on this ride')}
+          </h3>
+          {ride.data ? (
+            <ol className="mt-3 space-y-3">
+              {ride.data.stops.map((stop) => {
+                const yours = stop.seq >= candidate.fromSeq && stop.seq <= candidate.toSeq;
+                const marker = stop.seq === candidate.fromSeq ? t('You board here') : stop.seq === candidate.toSeq ? t('You get off here') : null;
+                return (
+                  <li key={stop.seq} className={`relative pl-6 ${yours ? '' : 'text-slate-500'}`}>
+                    <span
+                      aria-hidden="true"
+                      className={`absolute left-0 top-1.5 h-3 w-3 rounded-full ${marker ? 'bg-accent ring-4 ring-teal-600/20' : yours ? 'bg-teal-600' : 'bg-slate-300'}`}
+                    />
+                    <p className="flex items-baseline justify-between gap-3">
+                      <span className={yours ? 'font-semibold text-slate-900' : ''}>{t(stop.name)}</span>
+                      <span className="tabular-nums">{formatTime(stop.departureTime)}</span>
+                    </p>
+                    {marker && <p className="text-[13px] font-semibold text-teal-800">{marker}</p>}
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <QueryState isPending={ride.isPending} error={ride.error} isEmpty={false} empty="" onRetry={() => void ride.refetch()} />
+          )}
+        </section>
+
+        <section aria-labelledby={`driver-${candidate.rideId}`} className="space-y-2">
+          <h3 id={`driver-${candidate.rideId}`} className={heading}>
+            {t('Driver')}
+          </h3>
+          <div className="flex items-center gap-3">
+            <Avatar initials={initialsOf(candidate.driverName)} />
+            <p className="min-w-0 text-sm">
+              <Link to={`/users/${candidate.driverId}`} className="font-semibold text-slate-900 hover:text-teal-800 hover:underline">
+                {candidate.driverName}
+              </Link>
+              <span className="block text-slate-600">
+                <RatingSummary average={candidate.driverRating} count={candidate.driverRatingCount} />
+              </span>
+            </p>
+          </div>
+          <Detail icon={Award}>{driverRecord(candidate, t)}</Detail>
+          {/* `vehicle` is what the driver typed: shown as text, not translated. */}
+          {candidate.vehicle && <Detail icon={Car}>{[candidate.vehicle, ...vehiclePhrases(candidate, t)].join(' · ')}</Detail>}
+          {ride.data?.notes && (
+            <p className="text-sm text-slate-700">
+              <span className="font-medium">{t('From the driver:')}</span>{' '}
+              {/* Rendered as text: notes are whatever the driver typed. */}
+              <span className="whitespace-pre-wrap">{ride.data.notes}</span>
+            </p>
+          )}
+        </section>
+
+        <section aria-labelledby={`fare-${candidate.rideId}`} className="space-y-2">
+          <h3 id={`fare-${candidate.rideId}`} className={heading}>
+            {t('Fare')}
+          </h3>
+          {/* The server's own figures, each as it sent it: nothing here is worked out again. */}
+          <dl className="divide-y divide-slate-900/[0.06] rounded-2xl bg-slate-900/[0.03] px-4 text-sm">
+            <div className="flex justify-between py-2.5">
+              <dt className="text-slate-600">{t('Price a seat')}</dt>
+              <dd className="font-medium tabular-nums">{formatRupees(candidate.pricePerSeat)}</dd>
+            </div>
+            <div className="flex justify-between py-2.5">
+              <dt className="text-slate-600">{t('Seats')}</dt>
+              <dd className="font-medium tabular-nums">{seats}</dd>
+            </div>
+            <div className="flex justify-between py-2.5">
+              <dt className="font-semibold text-slate-900">{t('Total')}</dt>
+              <dd className="font-bold tabular-nums">{formatRupees(candidate.fare)}</dd>
+            </div>
+          </dl>
+          <p className="text-[13px] text-slate-500">{t('You pay your driver directly after the ride, in cash or by UPI. VAYORA charges nothing.')}</p>
+        </section>
+
+        <section aria-labelledby={`cancel-${candidate.rideId}`} className="space-y-2">
+          <h3 id={`cancel-${candidate.rideId}`} className={heading}>
+            {t('What cancelling costs')}
+          </h3>
+          <CancellingTerms />
+        </section>
+      </div>
+      {/* Kept in view under the details, however far they scroll. */}
+      <div className="mt-4 flex items-center justify-between gap-4 border-t border-slate-900/[0.06] pt-4">
+        <p>
+          <span className="block text-2xl font-bold tracking-tight text-slate-900">{formatRupees(candidate.fare)}</span>
+          <span className="block text-xs text-slate-500">{t('Pay after the ride')}</span>
+        </p>
+        {action}
+      </div>
+    </Sheet>
+  );
+}
+
 function DateChips({ value, onChoose }: { value: string; onChoose: (date: string) => void }) {
   const t = useT();
   const today = todayInIndia();
@@ -283,6 +399,8 @@ export function SearchPage() {
   const [sorting, startSorting] = useTransition();
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // The result whose details are open, by its key.
+  const [details, setDetails] = useState<string | null>(null);
   const phone = useMediaQuery(PHONE);
   const searchForm = useRef<HTMLFormElement>(null);
   // Once searched, the form steps aside for a one-line summary, so the results start at the top.
@@ -877,6 +995,26 @@ export function SearchPage() {
                       {t('This driver has withdrawn some rides. A flexible booking would move you to another ride automatically.')}
                     </Detail>
                   )}
+                  <Button tone="secondary" onClick={() => setDetails(key)}>
+                    <Info aria-hidden="true" className="h-4 w-4" />
+                    {t('Ride details')}
+                  </Button>
+                  <RideDetails
+                    candidate={candidate}
+                    seats={Number(criteria.form.seats)}
+                    open={details === key}
+                    onClose={() => setDetails(null)}
+                    action={
+                      <Button
+                        className="px-6"
+                        disabled={book.isPending || gone || tooFew}
+                        busy={book.isPending && book.variables === candidate}
+                        onClick={() => book.mutate(candidate, { onSuccess: () => setDetails(null) })}
+                      >
+                        {candidate.instantBooking ? t('Book') : t('Request')}
+                      </Button>
+                    }
+                  />
                   <More label={t('More about this ride')}>
                   <div className="space-y-1.5">
                   {/* `vehicle` is what the driver typed: shown as text, not translated. */}

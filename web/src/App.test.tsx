@@ -384,6 +384,35 @@ describe('finding and booking a ride', () => {
     expect((post[1]!.headers as Record<string, string>)['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
   });
 
+  it('shows a ride in full before booking, and books from there', async () => {
+    signIn('PASSENGER');
+    const fetchMock = serve({
+      'GET /rides/search': () => json([candidate]),
+      'GET /rides/12': () => json({ ...rideWithRoute, notes: 'Two bags each.', maxTwoInBack: false, seriesSize: 1 }),
+      'POST /bookings': () => json(booking, 201),
+    });
+    open('/search');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Ride details' }));
+    const sheet = screen.getByRole('dialog', { name: 'Ride details' });
+
+    // Every stop of the ride, the passenger's own stretch marked, and what the driver wrote.
+    expect(await within(sheet).findByText('Satara')).toBeInTheDocument();
+    expect(within(sheet).getByText('You board here')).toBeInTheDocument();
+    expect(within(sheet).getByText('You get off here')).toBeInTheDocument();
+    expect(within(sheet).getByText('Two bags each.')).toBeInTheDocument();
+    // The fare as the server gave it, and what cancelling costs, before anything is booked.
+    expect(within(sheet).getByText('Price a seat').nextSibling).toHaveTextContent('₹520');
+    expect(within(sheet).getByText('Total').nextSibling).toHaveTextContent('₹1,040');
+    expect(await within(sheet).findByText('48 hours or more before boarding: nothing to pay.')).toBeInTheDocument();
+
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Request' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Ride details' })).not.toBeInTheDocument());
+    expect(fetchMock.mock.calls.filter(([url, init]) => init?.method === 'POST' && String(url).endsWith('/bookings'))).toHaveLength(1);
+    expect(await screen.findByText(/Request sent/)).toBeInTheDocument();
+  });
+
   it('offers the next day when nothing is found, and searches it', async () => {
     signIn('PASSENGER');
     const fetchMock = serve({ 'GET /rides/search': () => json([]) });
