@@ -1,5 +1,28 @@
 # Progress
 
+## 2026-11-08 (late) — the brand and the front page, first of the redesign
+
+- **The team's brief** asks for the whole app redesigned in VAYORA's brand, phase by phase, keeping
+  every feature. Done in this pass: the audit, the design system (the palette) and the front page.
+- **Palette**: navy #10213A and green #16865A on #F5F7F9, and a navy dark mode, through the CSS
+  variables every screen reads, so all of them changed at once. One brand green for every role,
+  where passengers, drivers and administrators had a tint each. Measured: the brief's secondary
+  grey is 4.0:1 on white, so text uses #5F6E84 (5.2:1); white on the green is 4.57:1.
+- **Front page**: a photograph of the Mumbai to Pune Expressway at Khandala under navy, the tagline
+  "Your Journey. Shared Better.", and the whole search (from, swap, to, date, seats) in one row on a
+  wide screen. The date and seats now wait past signing up, as the route did. Then the visitor's
+  recent places, routes to start with, how it works, why VAYORA, trust and safety (112 first,
+  ratings both ways, boarding codes, reporting), the early-cancellation idea, passenger and driver
+  cards, questions, and a footer with the photo credit. The sample ride with a made-up driver is
+  gone. 24 new lines in Hindi and Marathi.
+- **Checked in Edge** at 360, 390, 768, 1024 and 1440 px, light and dark: no sideways scroll, no
+  text under 13 px, and on touch screens nothing under 44 px. A stale dev server from an earlier
+  session had been answering on the check's port with the old colours; it was found and stopped.
+- **Verified**: web 314 tests, type check, ESLint and the production build.
+- **Next, as the brief orders them**: sign-in and onboarding; search and ride details; booking;
+  passenger and driver dashboards; publishing as steps; account, notifications and safety; admin;
+  then a responsive pass over all of it.
+
 ## 2026-11-08 (night) — asking the assistant out loud
 
 - **The team chose speech** from three ways to go beyond text (speaking, answers read aloud,
