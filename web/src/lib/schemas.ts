@@ -130,8 +130,9 @@ export const rideSchema = z
         lat: z.coerce.number<number>(),
         lon: z.coerce.number<number>(),
         offsetMinutes: z.coerce.number<number>(),
-        // Price per seat of the leg that ends at this stop.
-        priceFromPrevious: z.coerce.number<number>(),
+        // Price per seat of the leg that ends at this stop. Starts empty, so 0, a free ride, is
+        // something the driver typed rather than something they left.
+        priceFromPrevious: z.union([z.literal(''), z.coerce.number<number>()]),
       }),
     ),
   })
@@ -158,7 +159,14 @@ export const rideSchema = z
           message: msg('Enter whole minutes, up to two days'),
         });
       }
-      if (!(stop.priceFromPrevious >= 0 && stop.priceFromPrevious <= 999999)) {
+      const price = stop.priceFromPrevious;
+      if (stop.index > 0 && price === '') {
+        context.addIssue({
+          code: 'custom',
+          path: ['stops', stop.index, 'priceFromPrevious'],
+          message: msg('Enter a price, or 0 for a free ride'),
+        });
+      } else if (price !== '' && !(price >= 0 && price <= 999999)) {
         context.addIssue({
           code: 'custom',
           path: ['stops', stop.index, 'priceFromPrevious'],
@@ -199,7 +207,7 @@ export function toPublishRequest(form: RideForm) {
       // Minutes after departure: the ride departs from its first stop, at 0.
       offsetMinutes: stop.offsetMinutes,
     })),
-    segmentPrices: form.stops.slice(1).map((stop) => stop.priceFromPrevious),
+    segmentPrices: form.stops.slice(1).map((stop) => (stop.priceFromPrevious === '' ? 0 : stop.priceFromPrevious)),
     notes: form.notes.trim(),
     maxTwoInBack: form.maxTwoInBack,
     womenOnly: form.womenOnly,

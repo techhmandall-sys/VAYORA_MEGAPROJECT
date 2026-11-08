@@ -361,7 +361,6 @@ export const mr: Record<string, string> = {
   'Instant booking': 'त्वरित बुकिंग',
   'You approve requests': 'विनंत्या तुम्ही मंजूर करता',
   '{km} km by road, about {time}': 'रस्त्याने {km} किमी, सुमारे {time}',
-  'About {km} km in a straight line (road distance unavailable)': 'सरळ रेषेत सुमारे {km} किमी (रस्त्याचे अंतर उपलब्ध नाही)',
   'Start ride': 'प्रवास सुरू करा',
   'Cancel ride': 'प्रवास रद्द करा',
   'Yes, cancel for everyone': 'होय, सर्वांसाठी रद्द करा',
@@ -432,8 +431,6 @@ export const mr: Record<string, string> = {
   '{n} seats left': '{n} जागा शिल्लक',
   'Confirms instantly': 'लगेच निश्चित होते',
   'Driver approves each request': 'चालक प्रत्येक विनंती मंजूर करतो',
-  'Pickup {pickup} from your start · drop-off {dropoff} from your destination':
-    'पिकअप तुमच्या सुरुवातीच्या ठिकाणापासून {pickup} · ड्रॉप तुमच्या गंतव्यस्थानापासून {dropoff}',
   Book: 'बुक करा',
   Request: 'विनंती करा',
   'Hide route': 'मार्ग लपवा',
@@ -2210,4 +2207,49 @@ export const mr: Record<string, string> = {
     'तुमचा पहिला प्रवास प्रकाशित करा',
   '{step}: done':
     '{step}: पूर्ण',
+  // Easier on a phone: search summary, booking tiles, publish and account
+  'Enter a price, or 0 for a free ride':
+    'किंमत टाका, किंवा मोफत प्रवासासाठी 0',
+  'Safety':
+    'सुरक्षितता',
+  'None yet':
+    'अजून कोणी नाही',
+  '{n} contact':
+    '{n} संपर्क',
+  '{n} contacts':
+    '{n} संपर्क',
+  'Not declared':
+    'जाहीर केलेले नाही',
+  'QR code':
+    'QR कोड',
+  'Cash only':
+    'फक्त रोख',
+  'App':
+    'ॲप',
+  "{when}, in your device's local time":
+    '{when}, तुमच्या डिव्हाइसच्या स्थानिक वेळेनुसार',
+  'Optional':
+    'ऐच्छिक',
+  'About {km} km in a straight line':
+    'सरळ रेषेत सुमारे {km} किमी',
+  'You can start it from {time}':
+    'तुम्ही हा प्रवास {time} पासून सुरू करू शकता',
+  '{n} seat':
+    '{n} जागा',
+  '{n} seats':
+    '{n} जागा',
+  '{n} filters on':
+    '{n} फिल्टर लावले आहेत',
+  'Change search':
+    'शोध बदला',
+  'Picks you up where you start':
+    'तुम्ही जिथून निघता, तिथूनच घेतो',
+  'Pickup {pickup} from your start':
+    'पिकअप तुमच्या सुरुवातीच्या ठिकाणापासून {pickup}',
+  'drops you where you are going':
+    'तुम्हाला जिथे जायचे, तिथेच सोडतो',
+  'drop-off {dropoff} from your destination':
+    'ड्रॉप तुमच्या गंतव्यस्थानापासून {dropoff}',
+  'What cancelling costs':
+    'रद्द करण्याचा खर्च',
 };

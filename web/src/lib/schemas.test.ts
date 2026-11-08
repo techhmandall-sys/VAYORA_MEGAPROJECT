@@ -121,6 +121,22 @@ describe('rideSchema', () => {
     expect(rideSchema.safeParse(ride({ stops })).success).toBe(true);
   });
 
+  it('asks for a price left empty, and takes 0 as a free ride', () => {
+    const empty = ride().stops;
+    empty[2] = { ...empty[2], priceFromPrevious: '' };
+    expect(messages(rideSchema.safeParse(ride({ stops: empty })))).toEqual(['Enter a price, or 0 for a free ride']);
+
+    const free = ride().stops;
+    free[2] = { ...free[2], priceFromPrevious: 0 };
+    expect(rideSchema.safeParse(ride({ stops: free })).success).toBe(true);
+  });
+
+  it('asks for no price at the first stop, where no leg ends', () => {
+    const first = ride().stops;
+    first[0] = { ...first[0], priceFromPrevious: '' };
+    expect(rideSchema.safeParse(ride({ stops: first })).success).toBe(true);
+  });
+
   it('refuses a negative price or an absurd offset', () => {
     const negative = ride().stops;
     negative[1] = { ...negative[1], priceFromPrevious: -5 };

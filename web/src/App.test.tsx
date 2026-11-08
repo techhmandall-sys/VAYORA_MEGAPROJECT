@@ -307,7 +307,9 @@ describe('finding and booking a ride', () => {
     expect(within(results).getByText(/4\.7 out of 5 · 3 ratings/)).toBeInTheDocument();
     expect(within(results).getByText(/3 seats left/)).toBeInTheDocument();
     expect(within(results).getByText('₹1,040')).toBeInTheDocument();
-    expect(within(results).getByText(/You pay your driver directly after the ride, in cash or by UPI/)).toBeInTheDocument();
+    // The form has stepped aside for a summary, so the results start near the top.
+    expect(screen.getByRole('button', { name: 'Change search' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
     // There is nothing to choose: no card, no wallet, no second way to book.
     expect(within(results).queryByLabelText('Pay with')).not.toBeInTheDocument();
     expect(within(results).queryByText(/service fee/)).not.toBeInTheDocument();
@@ -605,7 +607,7 @@ describe('maps, routes and location search', () => {
     open('/search');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
-    expect(await screen.findByText(/Pickup 2\.0 km from your start · drop-off 0 m from your destination/)).toBeInTheDocument();
+    expect(await screen.findByText(/Pickup 2\.0 km from your start · drops you where you are going/)).toBeInTheDocument();
     const first = searchUrls(fetchMock)[0].searchParams;
     expect([first.get('originLat'), first.get('originLon')]).toEqual(['16.705', '74.2433']);
     expect([first.get('destLat'), first.get('destLon')]).toEqual(['18.5204', '73.8567']);
@@ -633,6 +635,8 @@ describe('maps, routes and location search', () => {
     expect([sent.get('originLat'), sent.get('originLon')]).toEqual(['17.307', '74.19']);
     expect(sent.get('destLat')).toBe('18.5204'); // the destination is still the town
 
+    // The form steps aside for a one-line summary once searched; it comes back to change the search.
+    await userEvent.click(screen.getByRole('button', { name: 'Change search' }));
     await userEvent.click(screen.getByRole('button', { name: 'Use the centre of Kolhapur instead' }));
     expect(screen.getByText('Start: the centre of Kolhapur')).toBeInTheDocument();
   });
@@ -1388,6 +1392,8 @@ describe('search filters', () => {
     expect(await screen.findByText(/Contact confirmed/)).toBeInTheDocument();
     expect(Object.keys(searches(fetchMock)[0]).sort()).toEqual(['date', 'destLat', 'destLon', 'originLat', 'originLon', 'seats', 'sort']);
 
+    // The form steps aside for a one-line summary once searched; it comes back to change the search.
+    await userEvent.click(screen.getByRole('button', { name: 'Change search' }));
     await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
     const filters = within(screen.getByRole('group', { name: 'Show only rides that' }));
     await userEvent.selectOptions(filters.getByLabelText('Leave in the'), 'Afternoon, 12 to 5');
@@ -1432,6 +1438,8 @@ describe('search filters', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Search' }));
     expect(await screen.findByText(/Try another date or other points/)).toBeInTheDocument();
 
+    // The form steps aside for a one-line summary once searched; it comes back to change the search.
+    await userEvent.click(screen.getByRole('button', { name: 'Change search' }));
     await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
     await userEvent.click(screen.getByLabelText('Have a driver who said pets are welcome'));
     expect(screen.getByText(/leave out drivers who have not said either way/)).toBeInTheDocument();
@@ -1768,7 +1776,8 @@ describe('running a ride from my rides', () => {
     });
     open('/rides');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Show passengers' }));
+    // Leaving within a day: who is coming shows from the start.
+    expect(await screen.findByRole('button', { name: 'Hide passengers' })).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: 'Asha Patil' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Accept' })).toHaveLength(2);
 
@@ -1805,7 +1814,8 @@ describe('running a ride from my rides', () => {
     open('/rides');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Start ride' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Show passengers' }));
+    // Leaving within a day: who is coming shows from the start.
+    expect(await screen.findByRole('button', { name: 'Hide passengers' })).toBeInTheDocument();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Did not board' }));
     expect(posted(fetchMock)).toEqual(['/rides/12/start']); // asks first
@@ -1877,6 +1887,8 @@ describe('women-only rides', () => {
 
     fireEvent.change(await screen.findByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
     await userEvent.click(await screen.findByLabelText('Women passengers only'));
+    // A price starts empty: a free ride is something the driver types, never what they leave.
+    await userEvent.type(screen.getByLabelText('Price to Pune (₹)'), '450');
     await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
 
     expect(await screen.findByText('Women only')).toBeInTheDocument();
@@ -2087,7 +2099,8 @@ describe('boarding codes', () => {
     });
     open('/rides');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Show passengers' }));
+    // Leaving within a day: who is coming shows from the start.
+    expect(await screen.findByRole('button', { name: 'Hide passengers' })).toBeInTheDocument();
     const input = await screen.findByLabelText('Boarding code shown by the passenger');
     await userEvent.type(input, '48a21');
     expect(input).toHaveValue('4821'); // digits only, four at most
@@ -2942,6 +2955,8 @@ describe('staff checks of what a driver declared', () => {
     expect(await screen.findByText('Identity checked by staff')).toBeInTheDocument();
     expect(screen.getByText(/Insurance: New India Assurance, until .*2027\. VAYORA staff saw the policy; it was not checked with the insurer\./)).toBeInTheDocument();
 
+    // The form steps aside for a one-line summary once searched; it comes back to change the search.
+    await userEvent.click(screen.getByRole('button', { name: 'Change search' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Filters' }));
     await userEvent.click(screen.getByLabelText('Have a driver whose identity VAYORA staff have checked'));
     await userEvent.click(screen.getByRole('button', { name: 'Search' }));
@@ -3720,8 +3735,8 @@ describe('getting set up as a driver', () => {
     expect(await screen.findByRole('heading', { name: 'Get set up' })).toBeInTheDocument();
     expect(screen.getByText('0 of 4 done')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Add your car' })).toHaveAttribute('href', '/vehicles');
-    expect(screen.getByRole('link', { name: 'Add your UPI ID or QR code, so passengers can pay you' })).toHaveAttribute('href', '/account');
-    expect(screen.getByRole('link', { name: 'Confirm your email or phone' })).toHaveAttribute('href', '/account');
+    expect(screen.getByRole('link', { name: 'Add your UPI ID or QR code, so passengers can pay you' })).toHaveAttribute('href', '/account#payment');
+    expect(screen.getByRole('link', { name: 'Confirm your email or phone' })).toHaveAttribute('href', '/account#contact');
     expect(screen.getByRole('link', { name: 'Publish your first ride' })).toHaveAttribute('href', '/rides/new');
   });
 
@@ -3756,5 +3771,118 @@ describe('getting set up as a driver', () => {
     await waitFor(() => expect(['/vehicles', '/me/payment-details', '/me/profile'].every(asked)).toBe(true));
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(screen.queryByRole('heading', { name: 'Get set up' })).not.toBeInTheDocument();
+  });
+});
+
+describe('easier on a phone', () => {
+  const vehicle = { id: 3, make: 'Maruti', model: 'Ertiga', year: 2022, colour: 'Silver', seats: 7 };
+
+  it('folds the search into one line once searched, and opens it again to change it', async () => {
+    signIn('PASSENGER');
+    serve({ 'GET /rides/search': () => json([candidate]) });
+    open('/search');
+
+    await userEvent.clear(await screen.findByLabelText('Seats'));
+    await userEvent.type(screen.getByLabelText('Seats'), '2');
+    // Whether to be rebooked is part of the search, chosen before any result is in view.
+    expect(screen.getByRole('combobox', { name: 'If the driver withdraws' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+    await screen.findByRole('region', { name: 'Search results' });
+    const summary = screen.getByText('Kolhapur → Pune').closest('div')!;
+    expect(within(summary).getByText(/2 seats/)).toBeInTheDocument();
+    const change = within(summary).getByRole('button', { name: 'Change search' });
+    // The button pressed has gone, so the reader's place moves to the one that brings it back.
+    await waitFor(() => expect(change).toHaveFocus());
+    expect(screen.queryByRole('spinbutton', { name: 'Seats' })).not.toBeInTheDocument();
+
+    await userEvent.click(change);
+    expect(screen.getByRole('spinbutton', { name: 'Seats' })).toHaveValue(2);
+    expect(screen.queryByRole('button', { name: 'Change search' })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Search results' })).toBeInTheDocument();
+  });
+
+  it("lays a booking's actions out in one row, and keeps cancelling quiet with its cost in the sheet", async () => {
+    signIn('PASSENGER');
+    const fetchMock = serve({ 'GET /bookings': () => json([{ ...booking, status: 'CONFIRMED' }]) });
+    open('/bookings');
+
+    expect(await screen.findByRole('button', { name: 'Show meeting point' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open chat' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Call the driver' })).toBeInTheDocument();
+    // The rules sit behind a line on the page rather than in a box on every visit.
+    expect(screen.getByText('What cancelling costs').closest('details')).not.toHaveAttribute('open');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel booking' }));
+    const sheet = screen.getByRole('dialog', { name: 'Cancel booking' });
+    expect(await within(sheet).findByText('48 hours or more before boarding: nothing to pay.')).toBeInTheDocument();
+    expect(within(sheet).getByRole('button', { name: 'Yes, cancel it' })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
+  it("offers to start a ride only once it may be started, and keeps a later ride's passengers folded", async () => {
+    signIn('DRIVER');
+    const leaves = Date.now() + 3 * 86_400_000;
+    const ride = {
+      ...rideWithRoute,
+      departureTime: new Date(leaves).toISOString(),
+      startsFrom: new Date(leaves - 3_600_000).toISOString(),
+      notes: null,
+      maxTwoInBack: false,
+      seriesSize: 1,
+    };
+    serve({ 'GET /rides/mine': () => json([ride]), 'GET /rides/12/bookings': () => json([booking]) });
+    open('/rides');
+
+    expect(await screen.findByText(/^You can start it from /)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start ride' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show passengers' })).toBeInTheDocument();
+  });
+
+  it('keeps the optional parts of publishing folded, opens one holding a mistake, and asks for every price', async () => {
+    signIn('DRIVER');
+    const fetchMock = serve({ 'GET /vehicles': () => json([vehicle]) });
+    open('/rides/new');
+
+    fireEvent.change(await screen.findByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
+    // The time chosen is said back in words, where a date box alone can be misread.
+    expect(screen.getByText(/, in your device's local time$/)).toBeInTheDocument();
+    const optional = screen.getByText('Who rides, and how').closest('details')!;
+    expect(optional).not.toHaveAttribute('open');
+    expect(screen.getByText('Return and repeat').closest('details')).not.toHaveAttribute('open');
+    // A price starts empty: a free ride is something the driver types, never what they leave.
+    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(null);
+
+    const detour = screen.getByLabelText('Minutes you will go out of your way, in all, to pick passengers up at their own point');
+    await userEvent.clear(detour);
+    await userEvent.type(detour, '45');
+    await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
+
+    expect(await screen.findByText('Enter a price, or 0 for a free ride')).toBeInTheDocument();
+    expect(screen.getByText('At most 30 minutes')).toBeInTheDocument();
+    await waitFor(() => expect(optional).toHaveAttribute('open'));
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
+  it('lists the account as rows that say where each stands, and opens the one a link points at', async () => {
+    signIn('DRIVER');
+    serve({
+      'GET /me/profile': () => json({ email: 'user@example.test', emailVerified: true, phone: null, phoneVerified: false }),
+      'GET /me/emergency-contacts': () => json([]),
+      // Before the details: the first route whose prefix matches answers.
+      'GET /me/payment-details/qr': () => json({ detail: 'No QR code' }, 404),
+      'GET /me/payment-details': () => json({ upiId: 'ravi@okaxis', hasQr: false }),
+    });
+    open('/account#payment');
+
+    // A row is its summary line; a title may also appear inside the row it opens.
+    const row = (title: string) => screen.getAllByText(title).map((element) => element.closest('summary')).find(Boolean)!;
+    await screen.findByText('How passengers pay you');
+    await waitFor(() => expect(row('How passengers pay you').parentElement).toHaveAttribute('open'));
+    expect(await within(row('How passengers pay you')).findByText('ravi@okaxis')).toBeInTheDocument();
+    expect(row('Profile').parentElement).not.toHaveAttribute('open');
+    expect(within(row('Email and phone')).getByText('Confirmed')).toBeInTheDocument();
+    expect(await within(row('Emergency contacts')).findByText('None yet')).toBeInTheDocument();
+    expect(within(row('Identity document')).getByText('Not declared')).toBeInTheDocument();
   });
 });

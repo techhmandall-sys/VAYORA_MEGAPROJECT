@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Contact } from 'lucide-react';
-import { useEffect, useId, useState, type FormEvent } from 'react';
+import { Bell, ChevronDown, Contact, Gift, IdCard, Mail, ShieldAlert, UserRound, Wallet, type LucideIcon } from 'lucide-react';
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { useToast } from '../components/toast';
-import { Button, Card, ConfirmButton, Notice, Page, QueryState, SelectField, TextField } from '../components/ui';
+import { Button, ConfirmButton, Notice, Page, QueryState, SelectField, TextField } from '../components/ui';
 import { api } from '../lib/api';
 import { DriverPaymentEditor } from '../components/payment';
 import { initialsOf, PhotoEditor } from '../components/photo';
@@ -12,7 +13,7 @@ import { useAuth } from '../lib/auth';
 import { msg, useT } from '../lib/i18n';
 import { DocumentCheckStatus } from '../components/documentCheck';
 import { idDocumentLabels } from '../lib/idDocuments';
-import type { Chattiness, EmergencyContact, Gender, IdDocument, MyProfile } from '../lib/types';
+import type { Chattiness, DriverPaymentDetails, EmergencyContact, Gender, IdDocument, MyProfile } from '../lib/types';
 
 const PHONE = /^\+?[0-9]{10,15}$/;
 const PHONE_ERROR = msg('Enter 10 to 15 digits, with or without a + in front');
@@ -427,73 +428,140 @@ function NotificationChoices({ emailConfirmed, phoneConfirmed }: { emailConfirme
   );
 }
 
+/**
+ * One row of a grouped list, as iOS's Settings lays them out: what it is and where it stands,
+ * opening in place. A link to /account#<id> opens that row, so another screen can point at it.
+ */
+function SettingsRow({ id, icon: Icon, tint, title, status, children }: {
+  id: string;
+  icon: LucideIcon;
+  /** The square behind the icon, as Settings colours each kind of row. */
+  tint: string;
+  title: string;
+  /** Where it stands, shown at the row's end; nothing while unknown. */
+  status?: string | null;
+  children: ReactNode;
+}) {
+  const details = useRef<HTMLDetailsElement>(null);
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash !== `#${id}` || !details.current) return;
+    details.current.open = true;
+    details.current.scrollIntoView?.({ block: 'start' });
+  }, [hash, id]);
+  return (
+    <details ref={details} id={id} className="more scroll-mt-20 border-b border-slate-900/[0.06] last:border-0">
+      <summary className="flex min-h-14 cursor-pointer items-center gap-3 px-4 py-2.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-teal-600/30">
+        <span aria-hidden="true" className={`flex h-8 w-8 flex-none items-center justify-center rounded-lg text-white ${tint}`}>
+          <Icon className="h-[18px] w-[18px]" strokeWidth={2.2} />
+        </span>
+        <span className="min-w-0 flex-1 text-[16px] font-medium text-slate-900">{title}</span>
+        {status && <span className="max-w-[45%] truncate text-[15px] text-slate-500">{status}</span>}
+        <ChevronDown aria-hidden="true" className="more-chevron h-4 w-4 flex-none text-slate-400" />
+      </summary>
+      <section aria-label={title} className="px-4 pb-5 pt-1">
+        {children}
+      </section>
+    </details>
+  );
+}
+
+/** Rows grouped as Settings groups them, under a small heading. */
+function SettingsGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <h2 className="px-4 text-[13px] font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
+      <div className="overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-slate-900/[0.04]">{children}</div>
+    </div>
+  );
+}
+
 export function AccountPage() {
   const t = useT();
   const { user } = useAuth();
   const profile = useQuery({ queryKey: ['me', 'profile'], queryFn: () => api<MyProfile>('/me/profile') });
   const mine = profile.data;
+  // What each row says at its end. The same queries the rows use, so nothing is fetched twice.
+  const member = user?.role !== 'ADMIN';
+  const driver = user?.role === 'DRIVER';
+  const contacts = useQuery({ queryKey: ['me', 'contacts'], queryFn: () => api<EmergencyContact[]>('/me/emergency-contacts'), enabled: member });
+  const paying = useQuery({ queryKey: ['me', 'payment-details'], queryFn: () => api<DriverPaymentDetails>('/me/payment-details'), enabled: driver });
+  const count = contacts.data?.length;
 
   return (
     <Page title={t('My account')}>
       <QueryState isPending={profile.isPending} error={profile.error} isEmpty={false} empty="" onRetry={() => void profile.refetch()} />
       {mine && (
         <>
-          <section aria-label={t('Profile')} className="space-y-3">
-            <h2 className="text-lg font-semibold">{t('Profile')}</h2>
-            <Card>
+          <SettingsGroup title={t('You')}>
+            <SettingsRow id="profile" icon={UserRound} tint="bg-sky-900" title={t('Profile')} status={user?.fullName}>
               {user && (
                 <div className="mb-4">
                   <PhotoEditor viewPath={`/users/${user.id}/photo`} changePath="/me/photo" alt={t('Your photo')} initials={initialsOf(user.fullName)} />
                 </div>
               )}
               <ProfileForm profile={mine} />
-            </Card>
-          </section>
-          <section aria-label={t('Email and phone')} className="space-y-3">
-            <h2 className="text-lg font-semibold">{t('Email and phone')}</h2>
-            <Card>
+            </SettingsRow>
+            <SettingsRow
+              id="contact"
+              icon={Mail}
+              tint="bg-teal-700"
+              title={t('Email and phone')}
+              status={mine.emailVerified || mine.phoneVerified ? t('Confirmed') : t('Not confirmed')}
+            >
               <div className="space-y-4">
                 <Confirm channel="email" label={t('Email')} address={mine.email} confirmed={mine.emailVerified} />
                 <Confirm channel="phone" label={t('Phone')} address={mine.phone} confirmed={mine.phoneVerified} />
               </div>
-            </Card>
-          </section>
-          {user?.role === 'DRIVER' && (
-            <section aria-label={t('How passengers pay you')} className="space-y-3">
-              <h2 className="text-lg font-semibold">{t('How passengers pay you')}</h2>
-              <Card>
+            </SettingsRow>
+          </SettingsGroup>
+          {(member || driver) && (
+            <SettingsGroup title={t('Safety')}>
+              {member && (
+                <SettingsRow
+                  id="emergency-contacts"
+                  icon={ShieldAlert}
+                  tint="bg-danger"
+                  title={t('Emergency contacts')}
+                  status={count === undefined ? null : count === 0 ? t('None yet') : count === 1 ? t('{n} contact', { n: 1 }) : t('{n} contacts', { n: count })}
+                >
+                  <Contacts />
+                </SettingsRow>
+              )}
+              {driver && (
+                <SettingsRow
+                  id="identity"
+                  icon={IdCard}
+                  tint="bg-slate-600"
+                  title={t('Identity document')}
+                  status={mine.declaredId ? t(idDocumentLabels[mine.declaredId]) : t('Not declared')}
+                >
+                  <IdDeclaration declared={mine.declaredId ?? null} />
+                </SettingsRow>
+              )}
+            </SettingsGroup>
+          )}
+          {driver && (
+            <SettingsGroup title={t('Payments')}>
+              <SettingsRow
+                id="payment"
+                icon={Wallet}
+                tint="bg-emerald-800"
+                title={t('How passengers pay you')}
+                status={paying.data ? (paying.data.upiId ?? (paying.data.hasQr ? t('QR code') : t('Cash only'))) : null}
+              >
                 <DriverPaymentEditor />
-              </Card>
-            </section>
+              </SettingsRow>
+            </SettingsGroup>
           )}
-          {user?.role === 'DRIVER' && (
-            <section aria-label={t('Identity document')} className="space-y-3">
-              <h2 className="text-lg font-semibold">{t('Identity document')}</h2>
-              <Card>
-                <IdDeclaration declared={mine.declaredId ?? null} />
-              </Card>
-            </section>
-          )}
-          <section aria-label={t('Invite friends')} className="space-y-3">
-            <h2 className="text-lg font-semibold">{t('Invite friends')}</h2>
-            <Card>
-              <Invitations />
-            </Card>
-          </section>
-          <section aria-label={t('Notifications')} className="space-y-3">
-            <h2 className="text-lg font-semibold">{t('Notifications')}</h2>
-            <Card>
+          <SettingsGroup title={t('App')}>
+            <SettingsRow id="notifications" icon={Bell} tint="bg-red-600" title={t('Notifications')}>
               <NotificationChoices emailConfirmed={mine.emailVerified} phoneConfirmed={mine.phoneVerified} />
-            </Card>
-          </section>
-          {user?.role !== 'ADMIN' && (
-            <section aria-label={t('Emergency contacts')} className="space-y-3">
-              <h2 className="text-lg font-semibold">{t('Emergency contacts')}</h2>
-              <Card>
-                <Contacts />
-              </Card>
-            </section>
-          )}
+            </SettingsRow>
+            <SettingsRow id="invite" icon={Gift} tint="bg-amber-800" title={t('Invite friends')}>
+              <Invitations />
+            </SettingsRow>
+          </SettingsGroup>
         </>
       )}
     </Page>

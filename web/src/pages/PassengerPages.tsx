@@ -18,13 +18,14 @@ import { CallButton } from '../components/call';
 import { initialsOf } from '../components/photo';
 import { Collapse } from '../components/collapse';
 import { SuccessCard } from '../components/success';
-import { Avatar, Button, Card, Chip, ConfirmButton, Detail, Meter, More, Notice, Page, QueryState, Segmented, SelectField, StatusBadge, StepperField, TextField } from '../components/ui';
+import { ActionTile, Avatar, Button, Card, Chip, ConfirmButton, Detail, Meter, More, Notice, Page, QueryState, Segmented, SelectField, StatusBadge, StepperField, TextField } from '../components/ui';
 import { api } from '../lib/api';
 import { placeNamed } from '../lib/places';
 import { PlaceField } from '../components/places';
 import { answerBy, formatDate, formatDateTime, formatDayMonth, formatRupees, formatTime, formatWeekday, todayInIndia } from '../lib/format';
 import { clockFace, LIVE_MS, owedNow, useNow } from '../lib/live';
 import { takeWantedRoute } from '../lib/recent';
+import { useScrollFade } from '../lib/scrollFade';
 import { msg, useT, useUnits } from '../lib/i18n';
 import { matchReasonLabels } from '../lib/match';
 import { comfortLabels, luggageLabels, vehiclePhrases } from '../lib/vehicle';
@@ -44,6 +45,9 @@ import type {
   SearchSort,
   SeatHold,
 } from '../lib/types';
+
+/** Closer than this, a stop is where the passenger is: said in words, not as "0 m". */
+const NEAR_M = 50;
 
 interface LatLon {
   lat: number;
@@ -217,15 +221,16 @@ function DateChips({ value, onChoose }: { value: string; onChoose: (date: string
   const t = useT();
   const today = todayInIndia();
   const days = Array.from({ length: 7 }, (_, index) => todayInIndia(new Date(Date.parse(`${today}T12:00:00+05:30`) + index * 86_400_000)));
+  const row = useScrollFade<HTMLDivElement>();
   return (
-    <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">
+    <div ref={row} className="no-scrollbar scroll-fade -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">
       {days.map((day, index) => (
         <button
           key={day}
           type="button"
           aria-pressed={day === value}
           onClick={() => onChoose(day)}
-          className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 ${
+          className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold touch:min-h-11 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 ${
             day === value ? 'bg-tint text-white shadow-sm' : 'bg-slate-900/[0.05] text-slate-700 hover:bg-slate-900/[0.09]'
           }`}
         >
@@ -276,6 +281,9 @@ export function SearchPage() {
   const [sorting, startSorting] = useTransition();
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Once searched, the form steps aside for a one-line summary, so the results start at the top.
+  const [editing, setEditing] = useState(true);
+  const changeSearch = useRef<HTMLButtonElement>(null);
   // A route chosen on the front page before signing in, once.
   const [wanted] = useState(takeWantedRoute);
   const [turns, setTurns] = useState(0);
@@ -419,7 +427,25 @@ export function SearchPage() {
 
   return (
     <Page title={t('Find a ride')}>
-      <Card>
+      {criteria && !editing && (
+        <div className="flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 shadow-card ring-1 ring-slate-900/[0.04]">
+          <Search aria-hidden="true" className="h-5 w-5 flex-none text-teal-700" />
+          <p className="min-w-0 flex-1">
+            <span className="block truncate font-semibold text-slate-900">
+              {t(criteria.form.origin)} → {t(criteria.form.destination)}
+            </span>
+            <span className="block truncate text-[13px] text-slate-600">
+              {formatDate(`${criteria.form.date}T12:00:00+05:30`)} ·{' '}
+              {Number(criteria.form.seats) === 1 ? t('{n} seat', { n: 1 }) : t('{n} seats', { n: criteria.form.seats })}
+              {filtersSet > 0 && ` · ${t('{n} filters on', { n: filtersSet })}`}
+            </span>
+          </p>
+          <Button ref={changeSearch} tone="secondary" aria-expanded={false} onClick={() => setEditing(true)}>
+            {t('Change search')}
+          </Button>
+        </div>
+      )}
+      <Card hidden={Boolean(criteria) && !editing}>
         <form
           onSubmit={handleSubmit((form) => {
             setBooked(null);
@@ -431,6 +457,9 @@ export function SearchPage() {
               sort,
               filters,
             });
+            setEditing(false);
+            // The button pressed is now hidden: keep the reader's place on the summary instead.
+            window.requestAnimationFrame(() => changeSearch.current?.focus({ preventScroll: true }));
           })}
           noValidate
           className="grid grid-cols-1 gap-4 sm:grid-cols-2"
@@ -442,7 +471,7 @@ export function SearchPage() {
               aria-label={t('Swap start and destination')}
               title={t('Swap start and destination')}
               onClick={swapEnds}
-              className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/[0.05] text-teal-800 hover:bg-slate-900/[0.09] active:scale-90 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 sm:mt-[1.65rem]"
+              className="mx-auto flex h-10 w-10 touch:h-11 touch:w-11 items-center justify-center rounded-full bg-slate-900/[0.05] text-teal-800 hover:bg-slate-900/[0.09] active:scale-90 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 sm:mt-[1.65rem]"
             >
               <ArrowUpDown aria-hidden="true" className="h-4 w-4 transition-transform duration-500 ease-spring sm:rotate-90" style={{ rotate: `${turns * 180}deg` }} />
             </button>
@@ -462,6 +491,18 @@ export function SearchPage() {
           />
           <div className="-mt-2 sm:col-span-2">
             <DateChips value={watch('date')} onChoose={(date) => setValue('date', date, { shouldValidate: formState.isSubmitted })} />
+          </div>
+          <div className="sm:col-span-2 sm:max-w-md">
+            <SelectField
+              label={t('If the driver withdraws')}
+              value={tier}
+              onChange={(event) => setTier(event.target.value as FlexTier)}
+              hint={t('Flexible and any time book you on another ride automatically. The price is the same.')}
+            >
+              <option value="EXACT">{t('Only this ride: suggest others')}</option>
+              <option value="FLEXIBLE">{t('Flexible: book me within 2 hours')}</option>
+              <option value="ANY_TIME">{t('Any time that day')}</option>
+            </SelectField>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
@@ -635,7 +676,6 @@ export function SearchPage() {
                 </h2>
                 <LiveStatus query={seatsNow} label={t('Seats are live')} />
               </div>
-              <Notice tone="info">{t('You pay your driver directly after the ride, in cash or by UPI. VAYORA charges nothing.')}</Notice>
               <Segmented<SearchSort>
                 label={t('Sort by')}
                 value={criteria.sort}
@@ -651,18 +691,6 @@ export function SearchPage() {
                   startSorting(() => setCriteria({ ...criteria, sort: next }));
                 }}
               />
-              <div className="max-w-xs">
-                <SelectField
-                  label={t('If the driver withdraws')}
-                  value={tier}
-                  onChange={(event) => setTier(event.target.value as FlexTier)}
-                  hint={t('Flexible and any time book you on another ride automatically. The price is the same.')}
-                >
-                  <option value="EXACT">{t('Only this ride: suggest others')}</option>
-                  <option value="FLEXIBLE">{t('Flexible: book me within 2 hours')}</option>
-                  <option value="ANY_TIME">{t('Any time that day')}</option>
-                </SelectField>
-              </div>
               {criteria.sort === 'BEST_MATCH' && (
                 <p className="max-w-xl text-sm text-slate-600">
                   {t(
@@ -773,14 +801,17 @@ export function SearchPage() {
                   )}
                   <button
                     type="button"
-                    className="block w-full text-left"
+                    className="block w-full text-left touch:min-h-11"
                     onClick={() => selectLastMile.mutate({ rideId: candidate.rideId, mode: 'walk' })}
                   >
                     <Detail icon={Footprints}>
-                      {t('Pickup {pickup} from your start · drop-off {dropoff} from your destination', {
-                        pickup: units.distance(candidate.pickupDistanceM),
-                        dropoff: units.distance(candidate.dropoffDistanceM),
-                      })}
+                      {candidate.pickupDistanceM < NEAR_M
+                        ? t('Picks you up where you start')
+                        : t('Pickup {pickup} from your start', { pickup: units.distance(candidate.pickupDistanceM) })}
+                      {' · '}
+                      {candidate.dropoffDistanceM < NEAR_M
+                        ? t('drops you where you are going')
+                        : t('drop-off {dropoff} from your destination', { dropoff: units.distance(candidate.dropoffDistanceM) })}
                       {candidate.pickupWalkMinutes > 0 &&
                         ` · ${
                           candidate.walkOnFootpaths
@@ -912,7 +943,7 @@ function Journey({ booking, rideStatus }: { booking: Booking; rideStatus?: RideS
             {index === step && step < 3 && <span className="absolute inset-0 animate-soft-ping rounded-full bg-accent" />}
             <Icon className="relative h-3.5 w-3.5" strokeWidth={2.4} />
           </span>
-          <span className={`text-[11px] font-medium leading-tight ${index === step ? 'font-semibold text-slate-900' : index < step ? 'text-slate-700' : 'text-slate-500'}`}>{t(label)}</span>
+          <span className={`text-xs font-medium leading-tight ${index === step ? 'font-semibold text-slate-900' : index < step ? 'text-slate-700' : 'text-slate-500'}`}>{t(label)}</span>
         </li>
       ))}
     </ol>
@@ -1032,25 +1063,25 @@ function BookingCard({ booking, requestTerms, cancelling, onCancel }: {
           )}
           {active && <BoardingPassView bookingId={booking.id} />}
         </div>
-        <div className="flex flex-wrap gap-2">
-          {active && (
-            <>
-              <Button tone="secondary" aria-expanded={meetingShown} onClick={() => setMeetingShown(!meetingShown)}>
-                <MapIcon aria-hidden="true" className="h-4 w-4" />
-                {meetingShown ? t('Hide meeting point') : t('Show meeting point')}
-              </Button>
-              <Button tone={underWay ? 'primary' : 'secondary'} aria-expanded={chatShown} onClick={() => setChatShown(!chatShown)}>
-                <MessagesSquare aria-hidden="true" className="h-4 w-4" />
-                {chatShown ? t('Close chat') : t('Open chat')}
-              </Button>
-              <ConfirmButton label={t('Cancel booking')} confirmLabel={t('Yes, cancel it')} disabled={cancelling} onConfirm={onCancel} />
-            </>
-          )}
-        </div>
       </div>
-      {booking.status === 'CONFIRMED' && (
-        <div className="mt-3">
-          <CallButton bookingId={booking.id} label={t('Call the driver')} />
+      {active && (
+        <div className={`mt-4 grid gap-2 ${booking.status === 'CONFIRMED' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <ActionTile
+            icon={MapIcon}
+            label={meetingShown ? t('Hide meeting point') : t('Show meeting point')}
+            active={meetingShown}
+            aria-expanded={meetingShown}
+            onClick={() => setMeetingShown(!meetingShown)}
+          />
+          <ActionTile
+            icon={MessagesSquare}
+            label={chatShown ? t('Close chat') : t('Open chat')}
+            // On the road, the chat is how the two sides find each other: it stands out.
+            active={chatShown || underWay}
+            aria-expanded={chatShown}
+            onClick={() => setChatShown(!chatShown)}
+          />
+          {booking.status === 'CONFIRMED' && <CallButton tile bookingId={booking.id} label={t('Call the driver')} />}
         </div>
       )}
       {booking.paymentStatus === 'DUE' && booking.amountDue != null && (
@@ -1072,6 +1103,14 @@ function BookingCard({ booking, requestTerms, cancelling, onCancel }: {
           <More label={t('How to pay your driver')}>
             <HowToPayDriver bookingId={booking.id} amount={booking.price} />
           </More>
+        </div>
+      )}
+      {active && (
+        <div className="mt-2 flex justify-end">
+          <ConfirmButton quiet label={t('Cancel booking')} confirmLabel={t('Yes, cancel it')} disabled={cancelling} onConfirm={onCancel}>
+            <OwedNow booking={booking} />
+            <CancellingTerms />
+          </ConfirmButton>
         </div>
       )}
       <Collapse open={meetingShown}>
@@ -1121,7 +1160,11 @@ export function BookingsPage() {
         icon={Ticket}
         onRetry={() => void bookings.refetch()}
       />
-      {upcoming.length > 0 && <CancellingTerms />}
+      {upcoming.length > 0 && (
+        <More label={t('What cancelling costs')}>
+          <CancellingTerms />
+        </More>
+      )}
       {upcoming.length > 0 && <h2 className="text-lg font-bold tracking-tight text-slate-900">{t('Coming up')}</h2>}
       {list(upcoming)}
       {past.length > 0 && <h2 className="pt-2 text-lg font-bold tracking-tight text-slate-900">{t('Earlier')}</h2>}

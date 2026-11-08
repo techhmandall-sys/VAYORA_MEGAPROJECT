@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Car, CarFront, Check, ChevronRight, IndianRupee, MessagesSquare, Users } from 'lucide-react';
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { Car, CarFront, Check, ChevronDown, ChevronRight, IndianRupee, MessagesSquare, Users } from 'lucide-react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -338,7 +338,7 @@ export function PublishRidePage() {
         {
           ...placeNamed('Pune')!,
           offsetMinutes: roughDriveMinutes(placeNamed('Kolhapur')!, placeNamed('Pune')!),
-          priceFromPrevious: 0,
+          priceFromPrevious: '',
         },
       ],
     },
@@ -423,7 +423,11 @@ export function PublishRidePage() {
               <TextField
                 label={t('Leaving at')}
                 type="datetime-local"
-                hint={t("In your device's local time.")}
+                hint={
+                  Number.isNaN(Date.parse(departure))
+                    ? t("In your device's local time.")
+                    : t("{when}, in your device's local time", { when: formatDateTime(new Date(departure).toISOString()) })
+                }
                 error={formState.errors.departure?.message}
                 {...register('departure')}
               />
@@ -441,7 +445,7 @@ export function PublishRidePage() {
               </label>
               <p className="text-sm text-slate-600 sm:col-span-2">
                 {t('Passengers pay you directly after the ride, in cash or by UPI.')}{' '}
-                <Link to="/account" className="font-medium text-teal-800 underline underline-offset-2">
+                <Link to="/account#payment" className="font-medium text-teal-800 underline underline-offset-2">
                   {t('Your UPI ID and QR code')}
                 </Link>
               </p>
@@ -504,7 +508,7 @@ export function PublishRidePage() {
                 <Button
                   tone="secondary"
                   className="mt-3"
-                  onClick={() => insert(fields.length - 1, { name: '', lat: 0, lon: 0, offsetMinutes: 0, priceFromPrevious: 0 }, { shouldFocus: false })}
+                  onClick={() => insert(fields.length - 1, { name: '', lat: 0, lon: 0, offsetMinutes: 0, priceFromPrevious: '' }, { shouldFocus: false })}
                 >
                   {t('Add a stop on the way')}
                 </Button>
@@ -536,7 +540,7 @@ export function PublishRidePage() {
             </div>
             </FormStep>
 
-            <FormStep n={3} title={t('Who rides, and how')}>
+            <FormStep n={3} title={t('Who rides, and how')} optional hasError={Boolean(formState.errors.maxDetourMinutes || formState.errors.notes)}>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
                 <input type="checkbox" className="h-4 w-4 rounded border-slate-300" {...register('maxTwoInBack')} />
@@ -578,7 +582,7 @@ export function PublishRidePage() {
             </div>
             </FormStep>
 
-            <FormStep n={4} title={t('Return and repeat')}>
+            <FormStep n={4} title={t('Return and repeat')} optional hasError={Boolean(formState.errors.returnDeparture || formState.errors.repeatWeeks)}>
             <div className="grid gap-4 sm:grid-cols-2">
               <TextField
                 label={t('Return ride leaving at (optional)')}
@@ -631,8 +635,40 @@ export function PublishRidePage() {
 }
 
 /** One numbered part of a long form: the driver sees where they are without anything hidden. */
-function FormStep({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+/**
+ * @param optional starts closed, so the form is as short as what every ride needs; it opens by
+ *                 itself when it holds a mistake, so nothing wrong is ever out of sight
+ */
+function FormStep({ n, title, children, optional = false, hasError = false }: {
+  n: number;
+  title: string;
+  children: ReactNode;
+  optional?: boolean;
+  hasError?: boolean;
+}) {
   const id = useId();
+  const t = useT();
+  const details = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (hasError && details.current) details.current.open = true;
+  }, [hasError]);
+  if (optional) {
+    return (
+      <details ref={details} aria-labelledby={id} className="more rounded-2xl bg-surface shadow-card ring-1 ring-slate-900/[0.04]">
+        <summary className="flex min-h-14 cursor-pointer items-center gap-3 p-4 sm:px-5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30">
+          <span aria-hidden="true" className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-slate-900/[0.07] text-sm font-bold text-slate-700">
+            {n}
+          </span>
+          <span id={id} className="text-[17px] font-semibold tracking-tight text-slate-900">
+            {title}
+          </span>
+          <span className="ml-auto text-[13px] text-slate-500">{t('Optional')}</span>
+          <ChevronDown aria-hidden="true" className="more-chevron h-4 w-4 text-slate-500" />
+        </summary>
+        <div className="px-4 pb-4 sm:px-5 sm:pb-5">{children}</div>
+      </details>
+    );
+  }
   return (
     <section aria-labelledby={id} className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-slate-900/[0.04] sm:p-5">
       <h2 id={id} className="mb-4 flex items-center gap-3 text-[17px] font-semibold tracking-tight text-slate-900">
@@ -670,8 +706,8 @@ function GettingStarted({ rides }: { rides: Ride[] }) {
   if (!vehicles.data || !paying.data || !me.data) return null;
   const steps = [
     { done: vehicles.data.length > 0, label: t('Add your car'), to: '/vehicles' },
-    { done: Boolean(paying.data.upiId || paying.data.hasQr), label: t('Add your UPI ID or QR code, so passengers can pay you'), to: '/account' },
-    { done: me.data.emailVerified || me.data.phoneVerified, label: t('Confirm your email or phone'), to: '/account' },
+    { done: Boolean(paying.data.upiId || paying.data.hasQr), label: t('Add your UPI ID or QR code, so passengers can pay you'), to: '/account#payment' },
+    { done: me.data.emailVerified || me.data.phoneVerified, label: t('Confirm your email or phone'), to: '/account#contact' },
     { done: rides.length > 0, label: t('Publish your first ride'), to: '/rides/new' },
   ];
   const left = steps.filter((step) => !step.done).length;
@@ -712,6 +748,7 @@ export function RidesPage() {
   const units = useUnits();
   const queryClient = useQueryClient();
   const rides = useQuery({ queryKey: ['rides'], queryFn: () => api<Ride[]>('/rides/mine'), refetchInterval: LIVE_MS.lists });
+  const now = useNow(30_000);
   const ahead = rides.data?.filter((ride) => ride.status === 'SCHEDULED' || ride.status === 'IN_PROGRESS') ?? [];
   const next = ahead.filter((ride) => ride.status === 'SCHEDULED').map((ride) => ride.departureTime).sort()[0];
   const act = useMutation({
@@ -775,7 +812,7 @@ export function RidesPage() {
                 <p className="mt-1 text-sm text-slate-600">
                   {ride.routeSource === 'OSRM'
                     ? t('{km} km by road, about {time}', { km: ride.distanceKm, time: units.duration(ride.durationMinutes) })
-                    : t('About {km} km in a straight line (road distance unavailable)', { km: ride.distanceKm })}
+                    : t('About {km} km in a straight line', { km: ride.distanceKm })}
                 </p>
               )}
               {ride.maxTwoInBack && <p className="mt-1 text-sm text-slate-600">{t('At most two in the back')}</p>}
@@ -794,9 +831,13 @@ export function RidesPage() {
             <div className="flex flex-wrap gap-2">
               {ride.status === 'SCHEDULED' && (
                 <>
+                  {ride.startsFrom && now < Date.parse(ride.startsFrom) ? (
+                    <p className="self-center text-sm text-slate-600">{t('You can start it from {time}', { time: formatDateTime(ride.startsFrom) })}</p>
+                  ) : (
                   <Button disabled={act.isPending} busy={act.isPending && act.variables?.ride === ride.id && act.variables.action === 'start'} onClick={() => act.mutate({ ride: ride.id, action: 'start' })}>
                     {t('Start ride')}
                   </Button>
+                  )}
                   <ConfirmButton
                     label={t('Cancel ride')}
                     confirmLabel={t('Yes, cancel for everyone')}
@@ -850,10 +891,15 @@ export function RidesPage() {
   );
 }
 
+/** Open from the start for a ride under way or leaving within a day: who is coming is what the driver checks. */
+const SOON_MS = 24 * 3_600_000;
+
 function RideBookings({ ride }: { ride: Ride }) {
   const t = useT();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(
+    () => ride.status === 'IN_PROGRESS' || (ride.status === 'SCHEDULED' && Date.parse(ride.departureTime) - Date.now() < SOON_MS),
+  );
   const [chatOpen, setChatOpen] = useState(false);
   const live = ride.status === 'SCHEDULED' || ride.status === 'IN_PROGRESS';
   const bookings = useQuery({
@@ -1028,7 +1074,7 @@ export function EarningsPage() {
     <Page title={t('Earnings')}>
       <Notice tone="info">
         {t('Passengers pay you directly, in cash or by UPI, and VAYORA takes nothing. What shows here is what you marked as paid.')}{' '}
-        <Link to="/account" className="font-medium underline underline-offset-2">
+        <Link to="/account#payment" className="font-medium underline underline-offset-2">
           {t('Your UPI ID and QR code')}
         </Link>
       </Notice>
