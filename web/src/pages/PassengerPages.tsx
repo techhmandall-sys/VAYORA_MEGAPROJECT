@@ -285,7 +285,7 @@ export function SearchPage() {
   const [editing, setEditing] = useState(true);
   const changeSearch = useRef<HTMLButtonElement>(null);
   // A route chosen on the front page before signing in, once.
-  const [wanted] = useState(takeWantedRoute);
+  const [wanted] = useState(() => takeWantedRoute(todayInIndia()));
   const [turns, setTurns] = useState(0);
   // Exact points chosen on the map. Either replaces its town's centre.
   const [picked, setPicked] = useState<{ origin?: LatLon; destination?: LatLon }>({});
@@ -297,7 +297,7 @@ export function SearchPage() {
   const idempotencyKeys = useRef(new Map<string, string>());
   const { register, handleSubmit, formState, watch, setValue, getValues } = useForm<SearchForm>({
     resolver: zodResolver(searchSchema),
-    defaultValues: { origin: wanted?.from ?? 'Kolhapur', destination: wanted?.to ?? 'Pune', date: todayInIndia(), seats: 1 },
+    defaultValues: { origin: wanted?.from ?? 'Kolhapur', destination: wanted?.to ?? 'Pune', date: wanted?.date ?? todayInIndia(), seats: wanted?.seats ?? 1 },
   });
   const towns = { origin: watch('origin'), destination: watch('destination') };
   const filtersSet = Object.keys(filterParams(filters)).length;

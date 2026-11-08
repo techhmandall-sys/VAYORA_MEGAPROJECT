@@ -1644,8 +1644,6 @@ export const mr: Record<string, string> = {
     'आधीच हा प्रवास करणाऱ्या कारमध्ये सीट बुक करा, किंवा तुमच्या कारमधील रिकाम्या सीट भरा. तुमचे बेत बदलले, तर दुसरे कोणी ती सीट घेऊ शकेल तोपर्यंत VAYORA तुम्हाला ती परत देण्याची आठवण करून देते.',
   'Offer a ride':
     'प्रवास द्या',
-  'An emergency button on every trip':
-    'प्रत्येक प्रवासात आपत्कालीन बटण',
   'days ahead you can book':
     'दिवस आधीपर्यंत बुक करता येते',
   'languages':
@@ -1748,8 +1746,6 @@ export const mr: Record<string, string> = {
     'हा थांबा काढा',
   'Map around your start and destination. Click to choose an exact point.':
     'तुमच्या सुरुवातीच्या ठिकाणाभोवतीचा आणि गंतव्यस्थानाभोवतीचा नकाशा. अचूक ठिकाण निवडण्यासाठी क्लिक करा.',
-  'Share the road between cities across India':
-    'संपूर्ण भारतात शहरांदरम्यानचा प्रवास वाटून घ्या',
   'Any route in India':
     'भारतातील कोणताही मार्ग',
   'cities to choose from':
@@ -2002,8 +1998,6 @@ export const mr: Record<string, string> = {
     'निघण्याची वेळ झाली',
   'In the last 7 days':
     'गेल्या 7 दिवसांत',
-  'Example':
-    'उदाहरण',
   // Paying the driver directly, in cash or by UPI
   'Paid to you each week (₹)':
     'दर आठवड्याला तुम्हाला मिळालेले पैसे (₹)',
@@ -2131,10 +2125,6 @@ export const mr: Record<string, string> = {
     'तुम्ही देय रक्कम मिळाल्याची नोंद करेपर्यंत प्रवासी पुन्हा बुक करू शकत नाही.',
   'Total paid to you':
     'तुम्हाला एकूण मिळाले',
-  'The earlier you cancel, the less you owe':
-    'जितक्या लवकर रद्द कराल, तितके कमी द्यावे लागेल',
-  'Your seat is held while you decide':
-    'निर्णय घेताना तुमची सीट राखून ठेवली जाते',
   'Pay the driver directly, in cash or by UPI':
     'चालकाला थेट रोख किंवा UPI ने पैसे द्या',
   'Keep the whole fare: VAYORA charges nothing':
@@ -2334,4 +2324,53 @@ export const mr: Record<string, string> = {
     'हे रेकॉर्डिंग खूप लांब आहे. छोट्या रेकॉर्डिंगमध्ये विचारा.',
   'The assistant could not hear a question. Try again, or type it.':
     'सहाय्यकाला कोणताही प्रश्न ऐकू आला नाही. पुन्हा प्रयत्न करा, किंवा तो लिहा.',
+  // The front page: the tagline, routes to start with, trust and safety, and questions
+  'Your Journey. Shared Better.':
+    'तुमचा प्रवास, अधिक चांगला सोबतीने.',
+  'Recently searched':
+    'अलीकडे शोधलेले',
+  'Routes to start with':
+    'सुरुवातीसाठी काही मार्ग',
+  'Tap one to fill in the search.':
+    'शोध भरण्यासाठी त्यापैकी एकावर टॅप करा.',
+  '{from} to {to}':
+    '{from} ते {to}',
+  'Call 112 first':
+    'सर्वात आधी 112',
+  'The emergency button on every screen puts calling 112 first, then alerts VAYORA staff with where you are, and texts your emergency contacts where texts are set up.':
+    'प्रत्येक स्क्रीनवरील आपत्कालीन बटण सर्वात आधी 112 ला कॉल करू देते, मग तुमच्या ठिकाणासह VAYORA कर्मचाऱ्यांना सूचना देते, आणि जिथे संदेश सेवा जोडलेली असेल तिथे तुमच्या आपत्कालीन संपर्कांना संदेश पाठवते.',
+  'Ratings both ways':
+    'दोन्ही बाजूंनी रेटिंग',
+  'Passengers and drivers rate each other after every trip, and every profile shows the rides each member has completed.':
+    'प्रत्येक प्रवासानंतर प्रवासी आणि ड्रायव्हर एकमेकांना रेटिंग देतात, आणि प्रत्येक प्रोफाइल सदस्याने किती राइड पूर्ण केल्या ते दाखवते.',
+  'Boarding codes':
+    'बोर्डिंग कोड क्रमांक',
+  'Each passenger has a four-digit code the driver checks at pickup, so the right person gets into the right car.':
+    'प्रत्येक प्रवाशाकडे चार अंकी कोड असतो, जो ड्रायव्हर पिकअपच्या वेळी तपासतो, म्हणजे योग्य व्यक्ती योग्य गाडीत बसते.',
+  'Report anyone':
+    'कोणाचीही तक्रार करा',
+  'Any member can be reported from their profile, and VAYORA staff look at every report.':
+    'कोणत्याही सदस्याची तक्रार त्याच्या प्रोफाइलवरून करता येते, आणि VAYORA कर्मचारी प्रत्येक तक्रार पाहतात.',
+  'What keeps every trip accountable, and what to do if something goes wrong.':
+    'प्रत्येक प्रवास जबाबदार कशामुळे राहतो, आणि काही चुकल्यास काय करायचे.',
+  'Frequently asked questions':
+    'वारंवार विचारले जाणारे प्रश्न',
+  'Does VAYORA charge a fee?':
+    'VAYORA काही शुल्क घेते का?',
+  'No. VAYORA takes no fee and no commission. Passengers pay their driver directly after the ride, in cash or by UPI.':
+    'नाही. VAYORA कोणतेही शुल्क किंवा कमिशन घेत नाही. प्रवासी राइडनंतर थेट त्यांच्या ड्रायव्हरला रोख किंवा UPI ने पैसे देतात.',
+  'What if I need to cancel?':
+    'मला रद्द करावे लागले तर?',
+  'The earlier you cancel, the less you pay: nothing if you cancel early enough, and never anything if your driver cancels. My bookings shows what cancelling would cost at any moment.':
+    'जितक्या लवकर रद्द कराल, तितके कमी द्यावे लागते: वेळेत रद्द केल्यास काहीच नाही, आणि ड्रायव्हरने रद्द केल्यास कधीच काही नाही. "माझी बुकिंग" मध्ये रद्द केल्यास किती लागेल ते कधीही दिसते.',
+  'How are prices set?':
+    'किमती कशा ठरतात?',
+  'Each driver sets the price per seat for every stretch of the ride. VAYORA suggests one from the distance, and you pay only for the stretch you ride.':
+    'प्रत्येक ड्रायव्हर राइडच्या प्रत्येक टप्प्यासाठी प्रति जागा किंमत स्वतः ठरवतो. VAYORA अंतरानुसार एक किंमत सुचवते, आणि तुम्ही फक्त तुम्ही प्रवास करता त्या टप्प्याचे पैसे देता.',
+  'Which cities can I travel between?':
+    'कोणत्या शहरांदरम्यान प्रवास करता येतो?',
+  'Any two of the {n} cities on VAYORA, across India. Road distances and times are worked out between Kolhapur and Pune; elsewhere they are a straight-line estimate, and say so.':
+    'संपूर्ण भारतातील VAYORA वरील {n} शहरांपैकी कोणत्याही दोन शहरांदरम्यान. रस्त्याचे अंतर आणि वेळ कोल्हापूर आणि पुणे दरम्यान मोजले जातात; इतरत्र ते सरळ रेषेतील अंदाज असतात, आणि तसे सांगितले जाते.',
+  'Photo: {name} on Unsplash':
+    'छायाचित्र: {name}, Unsplash वर',
 };

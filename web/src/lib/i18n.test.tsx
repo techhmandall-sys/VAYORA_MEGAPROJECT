@@ -89,8 +89,9 @@ describe('the source', () => {
   it('has no literal text between tags', () => {
     // A `>` that closes a tag, not the one in `=>`, then text, then the next tag.
     const text = /(?<![=-])>\s*([^<>{}=;()|&?:]*[A-Za-z]{2}[^<>{}=;()|&?:]*?)\s*</g;
-    // The map's attribution is a credit the licence requires, in the owner's own name.
-    const allowed = new Set(['OpenStreetMap']);
+    // The map's attribution is a credit the licence requires, in the owner's own name; the
+    // brand's name, and its copyright line, are written the same in every language.
+    const allowed = new Set(['OpenStreetMap', 'VAYORA', '© 2026 VAYORA']);
     const found = screens()
       .flatMap((file) => [...strip(readFileSync(file, 'utf8')).matchAll(text)].map((match) => [file.slice(SRC.length + 1), match[1].trim()]))
       .filter(([, literal]) => !allowed.has(literal))

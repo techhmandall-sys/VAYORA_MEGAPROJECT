@@ -184,12 +184,48 @@ describe('access', () => {
   it('shows a signed-out visitor what VAYORA is, and takes a driver to sign up as one', async () => {
     open('/');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Share the road between cities across India' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Your Journey. Shared Better.' })).toBeInTheDocument();
     expect(screen.getByText(/simulated unless real services are connected/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('link', { name: 'Offer a ride' }));
+    // Trust and safety, and the questions a newcomer has, are on the page, each under its heading.
+    expect(screen.getByRole('heading', { name: 'Trust and safety' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Frequently asked questions' })).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('link', { name: 'Offer a ride' })[0]);
 
     expect(await screen.findByRole('heading', { name: 'Create an account' })).toBeInTheDocument();
     expect(screen.getByLabelText('I want to')).toHaveValue('DRIVER');
+  });
+
+  it('carries a search from the front page, with its date and seats, past signing up', async () => {
+    open('/');
+
+    // A route to start with fills the search.
+    await userEvent.click(await screen.findByRole('button', { name: 'Mumbai to Pune' }));
+    const search = screen.getByRole('form', { name: 'Find a ride' });
+    expect(within(search).getByLabelText('From')).toHaveValue('Mumbai');
+    expect(within(search).getByLabelText('To')).toHaveValue('Pune');
+    const tomorrow = todayInIndia(new Date(Date.now() + 86_400_000));
+    fireEvent.change(within(search).getByLabelText('Date'), { target: { value: tomorrow } });
+    await userEvent.selectOptions(within(search).getByLabelText('Seats'), '2');
+    await userEvent.click(within(search).getByRole('button', { name: 'Find a ride' }));
+
+    expect(await screen.findByRole('heading', { name: 'Create an account' })).toBeInTheDocument();
+    expect(JSON.parse(sessionStorage.getItem('vayora.wanted-route')!)).toEqual({ from: 'Mumbai', to: 'Pune', date: tomorrow, seats: 2 });
+  });
+
+  it('starts the search page from the search wanted, but never from a date already past', async () => {
+    signIn('PASSENGER');
+    serve({});
+    const tomorrow = todayInIndia(new Date(Date.now() + 86_400_000));
+    sessionStorage.setItem('vayora.wanted-route', JSON.stringify({ from: 'Mumbai', to: 'Pune', date: tomorrow, seats: 3 }));
+    open('/search');
+    expect(await screen.findByLabelText('Seats')).toHaveValue(3);
+    expect(screen.getByLabelText('Date')).toHaveValue(tomorrow);
+    expect(sessionStorage.getItem('vayora.wanted-route')).toBeNull();
+    cleanup();
+
+    sessionStorage.setItem('vayora.wanted-route', JSON.stringify({ from: 'Mumbai', to: 'Pune', date: '2020-01-01', seats: 3 }));
+    open('/search');
+    expect(await screen.findByLabelText('Date')).toHaveValue(todayInIndia());
   });
 
   it('takes a signed-in member past the front page to their own', async () => {

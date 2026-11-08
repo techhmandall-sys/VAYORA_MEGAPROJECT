@@ -24,21 +24,35 @@ export function rememberPlace(name: string): void {
   }
 }
 
-/** Keeps a route chosen on the front page for the search page, whichever way the visitor signs in. */
-export function wantRoute(from: string, to: string): void {
+export interface WantedRoute {
+  from: string;
+  to: string;
+  /** YYYY-MM-DD, in India. */
+  date?: string;
+  seats?: number;
+}
+
+/** Keeps a search chosen on the front page for the search page, whichever way the visitor signs in. */
+export function wantRoute(wanted: WantedRoute): void {
   try {
-    sessionStorage.setItem(WANTED, JSON.stringify({ from, to }));
+    sessionStorage.setItem(WANTED, JSON.stringify(wanted));
   } catch {
     // They will choose it again.
   }
 }
 
-/** The route wanted, once. Null when there is none, or it names a place no longer listed. */
-export function takeWantedRoute(): { from: string; to: string } | null {
+/**
+ * The search wanted, once. Null when there is none, or it names a place no longer listed; a
+ * date already past, or seats out of range, are left out rather than carried over.
+ */
+export function takeWantedRoute(today: string): WantedRoute | null {
   try {
-    const stored = JSON.parse(sessionStorage.getItem(WANTED) ?? 'null') as { from?: string; to?: string } | null;
+    const stored = JSON.parse(sessionStorage.getItem(WANTED) ?? 'null') as Partial<WantedRoute> | null;
     sessionStorage.removeItem(WANTED);
-    return stored?.from && stored.to && placeNamed(stored.from) && placeNamed(stored.to) ? { from: stored.from, to: stored.to } : null;
+    if (!stored?.from || !stored.to || !placeNamed(stored.from) || !placeNamed(stored.to)) return null;
+    const date = typeof stored.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(stored.date) && stored.date >= today ? stored.date : undefined;
+    const seats = Number.isInteger(stored.seats) && stored.seats! >= 1 && stored.seats! <= 8 ? stored.seats : undefined;
+    return { from: stored.from, to: stored.to, date, seats };
   } catch {
     return null;
   }
