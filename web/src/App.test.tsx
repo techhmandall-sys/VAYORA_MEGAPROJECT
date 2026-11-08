@@ -3917,7 +3917,7 @@ describe('easier on a phone', () => {
 });
 
 describe('the assistant', () => {
-  const on = { enabled: true, max_messages: 20, max_message_chars: 2000 };
+  const on = { enabled: true, provider: 'gemini', max_messages: 20, max_message_chars: 2000 };
   // As newer browsers do, scrolling answers with a promise: an effect returning it would crash the page.
   beforeEach(() => Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, value: () => Promise.resolve() }));
   afterEach(() => Reflect.deleteProperty(Element.prototype, 'scrollIntoView'));
@@ -3944,6 +3944,8 @@ describe('the assistant', () => {
     });
     open('/assistant');
 
+    // Where the questions go, and that Google's free service may keep them.
+    expect(await screen.findByText(/sent to Google, whose AI writes the answers\. On its free service Google may use it/)).toBeInTheDocument();
     // A question to start from takes one tap.
     await userEvent.click(await screen.findByRole('button', { name: 'What does cancelling cost?' }));
     // Markup in an answer is shown as the characters it is, never made into markup.
@@ -4000,10 +4002,13 @@ describe('the assistant', () => {
 
   it("starts a driver from a driver's questions, and is in the driver's pages", async () => {
     signIn('DRIVER');
-    serve({ 'GET /v1/assistant': () => json(on) });
+    serve({ 'GET /v1/assistant': () => json({ ...on, provider: 'claude' }) });
     open('/assistant');
 
     expect(await screen.findByRole('button', { name: 'How do I publish a ride?' })).toBeInTheDocument();
+    // Answered by Claude, the page names Anthropic instead.
+    expect(screen.getByText(/sent to Anthropic, whose AI writes the answers/)).toBeInTheDocument();
+    expect(screen.queryByText(/sent to Google/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'How do I pay my driver?' })).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Assistant' }).length).toBeGreaterThan(0);
   });

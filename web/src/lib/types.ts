@@ -95,6 +95,8 @@ export interface Ride {
 /** Whether intel's assistant is on, and how much one question may carry. */
 export interface AssistantStatus {
   enabled: boolean;
+  /** Who writes the answers, and so where members' questions go. */
+  provider: 'gemini' | 'claude';
   max_messages: number;
   max_message_chars: number;
 }

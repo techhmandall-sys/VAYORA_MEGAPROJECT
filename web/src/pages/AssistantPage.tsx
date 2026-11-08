@@ -106,8 +106,11 @@ export function AssistantPage() {
             <p className="text-sm text-slate-700">
               {t('Ask how VAYORA works: booking, cancelling, paying your driver, safety. It cannot see your bookings or change anything.')}
             </p>
+            {/* Where the questions go, and what may become of them there: Gemini's free tier keeps them. */}
             <p className="text-[13px] text-slate-500">
-              {t('What you type is sent to Anthropic, whose AI writes the answers. VAYORA keeps none of it. An answer can be wrong: check anything important on the screen it is about.')}
+              {status.data.provider === 'claude'
+                ? t('What you type is sent to Anthropic, whose AI writes the answers. VAYORA keeps none of it. An answer can be wrong: check anything important on the screen it is about.')
+                : t('What you type is sent to Google, whose AI writes the answers. On its free service Google may use it to improve its products, and people there may read it, so do not type personal details. VAYORA keeps none of it. An answer can be wrong: check anything important on the screen it is about.')}
             </p>
           </div>
 
