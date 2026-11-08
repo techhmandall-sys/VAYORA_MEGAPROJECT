@@ -88,6 +88,8 @@ export interface Ride {
   womenOnly: boolean;
   /** Minutes in all the driver will go out of their way for pickups; 0 for none. */
   maxDetourMinutes?: number;
+  /** The earliest the driver may start it. */
+  startsFrom?: string;
 }
 
 export type RouteSource = 'OSRM' | 'STRAIGHT_LINE';

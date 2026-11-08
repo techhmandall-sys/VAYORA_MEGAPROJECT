@@ -128,6 +128,9 @@ class TripFlowIntegrationTest extends PostgresIntegrationTest {
         long farOff = rideLeavingIn(Duration.ofDays(3), true);
         assertConflict(() -> trips.start(driverId, farOff));
         assertConflict(() -> trips.complete(driverId, farOff));
+        // The ride says when it may start, so the app need not guess: an hour ahead, as configured.
+        RideService.Ride far = rides.get(farOff);
+        assertThat(far.startsFrom()).isEqualTo(far.departureTime().minus(Duration.ofHours(1)));
 
         long rideId = rideLeavingIn(Duration.ofMinutes(30), true);
         Booking booking = bookings.request(user(UserRole.PASSENGER), rideId, 0, 2, 1, null);

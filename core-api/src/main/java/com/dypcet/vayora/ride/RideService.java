@@ -122,12 +122,13 @@ public class RideService {
      * @param path            the route to draw, as [lat, lon] pairs; empty as above
      * @param seriesSize      how many rides were published together with this one,
      *                        itself included; 1 for a ride published alone
+     * @param startsFrom      the earliest its driver may start it, so the app offers starting only then
      */
     public record Ride(long id, long driverId, String driverName, long vehicleId,
             Instant departureTime, int seatsOffered, boolean instantBooking, String status,
             List<Stop> stops, List<Segment> segments, Double distanceKm, Integer durationMinutes,
             String routeSource, List<double[]> path, String notes, boolean maxTwoInBack,
-            int seriesSize, boolean womenOnly, int maxDetourMinutes) {
+            int seriesSize, boolean womenOnly, int maxDetourMinutes, Instant startsFrom) {
     }
 
     /**
@@ -374,6 +375,8 @@ public class RideService {
     private final BigDecimal suggestedRupeesPerKm;
     private final double walkingKmh;
     private final Duration midRouteLead;
+    /** How long before departure a driver may start a ride (TripService enforces it). */
+    private final Duration earlyStart;
     private final MatchScore.Weights matchWeights;
     private final DetourService detours;
     private final int maxDetourMinutes;
@@ -392,6 +395,7 @@ public class RideService {
             @Value("${vayora.search.walking-kmh}") double walkingKmh,
             @Value("${vayora.tiers.suggest-below}") double suggestFlexibleBelow,
             @Value("${vayora.booking.mid-route-lead}") Duration midRouteLead,
+            @Value("${vayora.trip.early-start}") Duration earlyStart,
             SeatHolds holds, StopoverService stopovers, SupplyGapService supply,
             @Value("${vayora.search.match.distance}") int matchDistance,
             @Value("${vayora.search.match.price}") int matchPrice,
@@ -422,6 +426,7 @@ public class RideService {
         this.walkingKmh = walkingKmh;
         this.suggestFlexibleBelow = suggestFlexibleBelow;
         this.midRouteLead = midRouteLead;
+        this.earlyStart = earlyStart;
     }
 
     @Transactional
@@ -635,7 +640,8 @@ public class RideService {
                         rs.getString("route_source"), path(rs.getString("route_json")),
                         rs.getString("notes"), rs.getBoolean("max_two_in_back"),
                         rs.getInt("series_size"), rs.getBoolean("women_only"),
-                        rs.getInt("max_detour_minutes")),
+                        rs.getInt("max_detour_minutes"),
+                        rs.getObject("departure_time", OffsetDateTime.class).toInstant().minus(earlyStart)),
                 rideId);
         if (found.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ride not found");
