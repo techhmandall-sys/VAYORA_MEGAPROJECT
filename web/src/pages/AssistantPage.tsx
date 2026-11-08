@@ -50,15 +50,19 @@ export function AssistantPage() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState('');
   const box = useRef<HTMLTextAreaElement>(null);
-  const end = useRef<HTMLDivElement>(null);
+  const end = useRef<HTMLFormElement>(null);
   const boxId = useId();
   const ask = useMutation({
     mutationFn: (messages: Pick<Turn, 'role' | 'content'>[]) =>
       intel<AssistantReply>('/v1/assistant/reply', { method: 'POST', body: { messages, language } }),
   });
 
-  // The latest answer, or the note that one is being written, is in view.
-  useEffect(() => end.current?.scrollIntoView?.({ block: 'end' }), [turns.length, ask.isPending]);
+  // The question box, and the latest answer or the note that one is being written just above
+  // it, are in view. In braces: newer browsers return a promise from scrolling, and an effect
+  // may return only its clean-up.
+  useEffect(() => {
+    end.current?.scrollIntoView?.({ block: 'end' });
+  }, [turns.length, ask.isPending]);
 
   const send = (question: string) => {
     const text = question.trim();
@@ -148,7 +152,6 @@ export function AssistantPage() {
                 {t('Writing an answer…')}
               </p>
             )}
-            <div ref={end} />
           </section>
 
           {ask.error && <Notice tone="error">{ask.error.message}</Notice>}
@@ -158,7 +161,9 @@ export function AssistantPage() {
               event.preventDefault();
               send(draft);
             }}
-            className="flex items-end gap-2"
+            ref={end}
+            // Clear of the tab bar a phone has at the bottom of the screen.
+            className="flex scroll-mb-28 items-end gap-2 sm:scroll-mb-6"
           >
             <label htmlFor={boxId} className="sr-only">
               {t('Your question')}

@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppRoutes } from './App';
 import { AuthProvider } from './lib/auth';
@@ -3918,6 +3918,9 @@ describe('easier on a phone', () => {
 
 describe('the assistant', () => {
   const on = { enabled: true, max_messages: 20, max_message_chars: 2000 };
+  // As newer browsers do, scrolling answers with a promise: an effect returning it would crash the page.
+  beforeEach(() => Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, value: () => Promise.resolve() }));
+  afterEach(() => Reflect.deleteProperty(Element.prototype, 'scrollIntoView'));
   const replies = (fetchMock: ReturnType<typeof serve>) =>
     fetchMock.mock.calls
       .filter(([url]) => String(url).endsWith('/v1/assistant/reply'))
