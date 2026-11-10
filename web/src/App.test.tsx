@@ -36,6 +36,24 @@ async function pickPlace(label: string, place: string) {
   await userEvent.click(await screen.findByRole('option', { name: place }));
 }
 
+/** On the publish page: Next, then the heading of the step it leads to. */
+async function nextStep(heading: string) {
+  await userEvent.click(await screen.findByRole('button', { name: 'Next' }));
+  return screen.findByRole('heading', { name: heading });
+}
+
+/**
+ * On the publish page, from the route it starts with to the preferences: a time and a price for
+ * the one stretch, typed, as no route is worked out where a test answers none.
+ */
+async function toPreferences() {
+  await nextStep('When, and in which car');
+  fireEvent.change(screen.getByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
+  await nextStep('Times and price per seat');
+  await userEvent.type(screen.getByLabelText('Price to Pune (₹)'), '450');
+  await nextStep('Who rides, and how');
+}
+
 function open(path: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -807,28 +825,39 @@ describe('maps, routes and location search', () => {
         { lat: 18.5204, lon: 73.8567 },
       ],
     });
-    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(460);
-    expect(screen.getByLabelText('Minutes from Kolhapur to Pune')).toHaveValue(191);
     // The summary follows the form: the whole way has a price, and only the time is left to choose.
     const summary = within(screen.getByRole('complementary', { name: 'Your ride' }));
     expect(summary.getByText('Kolhapur → Pune')).toBeInTheDocument();
     expect(summary.getByText('₹460')).toBeInTheDocument();
     expect(summary.getAllByText('Not chosen yet')).toHaveLength(1);
+    await nextStep('When, and in which car');
+    fireEvent.change(screen.getByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
+    await nextStep('Times and price per seat');
+    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(460);
+    expect(screen.getByLabelText('Minutes from Kolhapur to Pune')).toHaveValue(191);
 
     // A price the driver types stays theirs through every route worked out after it.
     await userEvent.clear(screen.getByLabelText('Price to Pune (₹)'));
     await userEvent.type(screen.getByLabelText('Price to Pune (₹)'), '500');
+    // Back on the route, it is the one already worked out: nothing is asked again.
+    await userEvent.click(screen.getByRole('button', { name: 'Step 1 of 5: Route' }));
+    expect(await screen.findByText('230 km by road, about 3 h 11 min of driving.')).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(routes()).toHaveLength(1);
     // Moving a pin invalidates the route that was shown, and it is worked out again.
     // The map's code arrives when it is first shown.
     await userEvent.click(await screen.findByRole('button', { name: 'click the map' }));
     expect(screen.queryByText(/230 km by road/)).not.toBeInTheDocument();
     expect(await screen.findByText('230 km by road, about 3 h 11 min of driving.')).toBeInTheDocument();
     expect(routes()).toHaveLength(2);
-    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(500);
+    await userEvent.click(screen.getByRole('button', { name: 'Step 3 of 5: Prices' }));
+    expect(await screen.findByLabelText('Price to Pune (₹)')).toHaveValue(500);
 
     // Asked for, the suggestion replaces it.
-    await userEvent.click(screen.getByRole('button', { name: 'Use the suggested prices and times' }));
-    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(460);
+    await userEvent.click(screen.getByRole('button', { name: 'Step 1 of 5: Route' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Use the suggested prices and times' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Step 3 of 5: Prices' }));
+    expect(await screen.findByLabelText('Price to Pune (₹)')).toHaveValue(460);
   });
 
   it('says quietly when the route could not be worked out by itself, and leaves the prices to type', async () => {
@@ -842,11 +871,16 @@ describe('maps, routes and location search', () => {
     expect(await screen.findByText('The route could not be worked out by itself. Enter the times and prices, or try again.')).toBeInTheDocument();
     // Nobody asked, so nothing interrupts a screen reader.
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(null);
 
     // Asked for, a failure is said as one.
     await userEvent.click(screen.getByRole('button', { name: 'Work out the route' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Routing is not available');
+
+    // The price is left for the driver to type.
+    await nextStep('When, and in which car');
+    fireEvent.change(screen.getByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
+    await nextStep('Times and price per seat');
+    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(null);
   });
 });
 
@@ -1581,7 +1615,8 @@ describe('ride notes, return rides and weekly repeats', () => {
     serve({ 'GET /vehicles': () => json([{ id: 3, make: 'Maruti', model: 'Ertiga', year: 2022, colour: 'Silver', seats: 7 }]) });
     open('/rides/new');
 
-    const repeat = await screen.findByLabelText('Repeat every week');
+    await toPreferences();
+    const repeat = screen.getByLabelText('Repeat every week');
     expect(screen.queryByText(/This will publish/)).not.toBeInTheDocument(); // one ride needs no warning
     await userEvent.selectOptions(repeat, 'For 2 more weeks');
     expect(await screen.findByText('This will publish 3 rides.')).toBeInTheDocument();
@@ -1740,20 +1775,28 @@ describe('publishing a ride through the page', () => {
   const vehicle = { id: 3, make: 'Maruti', model: 'Ertiga', year: 2022, colour: 'Silver', seats: 7 };
   const published = { ...rideWithRoute, notes: null, maxTwoInBack: false, seriesSize: 1 };
 
+  /** Every step but the review: a stop at Satara, a time, two seats on approval, and a price for each stretch. */
   async function fillIn() {
-    fireEvent.change(await screen.findByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
+    await userEvent.click(await screen.findByRole('button', { name: 'Add a stop on the way' }));
+    await pickPlace('Stop on the way 1', 'Satara');
+    await nextStep('When, and in which car');
+    fireEvent.change(screen.getByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
     await userEvent.clear(screen.getByLabelText('Seats offered'));
     await userEvent.type(screen.getByLabelText('Seats offered'), '2');
     await userEvent.click(screen.getByLabelText('Confirm bookings instantly, without asking me'));
-    await userEvent.click(screen.getByRole('button', { name: 'Add a stop on the way' }));
-    await pickPlace('Stop on the way 1', 'Satara');
+    await nextStep('Times and price per seat');
     await userEvent.clear(screen.getByLabelText('Price to Satara (₹)'));
     await userEvent.type(screen.getByLabelText('Price to Satara (₹)'), '270');
     await userEvent.clear(screen.getByLabelText('Price to Pune (₹)'));
     await userEvent.type(screen.getByLabelText('Price to Pune (₹)'), '250');
+    await nextStep('Who rides, and how');
   }
+  const sentRide = (fetchMock: ReturnType<typeof serve>) => {
+    const sent = fetchMock.mock.calls.find(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith('/rides'));
+    return JSON.parse(String(sent?.[1]?.body));
+  };
 
-  it('sends the stops, prices, seats and approval choice the driver entered, then shows their rides', async () => {
+  it('shows everything entered before publishing, sends it, confirms, and leads to the rides', async () => {
     signIn('DRIVER');
     const fetchMock = serve({
       'GET /vehicles': () => json([vehicle]),
@@ -1763,12 +1806,21 @@ describe('publishing a ride through the page', () => {
     open('/rides/new');
 
     await fillIn();
+    await nextStep('Check and publish');
+    const part = (title: string) => within(screen.getByRole('region', { name: title }));
+    expect(part('Where you stop').getByText('Kolhapur → Satara → Pune')).toBeInTheDocument();
+    expect(part('When, and in which car').getByText('Maruti Ertiga')).toBeInTheDocument();
+    expect(part('When, and in which car').getByText('Seats').nextSibling).toHaveTextContent('2');
+    expect(part('When, and in which car').getByText('You approve each request')).toBeInTheDocument();
+    expect(part('Times and price per seat').getByText('Whole way, per seat').nextSibling).toHaveTextContent('₹520');
+    expect(part('Who rides, and how').getByText('Nothing chosen')).toBeInTheDocument();
+    // Nothing is published until the driver says so.
+    expect(fetchMock.mock.calls.some(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith('/rides'))).toBe(false);
     await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
 
-    expect(await screen.findByRole('heading', { name: 'My rides' })).toBeInTheDocument();
-    const sent = fetchMock.mock.calls.find(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith('/rides'));
-    const body = JSON.parse(String(sent?.[1]?.body));
-    expect(body).toMatchObject({
+    expect(await screen.findByRole('heading', { name: 'Ride published' })).toBeInTheDocument();
+    expect(screen.getByText('Kolhapur → Satara → Pune')).toBeInTheDocument();
+    expect(sentRide(fetchMock)).toMatchObject({
       vehicleId: 3,
       departureTime: new Date('2030-01-01T07:00').toISOString(),
       seatsOffered: 2,
@@ -1777,8 +1829,10 @@ describe('publishing a ride through the page', () => {
       returnDepartureTime: null,
       repeatWeeks: 0,
     });
-    expect(body.stops.map((stop: { name: string }) => stop.name)).toEqual(['Kolhapur', 'Satara', 'Pune']);
-    expect(body.stops[0].offsetMinutes).toBe(0);
+    expect(sentRide(fetchMock).stops.map((stop: { name: string }) => stop.name)).toEqual(['Kolhapur', 'Satara', 'Pune']);
+    expect(sentRide(fetchMock).stops[0].offsetMinutes).toBe(0);
+    await userEvent.click(screen.getByRole('link', { name: 'See it in My rides' }));
+    expect(await screen.findByRole('heading', { name: 'My rides' })).toBeInTheDocument();
   });
 
   it('sends the minutes the driver will go out of their way, and none unless they say', async () => {
@@ -1786,7 +1840,6 @@ describe('publishing a ride through the page', () => {
     const fetchMock = serve({
       'GET /vehicles': () => json([vehicle]),
       'POST /rides': () => json(published, 201),
-      'GET /rides/mine': () => json([published]),
     });
     open('/rides/new');
 
@@ -1795,11 +1848,12 @@ describe('publishing a ride through the page', () => {
     expect(field).toHaveValue(0);
     await userEvent.clear(field);
     await userEvent.type(field, '10');
+    await nextStep('Check and publish');
+    expect(screen.getByText('Picks passengers up off the stops, up to 10 minutes out of the way in all')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
 
-    await screen.findByRole('heading', { name: 'My rides' });
-    const sent = fetchMock.mock.calls.find(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith('/rides'));
-    expect(JSON.parse(String(sent?.[1]?.body))).toMatchObject({ maxDetourMinutes: 10 });
+    await screen.findByRole('heading', { name: 'Ride published' });
+    expect(sentRide(fetchMock)).toMatchObject({ maxDetourMinutes: 10 });
   });
 
   it('publishes a ride between any two places, with a stop added and another taken away', async () => {
@@ -1807,11 +1861,10 @@ describe('publishing a ride through the page', () => {
     const fetchMock = serve({
       'GET /vehicles': () => json([vehicle]),
       'POST /rides': () => json(published, 201),
-      'GET /rides/mine': () => json([published]),
     });
     open('/rides/new');
 
-    fireEvent.change(await screen.findByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
+    await screen.findByRole('button', { name: 'Add a stop on the way' });
     await pickPlace('From', 'Mumbai');
     await pickPlace('To', 'Panaji');
     await userEvent.click(screen.getByRole('button', { name: 'Add a stop on the way' }));
@@ -1820,13 +1873,17 @@ describe('publishing a ride through the page', () => {
     await pickPlace('Stop on the way 2', 'Ratnagiri');
     await userEvent.click(screen.getAllByRole('button', { name: 'Remove this stop' })[0]);
     expect(screen.queryByLabelText('Stop on the way 2')).not.toBeInTheDocument();
+    await nextStep('When, and in which car');
+    fireEvent.change(screen.getByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
+    await nextStep('Times and price per seat');
     await userEvent.type(screen.getByLabelText('Price to Ratnagiri (₹)'), '500');
     await userEvent.type(screen.getByLabelText('Price to Panaji (₹)'), '400');
+    await nextStep('Who rides, and how');
+    await nextStep('Check and publish');
     await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
 
-    await screen.findByRole('heading', { name: 'My rides' });
-    const sent = fetchMock.mock.calls.find(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith('/rides'));
-    const body = JSON.parse(String(sent?.[1]?.body));
+    await screen.findByRole('heading', { name: 'Ride published' });
+    const body = sentRide(fetchMock);
     expect(body.stops.map((stop: { name: string }) => stop.name)).toEqual(['Mumbai', 'Ratnagiri', 'Panaji']);
     expect(body.stops[0]).toMatchObject({ lat: 19.076, lon: 72.8777, offsetMinutes: 0 });
     // Each later than the one before, or the server refuses the ride.
@@ -1835,17 +1892,18 @@ describe('publishing a ride through the page', () => {
     expect(body.segmentPrices).toEqual([500, 400]);
   });
 
-  it('will not publish until a stop that was added has a place', async () => {
+  it('will not go on until a stop that was added has a place', async () => {
     signIn('DRIVER');
     const fetchMock = serve({ 'GET /vehicles': () => json([vehicle]) });
     open('/rides/new');
 
-    fireEvent.change(await screen.findByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
-    await userEvent.click(screen.getByRole('button', { name: 'Add a stop on the way' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Add a stop on the way' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
 
     expect(await screen.findByText('Choose a place', { selector: 'p, span, [role="alert"]' })).toBeInTheDocument();
-    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+    expect(screen.getByRole('heading', { name: 'Where you stop' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Step 2 of 5: When' })).toBeDisabled();
+    expect(fetchMock.mock.calls.some(([url, init]) => init?.method === 'POST' && !String(url).endsWith('/route-preview'))).toBe(false);
   });
 
   it('forgets a worked-out route when a stop changes', async () => {
@@ -1866,7 +1924,7 @@ describe('publishing a ride through the page', () => {
     expect(screen.queryByRole('button', { name: 'Use the suggested prices and times' })).not.toBeInTheDocument();
   });
 
-  it("keeps the form and shows the server's reason when publishing is refused", async () => {
+  it("keeps everything and shows the server's reason when publishing is refused, with each step a tap away", async () => {
     signIn('DRIVER');
     serve({
       'GET /vehicles': () => json([vehicle]),
@@ -1875,11 +1933,67 @@ describe('publishing a ride through the page', () => {
     open('/rides/new');
 
     await fillIn();
+    await nextStep('Check and publish');
     await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('This vehicle can offer at most 6 seats');
     expect(screen.getByRole('heading', { name: 'Publish a ride' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Price to Satara (₹)')).toHaveValue(270);
+    const prices = within(screen.getByRole('region', { name: 'Times and price per seat' }));
+    await userEvent.click(prices.getByRole('button', { name: 'Change' }));
+    expect(await screen.findByLabelText('Price to Satara (₹)')).toHaveValue(270);
+    expect(screen.getByRole('heading', { name: 'Times and price per seat' })).toHaveFocus();
+  });
+
+  it('checks each step before going on, focuses what is wrong, and says the time back in words', async () => {
+    signIn('DRIVER');
+    const fetchMock = serve({ 'GET /vehicles': () => json([vehicle]) });
+    open('/rides/new');
+
+    await nextStep('When, and in which car');
+    expect(screen.getByRole('button', { name: 'Step 2 of 5: When' })).toHaveAttribute('aria-current', 'step');
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(await screen.findByText('Choose when you leave')).toBeInTheDocument();
+    expect(screen.getByLabelText('Leaving at')).toHaveFocus();
+    fireEvent.change(screen.getByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
+    // The time chosen is said back in words, where a date box alone can be misread.
+    expect(screen.getByText(/, in your device's local time$/)).toBeInTheDocument();
+
+    await nextStep('Times and price per seat');
+    // A price starts empty, and nothing is said about it until the driver tries to go on.
+    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(null);
+    expect(screen.queryByText('Enter a price, or 0 for a free ride')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(await screen.findByText('Enter a price, or 0 for a free ride')).toBeInTheDocument();
+    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveFocus();
+    await userEvent.type(screen.getByLabelText('Price to Pune (₹)'), '0');
+
+    await nextStep('Who rides, and how');
+    const detour = screen.getByLabelText('Minutes you will go out of your way, in all, to pick passengers up at their own point');
+    await userEvent.clear(detour);
+    await userEvent.type(detour, '45');
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(await screen.findByText('At most 30 minutes')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Who rides, and how' })).toBeInTheDocument();
+
+    // Back goes back a step, and nothing went to the server.
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(await screen.findByRole('heading', { name: 'Times and price per seat' })).toHaveFocus();
+    expect(fetchMock.mock.calls.some(([url, init]) => init?.method === 'POST' && !String(url).endsWith('/route-preview'))).toBe(false);
+  });
+
+  it('starts a second ride afresh after publishing one', async () => {
+    signIn('DRIVER');
+    serve({ 'GET /vehicles': () => json([vehicle]), 'POST /rides': () => json(published, 201) });
+    open('/rides/new');
+
+    await fillIn();
+    await nextStep('Check and publish');
+    await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish another ride' }));
+
+    expect(await screen.findByRole('heading', { name: 'Where you stop' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Stop on the way 1')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Step 2 of 5: When' })).toBeDisabled();
   });
 });
 
@@ -2011,11 +2125,12 @@ describe('women-only rides', () => {
     });
     open('/rides/new');
 
-    fireEvent.change(await screen.findByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
+    await toPreferences();
     await userEvent.click(await screen.findByLabelText('Women passengers only'));
-    // A price starts empty: a free ride is something the driver types, never what they leave.
-    await userEvent.type(screen.getByLabelText('Price to Pune (₹)'), '450');
+    await nextStep('Check and publish');
+    expect(screen.getByText('Women passengers only')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
+    await userEvent.click(await screen.findByRole('link', { name: 'See it in My rides' }));
 
     expect(await screen.findByText('Women only')).toBeInTheDocument();
     const sent = fetchMock.mock.calls.find(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith('/rides'));
@@ -2027,7 +2142,8 @@ describe('women-only rides', () => {
     serve({ 'GET /vehicles': () => json([vehicle]) });
     open('/rides/new');
 
-    expect(await screen.findByText(/can be offered by a driver whose profile says she is a woman/)).toBeInTheDocument();
+    await toPreferences();
+    expect(screen.getByText(/can be offered by a driver whose profile says she is a woman/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Women passengers only')).not.toBeInTheDocument();
   });
 
@@ -4150,29 +4266,18 @@ describe('easier on a phone', () => {
     expect(screen.getByRole('button', { name: 'Show passengers' })).toBeInTheDocument();
   });
 
-  it('keeps the optional parts of publishing folded, opens one holding a mistake, and asks for every price', async () => {
+  it('names the step of publishing in words, as the numbers alone stand for it on a phone', async () => {
     signIn('DRIVER');
-    const fetchMock = serve({ 'GET /vehicles': () => json([vehicle]) });
+    serve({ 'GET /vehicles': () => json([vehicle]) });
     open('/rides/new');
 
-    fireEvent.change(await screen.findByLabelText('Leaving at'), { target: { value: '2030-01-01T07:00' } });
-    // The time chosen is said back in words, where a date box alone can be misread.
-    expect(screen.getByText(/, in your device's local time$/)).toBeInTheDocument();
-    const optional = screen.getByText('Who rides, and how').closest('details')!;
-    expect(optional).not.toHaveAttribute('open');
-    expect(screen.getByText('Return and repeat').closest('details')).not.toHaveAttribute('open');
-    // A price starts empty: a free ride is something the driver types, never what they leave.
-    expect(screen.getByLabelText('Price to Pune (₹)')).toHaveValue(null);
-
-    const detour = screen.getByLabelText('Minutes you will go out of your way, in all, to pick passengers up at their own point');
-    await userEvent.clear(detour);
-    await userEvent.type(detour, '45');
-    await userEvent.click(screen.getByRole('button', { name: 'Publish ride' }));
-
-    expect(await screen.findByText('Enter a price, or 0 for a free ride')).toBeInTheDocument();
-    expect(screen.getByText('At most 30 minutes')).toBeInTheDocument();
-    await waitFor(() => expect(optional).toHaveAttribute('open'));
-    expect(fetchMock.mock.calls.some(([url, init]) => init?.method === 'POST' && new URL(String(url)).pathname.endsWith('/rides'))).toBe(false);
+    const steps = await screen.findByRole('navigation', { name: 'Steps' });
+    expect(within(steps).getByText('Step 1 of 5: Route')).toBeInTheDocument();
+    // Each step is a button; one not reached yet cannot be pressed.
+    expect(within(steps).getAllByRole('button')).toHaveLength(5);
+    expect(within(steps).getByRole('button', { name: 'Step 5 of 5: Review' })).toBeDisabled();
+    await nextStep('When, and in which car');
+    expect(within(steps).getByText('Step 2 of 5: When')).toBeInTheDocument();
   });
 
   it('lists the account as rows that say where each stands, and opens the one a link points at', async () => {

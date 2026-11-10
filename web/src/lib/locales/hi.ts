@@ -2217,8 +2217,6 @@ export const hi: Record<string, string> = {
     'ऐप',
   "{when}, in your device's local time":
     '{when}, आपके डिवाइस के स्थानीय समय में',
-  'Optional':
-    'वैकल्पिक',
   'About {km} km in a straight line':
     'सीधी रेखा में लगभग {km} किमी',
   'You can start it from {time}':
@@ -2438,4 +2436,49 @@ export const hi: Record<string, string> = {
     'न पढ़ी सूचनाएँ',
   'Recent trips':
     'हाल के सफ़र',
+  // Publishing a ride a step at a time: the steps, the review and the confirmation
+  'Steps':
+    'चरण',
+  'Step {n} of {all}: {step}':
+    '{all} में से चरण {n}: {step}',
+  'Route':
+    'रास्ता',
+  'Prices':
+    'कीमतें',
+  'Preferences':
+    'पसंद',
+  'Review':
+    'समीक्षा',
+  'Check and publish':
+    'जाँचें और प्रकाशित करें',
+  'Next':
+    'आगे',
+  'Back':
+    'पीछे',
+  'Change':
+    'बदलें',
+  'Confirmed instantly':
+    'तुरंत पक्की',
+  'You approve each request':
+    'हर अनुरोध आप मंज़ूर करते हैं',
+  'Picks passengers up off the stops, up to {n} minutes out of the way in all':
+    'पड़ावों से हटकर भी यात्रियों को लेंगे, कुल मिलाकर {n} मिनट तक रास्ते से हटकर',
+  'Nothing chosen':
+    'कुछ नहीं चुना',
+  'Notes for passengers':
+    'यात्रियों के लिए सूचना',
+  'Return ride':
+    'वापसी की सवारी',
+  'None':
+    'कोई नहीं',
+  'Ride published':
+    'सवारी प्रकाशित हुई',
+  'Passengers going your way can find it and book now.':
+    'आपकी ओर जा रहे यात्री अब इसे खोजकर बुक कर सकते हैं।',
+  'Published as {n} rides, each of which you can withdraw on its own.':
+    '{n} सवारियों के रूप में प्रकाशित, जिनमें से हर एक को आप अलग से वापस ले सकते हैं।',
+  'See it in My rides':
+    'इसे मेरी सवारियों में देखें',
+  'Publish another ride':
+    'एक और सवारी प्रकाशित करें',
 };

@@ -1,9 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Car, CarFront, ChevronDown, CirclePlus, IndianRupee, MessagesSquare, Users } from 'lucide-react';
+import { ArrowRight, Car, CarFront, Check, CirclePlus, IndianRupee, MessagesSquare, Users } from 'lucide-react';
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { LeavesIn, LiveStatus, useTimeAhead } from '../components/live';
 import { firstName, HomeStat, SetupChecklist } from '../components/setup';
@@ -171,8 +171,10 @@ const pinsOf = (stops: Pick<RideForm['stops'][number], 'lat' | 'lon'>[]) => stop
  * clicking the map, and offers prices and timings worked out from the route. The route is
  * worked out by itself as soon as two stops have places, and again whenever they change.
  */
-function RoutePlanner({ stops, rangeKm, onMove, onUse, onRoute }: {
+function RoutePlanner({ stops, known, rangeKm, onMove, onUse, onRoute }: {
   stops: RideForm['stops'];
+  /** The route already worked out for these very stops, if any: shown without asking again. */
+  known: RoutePreview | null;
   /** The chosen vehicle's range on a full charge, from the driver's own figures; null if not electric. */
   rangeKm: number | null;
   onMove: (index: number, lat: number, lon: number) => void;
@@ -195,9 +197,9 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse, onRoute }: {
   const [byHand, setByHand] = useState(false);
   const pins = pinsOf(included);
   // The stops as they stand now, for an answer that arrives later.
-  const latest = useRef({ included, onRoute });
+  const latest = useRef({ included, onRoute, known });
   useEffect(() => {
-    latest.current = { included, onRoute };
+    latest.current = { included, onRoute, known };
   });
   const { reset, mutate } = preview;
   const workOut = useCallback(
@@ -221,18 +223,14 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse, onRoute }: {
   // A route worked out for other stops is no route for these, however they changed.
   useEffect(() => {
     reset();
-    if (!ready) return;
+    // Back on this step with the stops as they were, the route is already known.
+    if (!ready || latest.current.known) return;
     timer.current = window.setTimeout(() => workOut(false), AUTO_ROUTE_MS);
     return () => window.clearTimeout(timer.current);
   }, [pins, ready, reset, workOut]);
 
   if (included.length < 2) return null;
-  // The first stretch between stops longer than a full charge: the server refuses to publish it.
-  const tooLong =
-    rangeKm == null || !preview.data ? -1 : preview.data.legs.findIndex((leg) => leg.distanceKm > rangeKm);
-  const chargers = preview.data?.alongRoute.some((a) => a.stopover.kind === 'CHARGER')
-    ? t('Chargers are listed near this route below.')
-    : t('No charger is listed near this route.');
+  const shown = preview.data ?? known ?? undefined;
   return (
     <fieldset className="space-y-3">
       <legend className="text-sm font-medium text-slate-700">{t('Route and meeting points')}</legend>
@@ -251,7 +249,7 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse, onRoute }: {
         </SelectField>
       </div>
       <RouteMap
-        path={preview.data?.path}
+        path={shown?.path}
         points={included.map((stop) => ({
           lat: Number(stop.lat),
           lon: Number(stop.lon),
@@ -274,8 +272,8 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse, onRoute }: {
         >
           {preview.isPending ? t('Working out the route…') : t('Work out the route')}
         </Button>
-        {preview.data && (
-          <Button tone="secondary" onClick={() => onUse(included.map((stop) => stop.index), preview.data)}>
+        {shown && (
+          <Button tone="secondary" onClick={() => onUse(included.map((stop) => stop.index), shown)}>
             {t('Use the suggested prices and times')}
           </Button>
         )}
@@ -286,21 +284,21 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse, onRoute }: {
         ) : (
           <p className="text-sm text-slate-600">{t('The route could not be worked out by itself. Enter the times and prices, or try again.')}</p>
         ))}
-      {preview.data && (
+      {shown && (
         <div className="text-sm text-slate-700">
           <p role="status">
-            {preview.data.source === 'OSRM'
+            {shown.source === 'OSRM'
               ? t('{km} km by road, about {time} of driving.', {
-                  km: preview.data.distanceKm,
-                  time: units.duration(preview.data.durationMinutes),
+                  km: shown.distanceKm,
+                  time: units.duration(shown.durationMinutes),
                 })
               : t(
                   'About {km} km in a straight line. No road route is available for this trip, so this is not a road distance and the times are rough guesses.',
-                  { km: preview.data.distanceKm },
+                  { km: shown.distanceKm },
                 )}
           </p>
           <ul className="mt-1 list-disc pl-5">
-            {preview.data.legs.map((leg, i) => (
+            {shown.legs.map((leg, i) => (
               <li key={included[i + 1].index}>
                 {t('{from} to {to}: {km} km, {time}, suggested {price} a seat', {
                   from: town(included[i].index),
@@ -313,34 +311,12 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse, onRoute }: {
             ))}
           </ul>
           <p className="mt-1 text-slate-500">{t('The suggestion is distance times a flat rate. The price is yours to set.')}</p>
-          {tooLong >= 0 ? (
-            <div className="mt-2">
-              <Notice tone="error">
-                {t('{from} to {to} is {km} km, longer than the {range} km your vehicle covers on a full charge, by your own figures. A ride with a stretch that long cannot be published: add a stop between them where you can charge.', {
-                  from: town(included[tooLong].index),
-                  to: town(included[tooLong + 1].index),
-                  km: preview.data.legs[tooLong].distanceKm,
-                  range: rangeKm!,
-                })}{' '}
-                {chargers}
-              </Notice>
-            </div>
-          ) : (
-            rangeKm != null &&
-            preview.data.distanceKm > rangeKm && (
-              <div className="mt-2">
-                <Notice tone="info">
-                  {t('This route is longer than the {range} km your vehicle covers on a full charge, by your own figures. Plan a charging stop: VAYORA does not plan one for you.', { range: rangeKm })}{' '}
-                  {chargers}
-                </Notice>
-              </div>
-            )
-          )}
-          {preview.data.alongRoute.length > 0 && (
+          <RangeNotice route={shown} rangeKm={rangeKm} towns={included.map((stop) => town(stop.index))} />
+          {shown.alongRoute.length > 0 && (
             <section aria-label={t('Along this route')} className="mt-3">
               <h3 className="font-medium">{t('Along this route')}</h3>
               <ul className="mt-1 space-y-1">
-                {preview.data.alongRoute.map((a) => (
+                {shown.alongRoute.map((a) => (
                   <li key={a.stopover.id}>
                     {t('km {km}', { km: Math.round(a.kmAlong) })} · {a.stopover.name} ·{' '}
                     {a.stopover.kind === 'CHARGER'
@@ -362,37 +338,214 @@ function RoutePlanner({ stops, rangeKm, onMove, onUse, onRoute }: {
   );
 }
 
+/** What a vehicle's own range says about a route: a stretch too long to publish, or a charge to plan. */
+function RangeNotice({ route, rangeKm, towns }: {
+  route: RoutePreview;
+  /** The chosen vehicle's range on a full charge, from the driver's own figures; null if not electric. */
+  rangeKm: number | null;
+  /** The route's stops, in order, as the driver reads them. */
+  towns: string[];
+}) {
+  const t = useT();
+  if (rangeKm == null) return null;
+  // The first stretch between stops longer than a full charge: the server refuses to publish it.
+  const tooLong = route.legs.findIndex((leg) => leg.distanceKm > rangeKm);
+  const chargers = route.alongRoute.some((a) => a.stopover.kind === 'CHARGER')
+    ? t('Chargers are listed near this route below.')
+    : t('No charger is listed near this route.');
+  if (tooLong >= 0) {
+    return (
+      <div className="mt-2">
+        <Notice tone="error">
+          {t('{from} to {to} is {km} km, longer than the {range} km your vehicle covers on a full charge, by your own figures. A ride with a stretch that long cannot be published: add a stop between them where you can charge.', {
+            from: towns[tooLong],
+            to: towns[tooLong + 1],
+            km: route.legs[tooLong].distanceKm,
+            range: rangeKm,
+          })}{' '}
+          {chargers}
+        </Notice>
+      </div>
+    );
+  }
+  if (route.distanceKm <= rangeKm) return null;
+  return (
+    <div className="mt-2">
+      <Notice tone="info">
+        {t('This route is longer than the {range} km your vehicle covers on a full charge, by your own figures. Plan a charging stop: VAYORA does not plan one for you.', { range: rangeKm })}{' '}
+        {chargers}
+      </Notice>
+    </div>
+  );
+}
+
+const [ROUTE, WHEN, PRICES, PREFERENCES, REVIEW] = [0, 1, 2, 3, 4];
+/** Each step's short name, for the progress line, and its heading. */
+const publishSteps = [
+  { label: msg('Route'), title: msg('Where you stop') },
+  { label: msg('When'), title: msg('When, and in which car') },
+  { label: msg('Prices'), title: msg('Times and price per seat') },
+  { label: msg('Preferences'), title: msg('Who rides, and how') },
+  { label: msg('Review'), title: msg('Check and publish') },
+];
+
+/** The step a field of the publish form is filled in on, by its path. */
+function stepOfField(path: string): number {
+  if (/^stops\.\d+\.(offsetMinutes|priceFromPrevious)$/.test(path)) return PRICES;
+  if (path === 'stops' || path.startsWith('stops.')) return ROUTE;
+  if (['vehicleId', 'departure', 'seatsOffered', 'instantBooking'].includes(path)) return WHEN;
+  return PREFERENCES;
+}
+
+/** The paths of every message in a form's errors, such as "stops.2.priceFromPrevious". */
+function errorPaths(errors: object, prefix = ''): string[] {
+  return Object.entries(errors).flatMap(([key, value]: [string, unknown]) => {
+    if (key === 'ref' || !value || typeof value !== 'object') return [];
+    // A message about a whole list sits under its root.
+    const path = key === 'root' ? prefix.slice(0, -1) : `${prefix}${key}`;
+    return typeof (value as { message?: unknown }).message === 'string' ? [path] : errorPaths(value, `${path}.`);
+  });
+}
+
+/**
+ * Where the driver is among the steps of publishing: each step done so far can be gone back to.
+ * On a phone the numbers alone, with the step named in words above them.
+ */
+function PublishProgress({ current, reached, onGo }: { current: number; reached: number; onGo: (step: number) => void }) {
+  const t = useT();
+  return (
+    <nav aria-label={t('Steps')} className="rounded-2xl bg-surface px-4 py-3.5 shadow-card ring-1 ring-slate-900/[0.04] sm:px-5">
+      <p className="text-[13px] font-medium text-slate-500 sm:hidden">
+        {t('Step {n} of {all}: {step}', { n: current + 1, all: publishSteps.length, step: t(publishSteps[current].label) })}
+      </p>
+      <ol className="mt-2 flex items-center gap-1.5 sm:mt-0 sm:gap-2">
+        {publishSteps.map((step, index) => {
+          const done = index < current;
+          return (
+            <li key={step.label} className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
+              <button
+                type="button"
+                disabled={index > reached}
+                aria-current={index === current ? 'step' : undefined}
+                aria-label={t('Step {n} of {all}: {step}', { n: index + 1, all: publishSteps.length, step: t(step.label) })}
+                onClick={() => onGo(index)}
+                className="group flex min-h-11 min-w-0 items-center gap-2 rounded-full focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30 disabled:cursor-default"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`flex h-8 w-8 flex-none items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                    index === current
+                      ? 'bg-accent text-white shadow-sm shadow-accent/30'
+                      : done
+                        ? 'bg-teal-600/[0.14] text-teal-800 group-hover:bg-teal-600/[0.22]'
+                        : 'bg-slate-900/[0.06] text-slate-500'
+                  }`}
+                >
+                  {done ? <Check className="h-4 w-4" strokeWidth={3} /> : index + 1}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={`hidden truncate text-sm sm:block ${index === current ? 'font-semibold text-slate-900' : 'font-medium text-slate-500'}`}
+                >
+                  {t(step.label)}
+                </span>
+              </button>
+              {index < publishSteps.length - 1 && (
+                <span aria-hidden="true" className={`h-0.5 min-w-2 flex-1 rounded-full ${index < reached ? 'bg-teal-600/40' : 'bg-slate-900/[0.08]'}`} />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+/** One part of the review: what was chosen at one step, and the way back to it. */
+function ReviewPart({ title, onChange, children }: { title: string; onChange: () => void; children: ReactNode }) {
+  const t = useT();
+  const id = useId();
+  return (
+    <section aria-labelledby={id} className="py-4 first:pt-0 last:pb-0">
+      <div className="flex items-center justify-between gap-3">
+        <h3 id={id} className="text-[15px] font-semibold text-slate-900">
+          {title}
+        </h3>
+        <button
+          type="button"
+          onClick={onChange}
+          aria-describedby={id}
+          className="-mr-2 inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-teal-800 hover:bg-teal-600/[0.08] focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30"
+        >
+          {t('Change')}
+        </button>
+      </div>
+      <div className="mt-1 text-sm text-slate-700">{children}</div>
+    </section>
+  );
+}
+
+/**
+ * Publishing a ride, a step at a time: the route with its map, when and in which car, the times
+ * and prices, what the driver offers passengers, and everything checked together before it goes.
+ * One form throughout, checked by the one schema: Next checks the step being left, and publishing
+ * checks them all, going back to the first step with something to fix.
+ */
 export function PublishRidePage() {
   const t = useT();
-  const navigate = useNavigate();
+  const units = useUnits();
   const queryClient = useQueryClient();
   const vehicles = useVehicles();
   // Only a driver whose profile says she is a woman may offer a women-only ride.
   const me = useQuery({ queryKey: ['me', 'profile'], queryFn: () => api<MyProfile>('/me/profile') });
-  const { register, handleSubmit, formState, watch, setValue, getValues, control } = useForm<RideForm>({
+  const defaultValues: Partial<RideForm> = {
+    departure: '',
+    seatsOffered: 3,
+    instantBooking: true,
+    maxTwoInBack: false,
+    womenOnly: false,
+    notes: '',
+    returnDeparture: '',
+    repeatWeeks: 0,
+    maxDetourMinutes: 0,
+    // The two ends to begin with; the driver changes them and adds stops in between.
+    stops: [
+      { ...placeNamed('Kolhapur')!, offsetMinutes: 0, priceFromPrevious: 0 },
+      {
+        ...placeNamed('Pune')!,
+        offsetMinutes: roughDriveMinutes(placeNamed('Kolhapur')!, placeNamed('Pune')!),
+        priceFromPrevious: '',
+      },
+    ],
+  };
+  const { register, handleSubmit, formState, watch, setValue, getValues, control, clearErrors, setFocus, reset } = useForm<RideForm>({
     resolver: zodResolver(rideSchema),
-    defaultValues: {
-      departure: '',
-      seatsOffered: 3,
-      instantBooking: true,
-      maxTwoInBack: false,
-      womenOnly: false,
-      notes: '',
-      returnDeparture: '',
-      repeatWeeks: 0,
-      maxDetourMinutes: 0,
-      // The two ends to begin with; the driver changes them and adds stops in between.
-      stops: [
-        { ...placeNamed('Kolhapur')!, offsetMinutes: 0, priceFromPrevious: 0 },
-        {
-          ...placeNamed('Pune')!,
-          offsetMinutes: roughDriveMinutes(placeNamed('Kolhapur')!, placeNamed('Pune')!),
-          priceFromPrevious: '',
-        },
-      ],
-    },
+    defaultValues,
+    // A mistake can be on a step not on screen: the page goes to it and focuses it itself.
+    shouldFocusError: false,
   });
   const { fields, insert, remove } = useFieldArray({ control, name: 'stops' });
+  const [step, setStep] = useState(ROUTE);
+  // The furthest step reached, so far: any step up to it can be gone back to.
+  const [reached, setReached] = useState(ROUTE);
+  // Where the focus goes once a step is on screen: a field to fix, or else the step's heading. A new
+  // object each time, so asking twice for the same field still moves the focus.
+  const [focusing, setFocusing] = useState<{ field: string | null } | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+
+  const go = (to: number, field: string | null = null) => {
+    setFocusing({ field });
+    setStep(to);
+    setReached((was) => Math.max(was, to));
+  };
+  useEffect(() => {
+    if (!focusing) return;
+    if (focusing.field) setFocus(focusing.field as Parameters<typeof setFocus>[0]);
+    // A place picked from a list cannot take the focus by name: the step's heading does.
+    if (!(document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLSelectElement)) {
+      heading.current?.focus();
+    }
+  }, [focusing, setFocus]);
 
   /** Rough times from one stop onward, each from the stop before, as far as the stops have places. */
   const retime = (from: number) => {
@@ -419,6 +572,8 @@ export function PublishRidePage() {
     retime(index);
   };
 
+  // The last route worked out and the stops it was for: the review shows it while they still match.
+  const [route, setRoute] = useState<{ pins: string; preview: RoutePreview } | null>(null);
   // Times and prices the driver typed are theirs: a route worked out by itself fills only the rest.
   const typed = useRef(new Set<string>());
   /**
@@ -426,10 +581,11 @@ export function PublishRidePage() {
    * before as it now stands, so a time the driver typed carries on to the stops after it.
    * @param all over what the driver typed as well: they asked for the suggestion
    */
-  const fillFromRoute = (chosen: number[], route: RoutePreview, all: boolean) => {
+  const fillFromRoute = (chosen: number[], preview: RoutePreview, all: boolean) => {
     const current = getValues('stops');
+    setRoute({ pins: pinsOf(chosen.map((index) => current[index])), preview });
     let minutes = Number(current[chosen[0]].offsetMinutes);
-    route.legs.forEach((leg, i) => {
+    preview.legs.forEach((leg, i) => {
       const index = chosen[i + 1];
       const id = fields[index]?.id;
       minutes += leg.durationMinutes;
@@ -445,18 +601,48 @@ export function PublishRidePage() {
       }
     });
   };
+  // What was published, and as how many rides, for the confirmation.
+  const [done, setDone] = useState<{ ride: Ride; count: number } | null>(null);
   const publish = useMutation({
     mutationFn: (form: RideForm) => api<Ride>('/rides', { method: 'POST', body: toPublishRequest(form) }),
-    onSuccess: () => {
+    onSuccess: (ride, form) => {
       void queryClient.invalidateQueries({ queryKey: ['rides'] });
-      navigate('/rides');
+      setDone({ ride, count: ridesPublished(form) });
     },
   });
 
+  /** Next, or Publish on the last step: the steps up to this one must be right to go on. */
+  const next = handleSubmit(
+    (form) => {
+      if (step === REVIEW) publish.mutate(form);
+      else go(step + 1);
+    },
+    (errors) => {
+      const paths = errorPaths(errors);
+      const first = Math.min(...paths.map(stepOfField));
+      if (first <= step) {
+        // Fields that are not typed into (a place, the list itself) have no focus to take.
+        go(first, paths.find((path) => stepOfField(path) === first && !/^stops(\.\d+\.name)?$/.test(path)) ?? null);
+        return;
+      }
+      // What is wrong further on is for when the driver gets there.
+      clearErrors(paths.filter((path) => stepOfField(path) > step) as Parameters<typeof clearErrors>[0]);
+      go(step + 1);
+    },
+  );
+
+  const startAgain = () => {
+    reset(defaultValues);
+    typed.current.clear();
+    setRoute(null);
+    setDone(null);
+    publish.reset();
+    setReached(ROUTE);
+    go(ROUTE);
+  };
+
   const stops = watch('stops');
   const publishing = ridesPublished({ returnDeparture: watch('returnDeparture'), repeatWeeks: watch('repeatWeeks') });
-  const stopsError = formState.errors.stops as { root?: { message?: string }; message?: string } | undefined;
-  const stopsMessage = stopsError?.root?.message ?? stopsError?.message;
 
   if (vehicles.data?.length === 0) {
     return (
@@ -471,294 +657,376 @@ export function PublishRidePage() {
     );
   }
 
+  if (done) {
+    const { ride, count } = done;
+    return (
+      <Page title={t('Ride published')}>
+        <Card>
+          <div className="flex items-start gap-4">
+            <span aria-hidden="true" className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+              <Check className="h-6 w-6" strokeWidth={3} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[19px] font-bold leading-snug tracking-tight text-slate-900">{ride.stops.map((stop) => t(stop.name)).join(' → ')}</p>
+              <p className="mt-0.5 text-[15px] text-slate-600">{formatDateTime(ride.departureTime)}</p>
+              <p className="mt-3 text-[15px] text-slate-700">{t('Passengers going your way can find it and book now.')}</p>
+              {count > 1 && <p className="mt-1 text-[15px] text-slate-700">{t('Published as {n} rides, each of which you can withdraw on its own.', { n: count })}</p>}
+            </div>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              to="/rides"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-5 text-[15px] font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.97] focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30"
+            >
+              {t('See it in My rides')}
+              <ArrowRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
+            </Link>
+            <Button tone="secondary" onClick={startAgain}>
+              {t('Publish another ride')}
+            </Button>
+          </div>
+        </Card>
+      </Page>
+    );
+  }
+
   const included = stops.filter((stop) => stop.name !== '');
   const wholeWay = stops.reduce((sum, stop, index) => (index > 0 ? sum + (Number(stop.priceFromPrevious) || 0) : sum), 0);
   const departure = watch('departure');
-  const leaving = departure && !Number.isNaN(new Date(departure).getTime()) ? formatDateTime(departure) : null;
+  const leaving = departure && !Number.isNaN(new Date(departure).getTime()) ? formatDateTime(new Date(departure).toISOString()) : null;
+  // Until the driver picks one, the select shows (and the form sends) the first vehicle.
+  const vehicle = vehicles.data && (vehicles.data.find((one) => String(one.id) === String(watch('vehicleId'))) ?? vehicles.data[0]);
+  const rangeKm = vehicle?.estimatedRangeKm ?? null;
+  const routeNow = route && route.pins === pinsOf(included) ? route.preview : null;
+  const at = (offsetMinutes: number) => formatTime(new Date(Date.parse(departure) + Number(offsetMinutes) * 60_000).toISOString());
+  const stopsError = formState.errors.stops as { root?: { message?: string }; message?: string } | undefined;
+  const stopsMessage = stopsError?.root?.message ?? stopsError?.message;
+  const repeatWeeks = Number(watch('repeatWeeks'));
+  const maxDetour = Number(watch('maxDetourMinutes'));
+  const notes = watch('notes').trim();
 
   return (
     <Page title={t('Publish a ride')}>
       <QueryState isPending={vehicles.isPending} error={vehicles.error} isEmpty={false} empty="" onRetry={() => void vehicles.refetch()} />
       {vehicles.data && (
-        <form
-          onSubmit={handleSubmit((form) => publish.mutate(form))}
-          noValidate
-          className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]"
-        >
-          <div className="space-y-5">
-            {publish.error && <Notice tone="error">{publish.error.message}</Notice>}
-            <FormStep n={1} title={t('When, and in which car')}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <SelectField label={t('Vehicle')} error={formState.errors.vehicleId?.message} {...register('vehicleId')}>
-                {vehicles.data.map((vehicle) => (
-                  <option key={vehicle.id} value={vehicle.id}>
-                    {t('{vehicle} ({n} passenger seats)', { vehicle: `${vehicle.make} ${vehicle.model}`, n: vehicle.seats - 1 })}
-                  </option>
-                ))}
-              </SelectField>
-              <TextField
-                label={t('Leaving at')}
-                type="datetime-local"
-                hint={
-                  Number.isNaN(Date.parse(departure))
-                    ? t("In your device's local time.")
-                    : t("{when}, in your device's local time", { when: formatDateTime(new Date(departure).toISOString()) })
-                }
-                error={formState.errors.departure?.message}
-                {...register('departure')}
-              />
-              <TextField
-                label={t('Seats offered')}
-                type="number"
-                min={1}
-                max={8}
-                error={formState.errors.seatsOffered?.message}
-                {...register('seatsOffered')}
-              />
-              <label className="flex items-center gap-2 self-end pb-2 text-sm text-slate-700">
-                <input type="checkbox" className="h-4 w-4 rounded border-slate-300" {...register('instantBooking')} />
-                {t('Confirm bookings instantly, without asking me')}
-              </label>
-              <p className="text-sm text-slate-600 sm:col-span-2">
-                {t('Passengers pay you directly after the ride, in cash or by UPI.')}{' '}
-                <Link to="/account#payment" className="font-medium text-teal-800 underline underline-offset-2">
-                  {t('Your UPI ID and QR code')}
-                </Link>
-              </p>
-            </div>
-            </FormStep>
+        <div className="space-y-5">
+          <PublishProgress current={step} reached={reached} onGo={(to) => go(to)} />
+          <form onSubmit={next} noValidate className={`grid items-start gap-5 ${step === REVIEW ? '' : 'lg:grid-cols-[minmax(0,1fr)_17rem]'}`}>
+            <section aria-labelledby="publish-step" className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-slate-900/[0.04] sm:p-5">
+              <h2 id="publish-step" ref={heading} tabIndex={-1} className="mb-4 text-[19px] font-bold tracking-tight text-slate-900 focus:outline-none">
+                {t(publishSteps[step].title)}
+              </h2>
 
-            <FormStep n={2} title={t('Where you stop')}>
-            {/* The places first: the route follows from them, and the times and prices from the route. */}
-            <div>
-              {stopsMessage && (
-                <p className="mt-2 text-sm text-red-700" role="alert">
-                  {t(stopsMessage)}
-                </p>
+              {step === ROUTE && (
+                <>
+                  {/* The places first: the route follows from them, and the times and prices from the route. */}
+                  {stopsMessage && (
+                    <p className="mb-2 text-sm text-red-700" role="alert">
+                      {t(stopsMessage)}
+                    </p>
+                  )}
+                  <div className="space-y-3">
+                    {fields.map((field, index) => {
+                      const stop = stops[index];
+                      const between = index > 0 && index < fields.length - 1;
+                      return (
+                        <div key={field.id} className="grid items-end gap-3 rounded-2xl border border-slate-200 p-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                          <PlaceField
+                            label={index === 0 ? t('From') : between ? t('Stop on the way {n}', { n: index }) : t('To')}
+                            value={stop?.name ?? ''}
+                            error={formState.errors.stops?.[index]?.name?.message}
+                            onChange={(name) => choosePlace(index, name)}
+                          />
+                          {between && (
+                            <Button tone="secondary" className="justify-self-start" onClick={() => removeStop(index)}>
+                              {t('Remove this stop')}
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* The server takes ten stops at most. */}
+                  {fields.length < 10 && (
+                    <Button
+                      tone="secondary"
+                      className="mt-3"
+                      onClick={() => insert(fields.length - 1, { name: '', lat: 0, lon: 0, offsetMinutes: 0, priceFromPrevious: '' }, { shouldFocus: false })}
+                    >
+                      {t('Add a stop on the way')}
+                    </Button>
+                  )}
+                  <div className="mt-5">
+                    <RoutePlanner
+                      stops={stops}
+                      known={routeNow}
+                      rangeKm={rangeKm}
+                      onMove={(index, lat, lon) => {
+                        setValue(`stops.${index}.lat`, lat);
+                        setValue(`stops.${index}.lon`, lon);
+                      }}
+                      onUse={(chosen, preview) => fillFromRoute(chosen, preview, true)}
+                      onRoute={(chosen, preview) => fillFromRoute(chosen, preview, false)}
+                    />
+                  </div>
+                </>
               )}
-              <div className="mt-3 space-y-3">
-                {fields.map((field, index) => {
-                  const stop = stops[index];
-                  const between = index > 0 && index < fields.length - 1;
-                  return (
-                    <div key={field.id} className="grid items-end gap-3 rounded-2xl border border-slate-200 p-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                      <PlaceField
-                        label={index === 0 ? t('From') : between ? t('Stop on the way {n}', { n: index }) : t('To')}
-                        value={stop?.name ?? ''}
-                        error={formState.errors.stops?.[index]?.name?.message}
-                        onChange={(name) => choosePlace(index, name)}
+
+              {step === WHEN && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <SelectField label={t('Vehicle')} error={formState.errors.vehicleId?.message} {...register('vehicleId')}>
+                    {vehicles.data.map((one) => (
+                      <option key={one.id} value={one.id}>
+                        {t('{vehicle} ({n} passenger seats)', { vehicle: `${one.make} ${one.model}`, n: one.seats - 1 })}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <TextField
+                    label={t('Leaving at')}
+                    type="datetime-local"
+                    hint={
+                      Number.isNaN(Date.parse(departure))
+                        ? t("In your device's local time.")
+                        : t("{when}, in your device's local time", { when: formatDateTime(new Date(departure).toISOString()) })
+                    }
+                    error={formState.errors.departure?.message}
+                    {...register('departure')}
+                  />
+                  <TextField
+                    label={t('Seats offered')}
+                    type="number"
+                    min={1}
+                    max={8}
+                    error={formState.errors.seatsOffered?.message}
+                    {...register('seatsOffered')}
+                  />
+                  <label className="flex min-h-11 items-center gap-2 self-end text-sm text-slate-700">
+                    <input type="checkbox" className="h-4 w-4 rounded border-slate-300" {...register('instantBooking')} />
+                    {t('Confirm bookings instantly, without asking me')}
+                  </label>
+                  <p className="text-sm text-slate-600 sm:col-span-2">
+                    {t('Passengers pay you directly after the ride, in cash or by UPI.')}{' '}
+                    <Link to="/account#payment" className="font-medium text-teal-800 underline underline-offset-2">
+                      {t('Your UPI ID and QR code')}
+                    </Link>
+                  </p>
+                </div>
+              )}
+
+              {step === PRICES && (
+                <>
+                  <p className="text-sm text-slate-500">
+                    {t('Filled in from the route as soon as it is worked out. Change any of them: what you type is kept.')}{' '}
+                    {t('Passengers can book between any two of your stops. Each price is for the stretch that ends at that stop.')}
+                  </p>
+                  <div className="mt-3 space-y-3">
+                    {fields.map((field, index) => {
+                      const stop = stops[index];
+                      // The first stop is where the ride leaves at the time chosen: it has no minutes or price of its own.
+                      if (index === 0 || !stop?.name) return null;
+                      return (
+                        <div key={field.id} className="grid items-end gap-3 rounded-2xl border border-slate-200 p-3 sm:grid-cols-2">
+                          <TextField
+                            label={t('Minutes from {start} to {town}', { start: t(stops[0].name), town: t(stop.name) })}
+                            type="number"
+                            min={0}
+                            error={formState.errors.stops?.[index]?.offsetMinutes?.message}
+                            {...register(`stops.${index}.offsetMinutes`, { onChange: () => typed.current.add(`${field.id}:minutes`) })}
+                          />
+                          <TextField
+                            label={t('Price to {town} (₹)', { town: t(stop.name) })}
+                            type="number"
+                            min={0}
+                            error={formState.errors.stops?.[index]?.priceFromPrevious?.message}
+                            {...register(`stops.${index}.priceFromPrevious`, { onChange: () => typed.current.add(`${field.id}:price`) })}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {step === PREFERENCES && (
+                <div className="space-y-6">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="flex min-h-11 items-center gap-2 text-sm text-slate-700 sm:col-span-2">
+                      <input type="checkbox" className="h-4 w-4 rounded border-slate-300" {...register('maxTwoInBack')} />
+                      {t('I promise at most two passengers on the back seat')}
+                    </label>
+                    <TextField
+                      label={t('Minutes you will go out of your way, in all, to pick passengers up at their own point')}
+                      hint={t('0 for none: passengers then board only at your stops. Each pickup is worked out before it is offered.')}
+                      type="number"
+                      min={0}
+                      max={MAX_DETOUR_MINUTES}
+                      error={formState.errors.maxDetourMinutes?.message}
+                      {...register('maxDetourMinutes')}
+                    />
+                    {me.data?.gender === 'FEMALE' ? (
+                      <label className="flex min-h-11 items-center gap-2 text-sm text-slate-700 sm:col-span-2">
+                        <input type="checkbox" className="h-4 w-4 rounded border-slate-300" {...register('womenOnly')} />
+                        {t('Women passengers only')}
+                      </label>
+                    ) : (
+                      <p className="text-sm text-slate-500 sm:col-span-2">
+                        {t('A ride for women passengers only can be offered by a driver whose profile says she is a woman.')}
+                      </p>
+                    )}
+                    <div className="sm:col-span-2">
+                      <label htmlFor="ride-notes" className="block text-sm font-medium text-slate-700">
+                        {t('Notes for passengers (optional)')}
+                      </label>
+                      <textarea
+                        id="ride-notes"
+                        rows={2}
+                        maxLength={500}
+                        aria-invalid={Boolean(formState.errors.notes)}
+                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-surface px-3.5 py-2.5 text-[15px] shadow-sm focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-600/15"
+                        {...register('notes')}
                       />
-                      {between && (
-                        <Button tone="secondary" className="justify-self-start" onClick={() => removeStop(index)}>
-                          {t('Remove this stop')}
-                        </Button>
+                      <p className="mt-1 text-sm text-slate-500">{t('Luggage, where exactly you wait, anything they should know.')}</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-4 border-t border-slate-900/[0.06] pt-5 sm:grid-cols-2">
+                    <h3 className="text-[15px] font-semibold text-slate-900 sm:col-span-2">{t('Return and repeat')}</h3>
+                    <TextField
+                      label={t('Return ride leaving at (optional)')}
+                      type="datetime-local"
+                      hint={t('The same stops in reverse, with the same prices and the same time between stops.')}
+                      error={formState.errors.returnDeparture?.message}
+                      {...register('returnDeparture')}
+                    />
+                    <SelectField label={t('Repeat every week')} hint={t('At the same time of day. Each is a separate ride you can withdraw on its own.')} {...register('repeatWeeks')}>
+                      <option value={0}>{t('No, just this once')}</option>
+                      {Array.from({ length: MAX_REPEAT_WEEKS }, (_, index) => index + 1).map((weeks) => (
+                        <option key={weeks} value={weeks}>
+                          {weeks === 1 ? t('For {n} more week', { n: weeks }) : t('For {n} more weeks', { n: weeks })}
+                        </option>
+                      ))}
+                    </SelectField>
+                    {publishing > 1 && (
+                      <p role="status" className="text-sm font-medium text-slate-700 sm:col-span-2">
+                        {t('This will publish {n} rides.', { n: publishing })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {step === REVIEW && (
+                <div className="divide-y divide-slate-900/[0.06]">
+                  {publish.error && (
+                    <div className="pb-4">
+                      <Notice tone="error">{publish.error.message}</Notice>
+                    </div>
+                  )}
+                  <ReviewPart title={t('Where you stop')} onChange={() => go(ROUTE)}>
+                    <p className="text-[15px] font-semibold text-slate-900">{included.map((stop) => t(stop.name)).join(' → ')}</p>
+                    {routeNow && (
+                      <p className="mt-0.5">
+                        {routeNow.source === 'OSRM'
+                          ? t('{km} km by road, about {time} of driving.', { km: routeNow.distanceKm, time: units.duration(routeNow.durationMinutes) })
+                          : t(
+                              'About {km} km in a straight line. No road route is available for this trip, so this is not a road distance and the times are rough guesses.',
+                              { km: routeNow.distanceKm },
+                            )}
+                      </p>
+                    )}
+                    {/* The car may have been chosen after the route was: its range is checked again here. */}
+                    {routeNow && <RangeNotice route={routeNow} rangeKm={rangeKm} towns={included.map((stop) => t(stop.name))} />}
+                  </ReviewPart>
+                  <ReviewPart title={t('When, and in which car')} onChange={() => go(WHEN)}>
+                    <dl className="divide-y divide-slate-900/[0.06]">
+                      <SummaryRow label={t('Leaving')} value={leaving ?? t('Not chosen yet')} />
+                      <SummaryRow label={t('Vehicle')} value={vehicle ? `${vehicle.make} ${vehicle.model}` : ''} />
+                      <SummaryRow label={t('Seats')} value={String(watch('seatsOffered'))} />
+                      <SummaryRow label={t('Booking')} value={watch('instantBooking') ? t('Confirmed instantly') : t('You approve each request')} />
+                    </dl>
+                  </ReviewPart>
+                  <ReviewPart title={t('Times and price per seat')} onChange={() => go(PRICES)}>
+                    <dl className="divide-y divide-slate-900/[0.06]">
+                      {stops.map((stop, index) =>
+                        index === 0 || !stop.name ? null : (
+                          <SummaryRow
+                            key={fields[index]?.id ?? index}
+                            label={t(stop.name)}
+                            value={`${leaving ? `${at(Number(stop.offsetMinutes))} · ` : ''}${formatRupees(Number(stop.priceFromPrevious) || 0)}`}
+                          />
+                        ),
                       )}
-                    </div>
-                  );
-                })}
-              </div>
-              {/* The server takes ten stops at most. */}
-              {fields.length < 10 && (
-                <Button
-                  tone="secondary"
-                  className="mt-3"
-                  onClick={() => insert(fields.length - 1, { name: '', lat: 0, lon: 0, offsetMinutes: 0, priceFromPrevious: '' }, { shouldFocus: false })}
-                >
-                  {t('Add a stop on the way')}
-                </Button>
-              )}
-            </div>
-
-            <div className="mt-5">
-            <RoutePlanner
-              stops={stops}
-              // Until the driver picks one, the select shows (and the form sends) the first vehicle.
-              rangeKm={
-                (vehicles.data.find((vehicle) => String(vehicle.id) === String(watch('vehicleId'))) ?? vehicles.data[0])
-                  ?.estimatedRangeKm ?? null
-              }
-              onMove={(index, lat, lon) => {
-                setValue(`stops.${index}.lat`, lat);
-                setValue(`stops.${index}.lon`, lon);
-              }}
-              onUse={(chosen, preview) => fillFromRoute(chosen, preview, true)}
-              onRoute={(chosen, preview) => fillFromRoute(chosen, preview, false)}
-            />
-            </div>
-
-            <fieldset className="mt-5">
-              <legend className="text-sm font-medium text-slate-700">{t('Times and price per seat')}</legend>
-              <p className="mt-1 text-sm text-slate-500">
-                {t('Filled in from the route as soon as it is worked out. Change any of them: what you type is kept.')}{' '}
-                {t('Passengers can book between any two of your stops. Each price is for the stretch that ends at that stop.')}
-              </p>
-              <div className="mt-3 space-y-3">
-                {fields.map((field, index) => {
-                  const stop = stops[index];
-                  // The first stop is where the ride leaves at the time above: it has no minutes or price of its own.
-                  if (index === 0 || !stop?.name) return null;
-                  return (
-                    <div key={field.id} className="grid items-end gap-3 rounded-2xl border border-slate-200 p-3 sm:grid-cols-2">
-                      <TextField
-                        label={t('Minutes from {start} to {town}', { start: t(stops[0].name), town: t(stop.name) })}
-                        type="number"
-                        min={0}
-                        error={formState.errors.stops?.[index]?.offsetMinutes?.message}
-                        {...register(`stops.${index}.offsetMinutes`, { onChange: () => typed.current.add(`${field.id}:minutes`) })}
+                      <SummaryRow label={t('Whole way, per seat')} value={formatRupees(wholeWay)} />
+                    </dl>
+                  </ReviewPart>
+                  <ReviewPart title={t('Who rides, and how')} onChange={() => go(PREFERENCES)}>
+                    <ul className="list-disc space-y-0.5 pl-5">
+                      {watch('maxTwoInBack') && <li>{t('I promise at most two passengers on the back seat')}</li>}
+                      {watch('womenOnly') && <li>{t('Women passengers only')}</li>}
+                      {maxDetour > 0 && <li>{t('Picks passengers up off the stops, up to {n} minutes out of the way in all', { n: maxDetour })}</li>}
+                      {!watch('maxTwoInBack') && !watch('womenOnly') && maxDetour === 0 && <li>{t('Nothing chosen')}</li>}
+                    </ul>
+                    {notes && (
+                      <p className="mt-2 whitespace-pre-line rounded-xl bg-slate-900/[0.04] px-3 py-2">
+                        <span className="font-medium text-slate-900">{t('Notes for passengers')}:</span> {notes}
+                      </p>
+                    )}
+                    <dl className="mt-2 divide-y divide-slate-900/[0.06]">
+                      <SummaryRow
+                        label={t('Return ride')}
+                        value={watch('returnDeparture') ? formatDateTime(new Date(watch('returnDeparture')).toISOString()) : t('None')}
                       />
-                      <TextField
-                        label={t('Price to {town} (₹)', { town: t(stop.name) })}
-                        type="number"
-                        min={0}
-                        error={formState.errors.stops?.[index]?.priceFromPrevious?.message}
-                        {...register(`stops.${index}.priceFromPrevious`, { onChange: () => typed.current.add(`${field.id}:price`) })}
+                      <SummaryRow
+                        label={t('Repeat every week')}
+                        value={repeatWeeks === 0 ? t('No, just this once') : repeatWeeks === 1 ? t('For {n} more week', { n: 1 }) : t('For {n} more weeks', { n: repeatWeeks })}
                       />
-                    </div>
-                  );
-                })}
-              </div>
-            </fieldset>
-            </FormStep>
-
-            <FormStep n={3} title={t('Who rides, and how')} optional hasError={Boolean(formState.errors.maxDetourMinutes || formState.errors.notes)}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
-                <input type="checkbox" className="h-4 w-4 rounded border-slate-300" {...register('maxTwoInBack')} />
-                {t('I promise at most two passengers on the back seat')}
-              </label>
-              <TextField
-                label={t('Minutes you will go out of your way, in all, to pick passengers up at their own point')}
-                hint={t('0 for none: passengers then board only at your stops. Each pickup is worked out before it is offered.')}
-                type="number"
-                min={0}
-                max={MAX_DETOUR_MINUTES}
-                error={formState.errors.maxDetourMinutes?.message}
-                {...register('maxDetourMinutes')}
-              />
-              {me.data?.gender === 'FEMALE' ? (
-                <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
-                  <input type="checkbox" className="h-4 w-4 rounded border-slate-300" {...register('womenOnly')} />
-                  {t('Women passengers only')}
-                </label>
-              ) : (
-                <p className="text-sm text-slate-500 sm:col-span-2">
-                  {t('A ride for women passengers only can be offered by a driver whose profile says she is a woman.')}
-                </p>
+                      <SummaryRow label={t('Rides to publish')} value={String(publishing)} />
+                    </dl>
+                  </ReviewPart>
+                </div>
               )}
-              <div className="sm:col-span-2">
-                <label htmlFor="ride-notes" className="block text-sm font-medium text-slate-700">
-                  {t('Notes for passengers (optional)')}
-                </label>
-                <textarea
-                  id="ride-notes"
-                  rows={2}
-                  maxLength={500}
-                  aria-invalid={Boolean(formState.errors.notes)}
-                  className="mt-1 block w-full rounded-xl border border-slate-200 bg-surface px-3.5 py-2.5 text-[15px] shadow-sm focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-600/15"
-                  {...register('notes')}
-                />
-                <p className="mt-1 text-sm text-slate-500">{t('Luggage, where exactly you wait, anything they should know.')}</p>
-              </div>
-            </div>
-            </FormStep>
 
-            <FormStep n={4} title={t('Return and repeat')} optional hasError={Boolean(formState.errors.returnDeparture || formState.errors.repeatWeeks)}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TextField
-                label={t('Return ride leaving at (optional)')}
-                type="datetime-local"
-                hint={t('The same stops in reverse, with the same prices and the same time between stops.')}
-                error={formState.errors.returnDeparture?.message}
-                {...register('returnDeparture')}
-              />
-              <SelectField label={t('Repeat every week')} hint={t('At the same time of day. Each is a separate ride you can withdraw on its own.')} {...register('repeatWeeks')}>
-                <option value={0}>{t('No, just this once')}</option>
-                {Array.from({ length: MAX_REPEAT_WEEKS }, (_, index) => index + 1).map((weeks) => (
-                  <option key={weeks} value={weeks}>
-                    {weeks === 1 ? t('For {n} more week', { n: weeks }) : t('For {n} more weeks', { n: weeks })}
-                  </option>
-                ))}
-              </SelectField>
-              {publishing > 1 && (
-                <p role="status" className="text-sm font-medium text-slate-700 sm:col-span-2">
-                  {t('This will publish {n} rides.', { n: publishing })}
-                </p>
-              )}
-            </div>
-            </FormStep>
-          </div>
-
-          {/* What will be published, kept in view beside the form on a wide screen. */}
-          <aside aria-label={t('Your ride')} className="space-y-4 lg:sticky lg:top-28">
-            <div className="overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-slate-900/[0.04]">
-              <div className="bg-gradient-to-br from-accent to-accent-strong px-4 py-3 text-white">
-                <p className="text-[13px] font-semibold uppercase tracking-wider text-white/80">{t('Your ride')}</p>
-                <p className="mt-1 text-[17px] font-bold leading-snug">
-                  {included.map((stop) => t(stop.name)).join(' → ')}
-                </p>
+              <div className="mt-6 flex flex-wrap-reverse items-center justify-between gap-3 border-t border-slate-900/[0.06] pt-4">
+                {step > ROUTE ? (
+                  <Button tone="secondary" onClick={() => go(step - 1)}>
+                    {t('Back')}
+                  </Button>
+                ) : (
+                  <span />
+                )}
+                {step === REVIEW ? (
+                  <Button type="submit" busy={publish.isPending} className="min-w-40 py-3">
+                    {publish.isPending ? t('Publishing…') : t('Publish ride')}
+                  </Button>
+                ) : (
+                  <Button type="submit" className="min-w-32">
+                    {t('Next')}
+                    <ArrowRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
+                  </Button>
+                )}
               </div>
-              <dl className="divide-y divide-slate-900/[0.06] px-4 text-sm">
-                <SummaryRow label={t('Leaving')} value={leaving ?? t('Not chosen yet')} />
-                <SummaryRow label={t('Seats')} value={String(watch('seatsOffered') ?? '')} />
-                <SummaryRow label={t('Whole way, per seat')} value={wholeWay > 0 ? formatRupees(wholeWay) : t('Not chosen yet')} />
-                <SummaryRow label={t('Rides to publish')} value={String(publishing)} />
-              </dl>
-            </div>
-            <Button type="submit" busy={publish.isPending} className="w-full py-3">
-              {publish.isPending ? t('Publishing…') : t('Publish ride')}
-            </Button>
-          </aside>
-        </form>
+            </section>
+
+            {/* What will be published, kept in view beside the step on a wide screen. The review is it in full. */}
+            {step !== REVIEW && (
+              <aside aria-label={t('Your ride')} className="hidden lg:sticky lg:top-28 lg:block">
+                <div className="overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-slate-900/[0.04]">
+                  <div className="bg-gradient-to-br from-accent to-accent-strong px-4 py-3 text-white">
+                    <p className="text-[13px] font-semibold uppercase tracking-wider text-white/80">{t('Your ride')}</p>
+                    <p className="mt-1 text-[17px] font-bold leading-snug">{included.map((stop) => t(stop.name)).join(' → ')}</p>
+                  </div>
+                  <dl className="divide-y divide-slate-900/[0.06] px-4 text-sm">
+                    <SummaryRow label={t('Leaving')} value={leaving ?? t('Not chosen yet')} />
+                    <SummaryRow label={t('Seats')} value={String(watch('seatsOffered') ?? '')} />
+                    <SummaryRow label={t('Whole way, per seat')} value={wholeWay > 0 ? formatRupees(wholeWay) : t('Not chosen yet')} />
+                    <SummaryRow label={t('Rides to publish')} value={String(publishing)} />
+                  </dl>
+                </div>
+              </aside>
+            )}
+          </form>
+        </div>
       )}
     </Page>
-  );
-}
-
-/** One numbered part of a long form: the driver sees where they are without anything hidden. */
-/**
- * @param optional starts closed, so the form is as short as what every ride needs; it opens by
- *                 itself when it holds a mistake, so nothing wrong is ever out of sight
- */
-function FormStep({ n, title, children, optional = false, hasError = false }: {
-  n: number;
-  title: string;
-  children: ReactNode;
-  optional?: boolean;
-  hasError?: boolean;
-}) {
-  const id = useId();
-  const t = useT();
-  const details = useRef<HTMLDetailsElement>(null);
-  useEffect(() => {
-    if (hasError && details.current) details.current.open = true;
-  }, [hasError]);
-  if (optional) {
-    return (
-      <details ref={details} aria-labelledby={id} className="more rounded-2xl bg-surface shadow-card ring-1 ring-slate-900/[0.04]">
-        <summary className="flex min-h-14 cursor-pointer items-center gap-3 p-4 sm:px-5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30">
-          <span aria-hidden="true" className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-slate-900/[0.07] text-sm font-bold text-slate-700">
-            {n}
-          </span>
-          <span id={id} className="text-[17px] font-semibold tracking-tight text-slate-900">
-            {title}
-          </span>
-          <span className="ml-auto text-[13px] text-slate-500">{t('Optional')}</span>
-          <ChevronDown aria-hidden="true" className="more-chevron h-4 w-4 text-slate-500" />
-        </summary>
-        <div className="px-4 pb-4 sm:px-5 sm:pb-5">{children}</div>
-      </details>
-    );
-  }
-  return (
-    <section aria-labelledby={id} className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-slate-900/[0.04] sm:p-5">
-      <h2 id={id} className="mb-4 flex items-center gap-3 text-[17px] font-semibold tracking-tight text-slate-900">
-        <span aria-hidden="true" className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-accent text-sm font-bold text-white shadow-sm shadow-accent/30">
-          {n}
-        </span>
-        {title}
-      </h2>
-      {children}
-    </section>
   );
 }
 
