@@ -41,6 +41,15 @@ export function wantRoute(wanted: WantedRoute): void {
   }
 }
 
+/** Whether a search chosen on the front page is waiting, left where it is. */
+export function hasWantedRoute(): boolean {
+  try {
+    return sessionStorage.getItem(WANTED) !== null;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The search wanted, left in place: a render React throws away (a page still loading, say) must
  * not lose it, so it is forgotten separately, once the page is on screen. Null when there is none,

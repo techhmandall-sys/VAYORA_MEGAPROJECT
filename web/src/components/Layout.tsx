@@ -10,6 +10,7 @@ import {
   CirclePlus,
   Ellipsis,
   FlaskConical,
+  House,
   Flag,
   Fuel,
   IndianRupee,
@@ -38,6 +39,7 @@ import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-route
 import { useAuth } from '../lib/auth';
 import { LANGUAGES, msg, useLanguage, useT, type Language } from '../lib/i18n';
 import { PHONE, useMediaQuery } from '../lib/media';
+import { hasWantedRoute } from '../lib/recent';
 import { themeLabels, useTheme, type ThemeChoice } from '../lib/theme';
 import { preload } from '../pageLoaders';
 import { BarTitle, BarTitleContext, useScrolled } from './pageTitle';
@@ -67,12 +69,14 @@ const INSIGHT = msg('Insights');
 
 const links: Record<Role, Section[]> = {
   PASSENGER: [
+    { to: '/home', label: msg('Home'), icon: House },
     { to: '/search', label: msg('Find a ride'), icon: Search },
     { to: '/bookings', label: msg('My bookings'), icon: Ticket },
     { to: '/payments', label: msg('Payments'), icon: Wallet },
     { to: '/assistant', label: msg('Assistant'), icon: Sparkles },
   ],
   DRIVER: [
+    { to: '/home', label: msg('Home'), icon: House },
     { to: '/rides', label: msg('My rides'), icon: Car },
     { to: '/rides/new', label: msg('Publish a ride'), icon: CirclePlus },
     { to: '/vehicles', label: msg('My vehicles'), icon: CarFront },
@@ -100,6 +104,12 @@ const links: Record<Role, Section[]> = {
 const account: Section = { to: '/account', label: msg('My account'), icon: UserRound };
 
 export const homeFor = (role: Role): string => links[role][0]?.to ?? '/';
+
+/**
+ * Where signing in leads, whichever way it was done: home, except that a passenger who chose a
+ * search on the front page goes straight to it.
+ */
+export const afterSignIn = (role: Role): string => (role === 'PASSENGER' && hasWantedRoute() ? '/search' : homeFor(role));
 
 const roleNames: Record<Role, string> = { PASSENGER: msg('Passenger'), DRIVER: msg('Driver'), ADMIN: msg('Administrator') };
 

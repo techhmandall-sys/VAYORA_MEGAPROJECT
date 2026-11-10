@@ -234,7 +234,7 @@ describe('access', () => {
     serve({ 'GET /rides/mine': () => json([]) });
     open('/');
 
-    expect(await screen.findByRole('heading', { name: 'My rides' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Hello, / })).toBeInTheDocument();
   });
 
   it('sends a signed-out visitor to sign in', async () => {
@@ -248,7 +248,7 @@ describe('access', () => {
     signIn('PASSENGER');
     open('/rides/new');
 
-    expect(await screen.findByRole('heading', { name: 'Find a ride' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Hello, / })).toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'Main' });
     expect(within(nav).getByRole('link', { name: 'My bookings' })).toBeInTheDocument();
     expect(within(nav).queryByRole('link', { name: 'Publish a ride' })).not.toBeInTheDocument();
@@ -259,8 +259,11 @@ describe('access', () => {
     serve({ 'GET /rides/mine': () => json([]) });
     open('/search');
 
-    expect(await screen.findByRole('heading', { name: 'My rides' })).toBeInTheDocument();
-    expect(await screen.findByText('You have not published a ride yet.')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Hello, / })).toBeInTheDocument();
+    expect(await screen.findByText('No rides ahead')).toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(within(nav).getByRole('link', { name: 'My rides' })).toBeInTheDocument();
+    expect(within(nav).queryByRole('link', { name: 'Find a ride' })).not.toBeInTheDocument();
   });
 
   it('signs out and returns to sign in', async () => {
@@ -544,7 +547,7 @@ describe('booking durability (administrator)', () => {
     serve({ 'GET /rides/mine': () => json([]) });
     open('/admin/durability');
 
-    expect(await screen.findByRole('heading', { name: 'My rides' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Hello, / })).toBeInTheDocument();
     expect(screen.queryByText('Booking durability')).not.toBeInTheDocument();
   });
 });
@@ -1445,7 +1448,7 @@ describe('emergencies (administrator)', () => {
     serve({});
     open('/admin/emergencies');
 
-    expect(await screen.findByRole('heading', { name: 'Find a ride' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Hello, / })).toBeInTheDocument();
   });
 });
 
@@ -2524,7 +2527,7 @@ describe('phone sign-up', () => {
     await userEvent.type(screen.getByLabelText('Password'), 'correct-horse-battery');
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
-    expect(await screen.findByRole('heading', { name: 'Find a ride' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Hello, / })).toBeInTheDocument();
     expect(bodyOf(fetchMock, 'POST', '/auth/login')).toEqual({ phone: '98000 00009', password: 'correct-horse-battery' });
   });
 
@@ -2553,7 +2556,7 @@ describe('phone sign-up', () => {
     await userEvent.click(screen.getByRole('radio', { name: /^Find rides as a passenger/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
 
-    expect(await screen.findByRole('heading', { name: 'Find a ride' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Hello, / })).toBeInTheDocument();
     const body = bodyOf(fetchMock, 'POST', '/auth/register') as Record<string, unknown>;
     expect(body).toMatchObject({ phone: '9800000009', fullName: 'Meera Kulkarni', role: 'PASSENGER' });
     expect(body).not.toHaveProperty('email');
@@ -2963,12 +2966,32 @@ describe('Google sign-in', () => {
     callback!({ credential: 'google-id-token' });
     await userEvent.click(await screen.findByRole('button', { name: 'Offer rides as a driver' }));
 
-    expect(await screen.findByRole('heading', { name: 'My rides' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Hello, / })).toBeInTheDocument();
     const posts = fetchMock.mock.calls.filter(([url, init]) => init?.method === 'POST' && String(url).endsWith('/auth/google'));
     expect(posts.map(([, init]) => JSON.parse(String(init!.body)))).toEqual([
       { idToken: 'google-id-token' },
       { idToken: 'google-id-token', role: 'DRIVER' },
     ]);
+  });
+
+  it('takes a passenger who chose a search on the front page straight to it, as the other ways in do', async () => {
+    let callback: ((response: { credential: string }) => void) | undefined;
+    vi.stubGlobal('google', {
+      accounts: { id: { initialize: (options: { callback: typeof callback }) => (callback = options.callback), renderButton: vi.fn() } },
+    });
+    const session = { accessToken: 'token', expiresInSeconds: 43200, user: { id: 9, email: 'meera@gmail.test', fullName: 'Meera Kulkarni', role: 'PASSENGER' } };
+    serve({
+      'GET /auth/google': () => json({ clientId: 'client.apps.googleusercontent.com' }),
+      'POST /auth/google': () => json(session),
+    });
+    sessionStorage.setItem('vayora.wanted-route', JSON.stringify({ from: 'Mumbai', to: 'Pune' }));
+    open('/login');
+
+    await waitFor(() => expect(callback).toBeDefined());
+    callback!({ credential: 'google-id-token' });
+
+    expect(await screen.findByRole('heading', { name: 'Find a ride' })).toBeInTheDocument();
+    expect(screen.getByLabelText('From')).toHaveValue('Mumbai');
   });
 });
 
@@ -3161,7 +3184,7 @@ describe('staff checks of what a driver declared', () => {
     serve({ 'GET /rides/mine': () => json([]) });
     open('/admin/document-checks');
 
-    expect(await screen.findByRole('heading', { name: 'My rides' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Hello, / })).toBeInTheDocument();
   });
 });
 
@@ -3889,7 +3912,7 @@ describe('getting set up as a driver', () => {
       'GET /me/payment-details': () => json({ upiId: null, hasQr: false }),
       'GET /me/profile': () => json(profile),
     });
-    open('/rides');
+    open('/home');
 
     expect(await screen.findByRole('heading', { name: 'Get set up' })).toBeInTheDocument();
     expect(screen.getByText('0 of 4 done')).toBeInTheDocument();
@@ -3907,7 +3930,7 @@ describe('getting set up as a driver', () => {
       'GET /me/payment-details': () => json({ upiId: null, hasQr: true }),
       'GET /me/profile': () => json(profile),
     });
-    open('/rides');
+    open('/home');
 
     expect(await screen.findByText('2 of 4 done')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Add your car: done' })).toBeInTheDocument();
@@ -3922,7 +3945,7 @@ describe('getting set up as a driver', () => {
       'GET /me/payment-details': () => json({ upiId: 'ravi@okaxis', hasQr: false }),
       'GET /me/profile': () => json({ ...profile, phoneVerified: true }),
     });
-    open('/rides');
+    open('/home');
 
     expect(await screen.findByText('Rides ahead')).toBeInTheDocument();
     // Every answer it depends on has come back, so its absence is a decision, not a wait.
@@ -3930,6 +3953,135 @@ describe('getting set up as a driver', () => {
     await waitFor(() => expect(['/vehicles', '/me/payment-details', '/me/profile'].every(asked)).toBe(true));
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(screen.queryByRole('heading', { name: 'Get set up' })).not.toBeInTheDocument();
+  });
+});
+
+describe('home', () => {
+  const hours = (count: number) => new Date(Date.now() + count * 3_600_000).toISOString();
+  const profile = { email: 'user@example.test', emailVerified: true, phone: null, phoneVerified: false,
+    bio: null, birthYear: null, gender: null, smoking: null, pets: null, music: null, chattiness: null };
+
+  it("shows a passenger the next trip, counts the passenger's own trips, and lists the last ones taken", async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /bookings': () => json([
+        { ...booking, id: 91, status: 'PENDING', boardingTime: hours(48) },
+        { ...booking, id: 92, status: 'CONFIRMED', boardingTime: hours(5), fromStop: 'Satara' },
+        { ...booking, id: 93, status: 'COMPLETED', boardingTime: hours(-72), price: 780 },
+        { ...booking, id: 94, status: 'CANCELLED', boardingTime: hours(24) },
+      ]),
+      'GET /me/profile': () => json(profile),
+      'GET /me/emergency-contacts': () => json([]),
+      'GET /notifications/unread-count': () => json({ unread: 4 }),
+    });
+    open('/home');
+
+    expect(await screen.findByRole('heading', { name: 'Hello, Asha' })).toBeInTheDocument();
+    // The soonest of the trips still ahead, whatever order they came in; a cancelled one is not a trip.
+    const next = await screen.findByRole('region', { name: 'Your next trip' });
+    expect(within(next).getByText('Satara → Pune')).toBeInTheDocument();
+    expect(within(next).getByRole('link', { name: 'My bookings' })).toHaveAttribute('href', '/bookings');
+    expect(screen.getByRole('link', { name: '2 Trips ahead' })).toHaveAttribute('href', '/bookings');
+    expect(screen.getByRole('link', { name: '1 Trips taken' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: '4 Unread notifications' })).toHaveAttribute('href', '/notifications');
+    const taken = screen.getByRole('region', { name: 'Recent trips' });
+    expect(within(taken).getByText('₹780')).toBeInTheDocument();
+    // What is left to set up: the email is confirmed, the rest is not.
+    expect(await screen.findByText('1 of 3 done')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Confirm your email or phone: done' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Add someone to tell in an emergency' })).toHaveAttribute('href', '/account#emergency-contacts');
+    expect(screen.getByRole('link', { name: 'Say what you like on a ride, to be matched on it' })).toHaveAttribute('href', '/account#profile');
+  });
+
+  it('starts a search from home and carries the route to the search page', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /bookings': () => json([]),
+      'GET /me/profile': () => json(profile),
+      'GET /me/emergency-contacts': () => json([]),
+    });
+    open('/home');
+
+    expect(await screen.findByText('No trips planned yet')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '0 Trips ahead' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Recent trips' })).not.toBeInTheDocument();
+    const search = screen.getByRole('form', { name: 'Find a ride' });
+    await pickPlace('To', 'Satara');
+    await userEvent.click(within(search).getByRole('button', { name: 'Find a ride' }));
+
+    expect(await screen.findByRole('heading', { name: 'Find a ride' })).toBeInTheDocument();
+    expect(screen.getByLabelText('From')).toHaveValue('Kolhapur');
+    expect(screen.getByLabelText('To')).toHaveValue('Satara');
+  });
+
+  it("shows a driver the next ride's seats and waiting requests, what is owed and what was paid this week", async () => {
+    signIn('DRIVER');
+    const ride = {
+      ...rideWithRoute,
+      notes: null,
+      maxTwoInBack: false,
+      seriesSize: 1,
+      departureTime: hours(6),
+      segments: [
+        { seq: 0, price: 270, seatsTotal: 3, seatsAvailable: 1 },
+        { seq: 1, price: 250, seatsTotal: 3, seatsAvailable: 2 },
+      ],
+    };
+    const earning = { bookingId: 90, passengerName: 'Asha Patil', fromStop: 'Kolhapur', toStop: 'Pune', reason: 'FARE' };
+    serve({
+      'GET /rides/mine': () => json([{ ...ride, id: 13, departureTime: hours(30) }, ride, { ...ride, id: 14, status: 'COMPLETED', departureTime: hours(-30) }]),
+      'GET /rides/12/bookings': () => json([booking, { ...booking, id: 95, status: 'CONFIRMED' }]),
+      'GET /earnings': () => json([
+        { ...earning, amount: 520, status: 'DUE', method: null, at: hours(-1) },
+        { ...earning, amount: 270, status: 'DUE', method: null, at: hours(-2) },
+        { ...earning, amount: 300, status: 'SETTLED', method: 'UPI', at: hours(-48) },
+        { ...earning, amount: 1000, status: 'SETTLED', method: 'CASH', at: hours(-240) },
+      ]),
+      'GET /vehicles': () => json([{ id: 4 }]),
+      'GET /me/payment-details': () => json({ upiId: 'ravi@okaxis', hasQr: false }),
+      'GET /me/profile': () => json(profile),
+    });
+    open('/home');
+
+    expect(await screen.findByRole('heading', { name: 'Hello, Asha' })).toBeInTheDocument();
+    const next = await screen.findByRole('region', { name: 'Your next ride' });
+    expect(within(next).getByText('Kolhapur → Pune')).toBeInTheDocument();
+    // Seats booked are those of the fullest stretch, as on My rides.
+    expect(within(next).getByText('Seats booked').nextSibling).toHaveTextContent('2 of 3');
+    await waitFor(() => expect(within(next).getByText('Requests waiting').nextSibling).toHaveTextContent('1'));
+    expect(screen.getByRole('link', { name: '2 Rides ahead' })).toHaveAttribute('href', '/rides');
+    expect(await screen.findByRole('link', { name: '₹790 Owed to you' })).toHaveAttribute('href', '/earnings');
+    expect(screen.getByRole('link', { name: '₹300 Paid in the last 7 days' })).toBeInTheDocument();
+    const actions = screen.getByRole('navigation', { name: 'Quick actions' });
+    expect(within(actions).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(['/rides/new', '/rides', '/vehicles', '/earnings']);
+  });
+
+  it('asks a driver with nothing ahead to publish a ride', async () => {
+    signIn('DRIVER');
+    serve({
+      'GET /rides/mine': () => json([]),
+      'GET /earnings': () => json([]),
+      'GET /vehicles': () => json([]),
+      'GET /me/payment-details': () => json({ upiId: null, hasQr: false }),
+      'GET /me/profile': () => json(profile),
+    });
+    open('/home');
+
+    const next = await screen.findByRole('region', { name: 'Your next ride' });
+    expect(within(next).getByText('No rides ahead')).toBeInTheDocument();
+    expect(within(next).getByRole('link', { name: 'Publish a ride' })).toHaveAttribute('href', '/rides/new');
+    expect(within(next).queryByText('Seats booked')).not.toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: '₹0 Owed to you' })).toBeInTheDocument();
+  });
+
+  it('is where the first link of the navigation takes a member', async () => {
+    signIn('PASSENGER');
+    serve({ 'GET /bookings': () => json([]), 'GET /me/emergency-contacts': () => json([]) });
+    open('/bookings');
+
+    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    await userEvent.click(within(nav).getByRole('link', { name: 'Home' }));
+    expect(await screen.findByRole('heading', { name: 'Hello, Asha' })).toBeInTheDocument();
   });
 });
 

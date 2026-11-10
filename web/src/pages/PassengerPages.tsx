@@ -1,11 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState, useTransition, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
-import { Armchair, ArrowUpDown, CalendarPlus, Info, Award, BadgeCheck, Car, CarTaxiFront, Check, Clock, Flag, Footprints, Hourglass, Map as MapIcon, MessagesSquare, Route as RouteIcon, Search, Send, ShieldCheck, Shuffle, SlidersHorizontal, Sparkles, Ticket, TriangleAlert, Undo2, UserRound, Users, Wallet, Zap } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Armchair, ArrowRight, ArrowUpDown, CalendarPlus, Info, Award, BadgeCheck, Car, CarTaxiFront, Check, Clock, Flag, Footprints, Hourglass, Map as MapIcon, MessagesSquare, Route as RouteIcon, Search, Send, ShieldCheck, Shuffle, SlidersHorizontal, Sparkles, Ticket, TriangleAlert, Undo2, UserRound, Users, Wallet, Zap } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
-import { LeavesIn, LiveDot, LiveStatus, useTimeAhead } from '../components/live';
+import { LeavesIn, LiveDot, LiveStatus, useTimeAhead, useUnread } from '../components/live';
+import { firstName, HomeStat, SetupChecklist } from '../components/setup';
+import { useAuth } from '../lib/auth';
 import { CancellingTerms, HowToPayDriver, usePaymentTerms } from '../components/payment';
 import { RateForm, RatingSummary } from '../components/rating';
 import { RideChat } from '../components/RideChat';
@@ -24,7 +26,7 @@ import { placeNamed } from '../lib/places';
 import { PlaceField } from '../components/places';
 import { answerBy, formatDate, formatDateTime, formatDayMonth, formatRupees, formatTime, formatWeekday, todayInIndia } from '../lib/format';
 import { clockFace, LIVE_MS, owedNow, useNow } from '../lib/live';
-import { forgetWantedRoute, readWantedRoute } from '../lib/recent';
+import { forgetWantedRoute, readWantedRoute, recentPlaces, wantRoute } from '../lib/recent';
 import { useScrollFade } from '../lib/scrollFade';
 import { PHONE, useMediaQuery } from '../lib/media';
 import { Sheet } from '../components/sheet';
@@ -37,6 +39,7 @@ import type {
   Availability,
   Candidate,
   Comfort,
+  EmergencyContact,
   FlexTier,
   Luggage,
   MyProfile,
@@ -1355,6 +1358,144 @@ export function BookingsPage() {
       {list(upcoming)}
       {past.length > 0 && <h2 className="pt-2 text-lg font-bold tracking-tight text-slate-900">{t('Earlier')}</h2>}
       {list(past)}
+    </Page>
+  );
+}
+
+/** What a passenger still has to do for safe, well-matched trips. */
+function PassengerSetup() {
+  const t = useT();
+  const me = useQuery({ queryKey: ['me', 'profile'], queryFn: () => api<MyProfile>('/me/profile') });
+  const contacts = useQuery({ queryKey: ['me', 'contacts'], queryFn: () => api<EmergencyContact[]>('/me/emergency-contacts') });
+  if (!me.data || !contacts.data) return null;
+  const preferences = [me.data.smoking, me.data.pets, me.data.music, me.data.chattiness];
+  return (
+    <SetupChecklist
+      steps={[
+        { done: me.data.emailVerified || me.data.phoneVerified, label: t('Confirm your email or phone'), to: '/account#contact' },
+        { done: contacts.data.length > 0, label: t('Add someone to tell in an emergency'), to: '/account#emergency-contacts' },
+        { done: preferences.some((said) => said !== null && said !== undefined), label: t('Say what you like on a ride, to be matched on it'), to: '/account#profile' },
+      ]}
+    />
+  );
+}
+
+/**
+ * A passenger's home: the next trip and how soon it leaves, a search to start from, how many
+ * trips there are, what is left to set up, and the trips taken. Every figure is the passenger's
+ * own bookings and account; nothing is a forecast.
+ */
+export function PassengerHome() {
+  const t = useT();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const bookings = useQuery({ queryKey: ['bookings'], queryFn: () => api<Booking[]>('/bookings'), refetchInterval: LIVE_MS.lists });
+  const unread = useUnread();
+  const now = useNow(60_000);
+  const [route, setRoute] = useState({ from: 'Kolhapur', to: 'Pune' });
+  const [recent] = useState(() => recentPlaces().slice(0, 4));
+  // A trip still counts as ahead for an hour after its boarding time: it may be under way.
+  const upcoming = (bookings.data ?? [])
+    .filter((booking) => (booking.status === 'CONFIRMED' || booking.status === 'PENDING') && Date.parse(booking.boardingTime) > now - 3_600_000)
+    .sort((a, b) => a.boardingTime.localeCompare(b.boardingTime));
+  const taken = (bookings.data ?? []).filter((booking) => booking.status === 'COMPLETED').sort((a, b) => b.boardingTime.localeCompare(a.boardingTime));
+  const next = upcoming[0];
+  const search = (event: FormEvent) => {
+    event.preventDefault();
+    wantRoute(route);
+    navigate('/search');
+  };
+  const pill =
+    'inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-[15px] font-bold text-navy shadow-lg shadow-black/10 transition-transform hover:-translate-y-0.5 active:scale-[0.97] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/50';
+
+  return (
+    <Page title={t('Hello, {name}', { name: firstName(user?.fullName ?? '') })}>
+      <QueryState isPending={bookings.isPending} error={bookings.error} isEmpty={false} empty="" onRetry={() => void bookings.refetch()} />
+      {bookings.data && (
+        <>
+          <section aria-label={t('Your next trip')} className="rounded-3xl bg-navy p-6 text-white shadow-float sm:p-7">
+            {next ? (
+              <>
+                <p className="text-sm font-medium text-white/75">{t('Your next trip')}</p>
+                <p className="mt-1 text-[26px] font-bold leading-tight tracking-tight">
+                  {t(next.fromStop)} → {t(next.toStop)}
+                </p>
+                <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-white/85">
+                  <span>{formatDateTime(next.boardingTime)}</span>
+                  <LeavesIn time={next.boardingTime} onDark />
+                </p>
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <Link to="/bookings" className={pill}>
+                    {t('My bookings')}
+                    <ArrowRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
+                  </Link>
+                  <StatusBadge status={next.status} />
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-[26px] font-bold leading-tight tracking-tight">{t('No trips planned yet')}</p>
+                <p className="mt-1.5 text-white/85">{t('Say where you are going, and see who is driving that way.')}</p>
+              </>
+            )}
+          </section>
+
+          <Card>
+            <form onSubmit={search} aria-label={t('Find a ride')} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+              <PlaceField label={t('From')} value={route.from} onChange={(from) => setRoute({ ...route, from })} />
+              <PlaceField label={t('To')} value={route.to} onChange={(to) => setRoute({ ...route, to })} />
+              <Button type="submit" disabled={route.from === route.to} className="min-h-11 px-6">
+                <Search aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
+                {t('Find a ride')}
+              </Button>
+            </form>
+            {recent.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="text-[13px] font-medium text-slate-500">{t('Recently searched')}</span>
+                {recent.map((place) => (
+                  <button
+                    key={place}
+                    type="button"
+                    onClick={() => setRoute({ from: route.from === place ? route.to : route.from, to: place })}
+                    className="inline-flex min-h-9 items-center rounded-full bg-slate-900/[0.05] px-3.5 text-sm font-medium text-slate-800 hover:bg-slate-900/[0.08] touch:min-h-11 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30"
+                  >
+                    {t(place)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <div className="grid grid-cols-3 gap-3">
+            <HomeStat label={t('Trips ahead')} value={String(upcoming.length)} to="/bookings" />
+            <HomeStat label={t('Trips taken')} value={String(taken.length)} to="/bookings" />
+            {unread !== undefined && <HomeStat label={t('Unread notifications')} value={String(unread)} to="/notifications" />}
+          </div>
+
+          <PassengerSetup />
+
+          {taken.length > 0 && (
+            <section aria-labelledby="taken-heading" className="space-y-3">
+              <h2 id="taken-heading" className="text-lg font-bold tracking-tight text-slate-900">
+                {t('Recent trips')}
+              </h2>
+              <ul className="divide-y divide-slate-900/[0.06] overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-slate-900/[0.04]">
+                {taken.slice(0, 3).map((booking) => (
+                  <li key={booking.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-slate-900">
+                        {t(booking.fromStop)} → {t(booking.toStop)}
+                      </span>
+                      <span className="block text-[13px] text-slate-500">{formatDate(booking.boardingTime)}</span>
+                    </span>
+                    <span className="flex-none font-semibold tabular-nums text-slate-900">{formatRupees(booking.price)}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
+      )}
     </Page>
   );
 }

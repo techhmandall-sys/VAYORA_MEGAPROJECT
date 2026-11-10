@@ -1,11 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Car, CarFront, Check, ChevronDown, ChevronRight, IndianRupee, MessagesSquare, Users } from 'lucide-react';
+import { ArrowRight, Car, CarFront, ChevronDown, CirclePlus, IndianRupee, MessagesSquare, Users } from 'lucide-react';
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { LeavesIn, LiveStatus, useTimeAhead } from '../components/live';
+import { firstName, HomeStat, SetupChecklist } from '../components/setup';
+import { useAuth } from '../lib/auth';
 import { PaymentReceivedButtons } from '../components/payment';
 import { RateForm } from '../components/rating';
 import { CheckCode } from '../components/boarding';
@@ -782,42 +784,15 @@ function GettingStarted({ rides }: { rides: Ride[] }) {
   const paying = useQuery({ queryKey: ['me', 'payment-details'], queryFn: () => api<DriverPaymentDetails>('/me/payment-details') });
   const me = useQuery({ queryKey: ['me', 'profile'], queryFn: () => api<MyProfile>('/me/profile') });
   if (!vehicles.data || !paying.data || !me.data) return null;
-  const steps = [
-    { done: vehicles.data.length > 0, label: t('Add your car'), to: '/vehicles' },
-    { done: Boolean(paying.data.upiId || paying.data.hasQr), label: t('Add your UPI ID or QR code, so passengers can pay you'), to: '/account#payment' },
-    { done: me.data.emailVerified || me.data.phoneVerified, label: t('Confirm your email or phone'), to: '/account#contact' },
-    { done: rides.length > 0, label: t('Publish your first ride'), to: '/rides/new' },
-  ];
-  const left = steps.filter((step) => !step.done).length;
-  if (left === 0) return null;
   return (
-    <Card>
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-lg font-bold tracking-tight text-slate-900">{t('Get set up')}</h2>
-        <p className="text-sm text-slate-600">{t('{done} of {all} done', { done: steps.length - left, all: steps.length })}</p>
-      </div>
-      <Meter fraction={(steps.length - left) / steps.length} label={t('Get set up')} />
-      <ol className="mt-3 divide-y divide-slate-100">
-        {steps.map((step) => (
-          <li key={step.label}>
-            <Link
-              to={step.to}
-              className="flex min-h-[44px] items-center gap-3 py-2 text-[15px] text-slate-900 hover:text-teal-800"
-              aria-label={step.done ? t('{step}: done', { step: step.label }) : step.label}
-            >
-              <span
-                aria-hidden="true"
-                className={`flex h-6 w-6 flex-none items-center justify-center rounded-full ${step.done ? 'bg-emerald-500 text-white' : 'ring-2 ring-slate-300'}`}
-              >
-                {step.done && <Check className="h-4 w-4" strokeWidth={3} />}
-              </span>
-              <span className={step.done ? 'text-slate-500 line-through decoration-slate-300' : 'font-medium'}>{step.label}</span>
-              <ChevronRight aria-hidden="true" className="ml-auto h-4 w-4 text-slate-400" />
-            </Link>
-          </li>
-        ))}
-      </ol>
-    </Card>
+    <SetupChecklist
+      steps={[
+        { done: vehicles.data.length > 0, label: t('Add your car'), to: '/vehicles' },
+        { done: Boolean(paying.data.upiId || paying.data.hasQr), label: t('Add your UPI ID or QR code, so passengers can pay you'), to: '/account#payment' },
+        { done: me.data.emailVerified || me.data.phoneVerified, label: t('Confirm your email or phone'), to: '/account#contact' },
+        { done: rides.length > 0, label: t('Publish your first ride'), to: '/rides/new' },
+      ]}
+    />
   );
 }
 
@@ -841,7 +816,6 @@ export function RidesPage() {
 
   return (
     <Page title={t('My rides')} aside={rides.data && rides.data.length > 0 ? <LiveStatus query={rides} /> : undefined}>
-      {rides.data && <GettingStarted rides={rides.data} />}
       {ahead.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat icon={Car} label={t('Rides ahead')}>
@@ -1237,6 +1211,111 @@ export function EarningsPage() {
             </table>
           </div>
         </Card>
+      )}
+    </Page>
+  );
+}
+
+/**
+ * A driver's home: the next ride with its seats taken and requests waiting, what to do next,
+ * what is owed and was paid, and what is left to set up. Every figure is the driver's own rides
+ * and earnings; nothing is a forecast.
+ */
+export function DriverHome() {
+  const t = useT();
+  const { user } = useAuth();
+  const rides = useQuery({ queryKey: ['rides'], queryFn: () => api<Ride[]>('/rides/mine'), refetchInterval: LIVE_MS.lists });
+  const earnings = useQuery({ queryKey: ['earnings'], queryFn: () => api<Earning[]>('/earnings') });
+  const now = useNow(60_000);
+  const ahead = (rides.data ?? [])
+    .filter((ride) => ride.status === 'SCHEDULED' || ride.status === 'IN_PROGRESS')
+    .sort((a, b) => a.departureTime.localeCompare(b.departureTime));
+  const next = ahead[0];
+  // The same query the ride's own card makes on My rides, so the two agree.
+  const requests = useQuery({
+    queryKey: ['rides', next?.id, 'bookings'],
+    queryFn: () => api<Booking[]>(`/rides/${next!.id}/bookings`),
+    enabled: next !== undefined,
+  });
+  const waiting = requests.data?.filter((booking) => booking.status === 'PENDING').length;
+  const owed = earnings.data?.filter((earning) => earning.status === 'DUE').reduce((sum, earning) => sum + earning.amount, 0);
+  const paidThisWeek = earnings.data
+    ?.filter((earning) => earning.status === 'SETTLED' && now - Date.parse(earning.at) < 7 * 86_400_000)
+    .reduce((sum, earning) => sum + earning.amount, 0);
+  const pill =
+    'mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-[15px] font-bold text-navy shadow-lg shadow-black/10 transition-transform hover:-translate-y-0.5 active:scale-[0.97] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/50';
+  const actions = [
+    { to: '/rides/new', label: t('Publish a ride'), icon: CirclePlus },
+    { to: '/rides', label: t('My rides'), icon: Car },
+    { to: '/vehicles', label: t('My vehicles'), icon: CarFront },
+    { to: '/earnings', label: t('Earnings'), icon: IndianRupee },
+  ];
+
+  return (
+    <Page title={t('Hello, {name}', { name: firstName(user?.fullName ?? '') })}>
+      <QueryState isPending={rides.isPending} error={rides.error} isEmpty={false} empty="" onRetry={() => void rides.refetch()} />
+      {rides.data && (
+        <>
+          <section aria-label={t('Your next ride')} className="rounded-3xl bg-navy p-6 text-white shadow-float sm:p-7">
+            {next ? (
+              <>
+                <p className="text-sm font-medium text-white/75">{t('Your next ride')}</p>
+                <p className="mt-1 text-[26px] font-bold leading-tight tracking-tight">
+                  {t(next.stops[0].name)} → {t(next.stops[next.stops.length - 1].name)}
+                </p>
+                <p className="mt-1.5 text-white/85">
+                  {formatDateTime(next.departureTime)} · <NextRideIn time={next.departureTime} />
+                </p>
+                <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2">
+                  <div>
+                    <dt className="text-[13px] text-white/70">{t('Seats booked')}</dt>
+                    <dd className="text-xl font-bold tabular-nums">{t('{taken} of {offered}', { taken: seatsTaken(next), offered: next.seatsOffered })}</dd>
+                  </div>
+                  {waiting !== undefined && (
+                    <div>
+                      <dt className="text-[13px] text-white/70">{t('Requests waiting')}</dt>
+                      <dd className="text-xl font-bold tabular-nums">{waiting}</dd>
+                    </div>
+                  )}
+                </dl>
+                <Link to="/rides" className={pill}>
+                  {t('My rides')}
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="text-[26px] font-bold leading-tight tracking-tight">{t('No rides ahead')}</p>
+                <p className="mt-1.5 text-white/85">{t('Publish one, and passengers going your way can book a seat.')}</p>
+                <Link to="/rides/new" className={pill}>
+                  {t('Publish a ride')}
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
+                </Link>
+              </>
+            )}
+          </section>
+
+          <nav aria-label={t('Quick actions')} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {actions.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                className="flex min-h-[4.5rem] flex-col items-start justify-center gap-1.5 rounded-2xl bg-surface px-4 py-3 shadow-card ring-1 ring-slate-900/[0.04] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-float focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30"
+              >
+                <Icon aria-hidden="true" className="h-5 w-5 text-teal-700" strokeWidth={2.2} />
+                <span className="text-[15px] font-semibold text-slate-900">{label}</span>
+              </Link>
+            ))}
+          </nav>
+
+          <div className="grid grid-cols-3 gap-3">
+            <HomeStat label={t('Rides ahead')} value={String(ahead.length)} to="/rides" />
+            {owed !== undefined && <HomeStat label={t('Owed to you')} value={formatRupees(owed)} to="/earnings" />}
+            {paidThisWeek !== undefined && <HomeStat label={t('Paid in the last 7 days')} value={formatRupees(paidThisWeek)} to="/earnings" />}
+          </div>
+
+          <GettingStarted rides={rides.data} />
+        </>
       )}
     </Page>
   );

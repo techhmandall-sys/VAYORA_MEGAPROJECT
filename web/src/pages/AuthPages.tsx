@@ -2,11 +2,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Car, Check, Search, type LucideIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 
 import heroNarrow from '../assets/khandala-900.webp';
 import { GoogleSignIn } from '../components/google';
-import { homeFor } from '../components/Layout';
+import { afterSignIn } from '../components/Layout';
 import { useLargeTitle } from '../components/pageTitle';
 import { Button, More, Notice, PasswordField, TextField } from '../components/ui';
 import { useAuth } from '../lib/auth';
@@ -53,19 +53,18 @@ function AuthShell({ title, lead, children }: { title: string; lead: string; chi
 export function LoginPage() {
   const t = useT();
   const { user, login } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [failure, setFailure] = useState<string | null>(null);
   const { register, handleSubmit, formState } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
 
-  if (user) return <Navigate to={homeFor(user.role)} replace />;
+  // Signed in, by password or Google: on to where they were going, or home. This is the one way
+  // out, so the search chosen on the front page cannot be taken by one way and missed by another.
+  if (user) return <Navigate to={(location.state as { from?: string } | null)?.from ?? afterSignIn(user.role)} replace />;
 
   const submit = handleSubmit(async (form) => {
     setFailure(null);
     try {
-      const signedIn = await login(form);
-      const from = (location.state as { from?: string } | null)?.from;
-      navigate(from ?? homeFor(signedIn.role), { replace: true });
+      await login(form);
     } catch (error) {
       setFailure((error as Error).message);
     }
@@ -111,7 +110,6 @@ function RoleCard({ icon: Icon, title, body, input }: { icon: LucideIcon; title:
 export function RegisterPage() {
   const t = useT();
   const { user, register: signUp } = useAuth();
-  const navigate = useNavigate();
   const [failure, setFailure] = useState<string | null>(null);
   // The front page's "Offer a ride" arrives with ?as=driver, so the choice is already made.
   const as = useSearchParams()[0].get('as');
@@ -122,13 +120,13 @@ export function RegisterPage() {
   });
   const method = watch('method');
 
-  if (user) return <Navigate to={homeFor(user.role)} replace />;
+  // Signed up, here or with Google: the one way out, as on signing in.
+  if (user) return <Navigate to={afterSignIn(user.role)} replace />;
 
   const submit = handleSubmit(async (form) => {
     setFailure(null);
     try {
-      const created = await signUp(form);
-      navigate(homeFor(created.role), { replace: true });
+      await signUp(form);
     } catch (error) {
       setFailure((error as Error).message);
     }

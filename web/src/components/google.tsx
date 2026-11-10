@@ -1,8 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
-import { homeFor } from './Layout';
 import { Button, Card, Notice } from './ui';
 import { api, ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -45,7 +43,6 @@ function loadScript(): Promise<GoogleIdentity> {
  */
 export function GoogleSignIn() {
   const t = useT();
-  const navigate = useNavigate();
   const { google } = useAuth();
   const settings = useQuery({ queryKey: ['auth', 'google'], queryFn: () => api<{ clientId: string | null }>('/auth/google') });
   const button = useRef<HTMLDivElement>(null);
@@ -56,8 +53,8 @@ export function GoogleSignIn() {
   const finish = async (credential: string, role?: Role) => {
     setFailure(null);
     try {
-      const user = await google(credential, role);
-      navigate(homeFor(user.role), { replace: true });
+      // Signed in: the page this button is on moves on by itself.
+      await google(credential, role);
     } catch (error) {
       // No account yet: ask for the role, then try again with the same token.
       if (error instanceof ApiError && error.status === 409 && !role) setPending(credential);

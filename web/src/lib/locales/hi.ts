@@ -2401,4 +2401,41 @@ export const hi: Record<string, string> = {
     'प्रति सीट कीमत',
   'Total':
     'कुल',
+  // Home: a member's own, the next trip or ride, figures and what is left to set up
+  'Home':
+    'होम',
+  'Hello, {name}':
+    'नमस्ते, {name}',
+  '{taken} of {offered}':
+    '{offered} में से {taken}',
+  'Requests waiting':
+    'रुके हुए अनुरोध',
+  'No rides ahead':
+    'आगे कोई राइड नहीं',
+  'Publish one, and passengers going your way can book a seat.':
+    'एक राइड प्रकाशित करें, और आपकी ओर जा रहे यात्री सीट बुक कर सकेंगे।',
+  'Quick actions':
+    'झटपट काम',
+  'Owed to you':
+    'आपको मिलना बाकी',
+  'Paid in the last 7 days':
+    'पिछले 7 दिनों में मिला',
+  'Add someone to tell in an emergency':
+    'आपातकाल में सूचित करने के लिए किसी को जोड़ें',
+  'Say what you like on a ride, to be matched on it':
+    'बताइए कि राइड में आपको क्या पसंद है, ताकि उसी के हिसाब से मिलान हो',
+  'Your next trip':
+    'आपका अगला सफ़र',
+  'No trips planned yet':
+    'अभी कोई सफ़र तय नहीं',
+  'Say where you are going, and see who is driving that way.':
+    'बताइए कि आप कहाँ जा रहे हैं, और देखिए कि उस ओर कौन गाड़ी चला रहा है।',
+  'Trips ahead':
+    'आगे के सफ़र',
+  'Trips taken':
+    'पूरे हुए सफ़र',
+  'Unread notifications':
+    'न पढ़ी सूचनाएँ',
+  'Recent trips':
+    'हाल के सफ़र',
 };

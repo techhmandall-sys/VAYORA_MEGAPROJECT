@@ -67,18 +67,22 @@ export function useTimeAhead(): (milliseconds: number) => string {
   };
 }
 
-/** How long until a ride leaves, ticking down, more urgent as it nears. Nothing once it has gone. */
-export function LeavesIn({ time }: { time: string }) {
+/**
+ * How long until a ride leaves, ticking down, more urgent as it nears. Nothing once it has gone.
+ * `onDark` is for a dark card, where the light card's green would not read.
+ */
+export function LeavesIn({ time, onDark = false }: { time: string; onDark?: boolean }) {
   const t = useT();
   const ahead = useTimeAhead();
   const now = useNow(30_000);
   const left = Date.parse(time) - now;
   if (left <= 0) return null;
   const soon = left < 2 * 3_600_000;
+  const calm = onDark ? 'bg-white/15 text-white' : 'bg-teal-600/[0.12] text-teal-800';
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${
-        soon ? 'bg-amber-100 text-amber-900' : 'bg-teal-600/[0.12] text-teal-800'
+        soon ? 'bg-amber-100 text-amber-900' : calm
       }`}
     >
       {soon && <LiveDot state="waiting" />}

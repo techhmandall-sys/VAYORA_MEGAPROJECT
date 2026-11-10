@@ -48,6 +48,16 @@ const EmergenciesPage = page(load.safety, 'EmergenciesPage');
 const DurabilityPage = page(load.durability, 'DurabilityPage');
 const WhatIfPage = page(load.whatIf, 'WhatIfPage');
 const AssistantPage = page(load.assistant, 'AssistantPage');
+const PassengerHome = page(passenger, 'PassengerHome');
+const DriverHome = page(driver, 'DriverHome');
+
+/** Each member's own home; staff have the back office. */
+function RoleHome() {
+  const { user } = useAuth();
+  if (user?.role === 'DRIVER') return <DriverHome />;
+  if (user?.role === 'PASSENGER') return <PassengerHome />;
+  return <Navigate to="/admin" replace />;
+}
 
 function Home() {
   const { user } = useAuth();
@@ -92,6 +102,7 @@ export function AppRoutes() {
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="account" element={<AccountPage />} />
           <Route path="assistant" element={<AssistantPage />} />
+          <Route path="home" element={<RoleHome />} />
         </Route>
         <Route element={<RequireRole role="ADMIN" />}>
           <Route path="admin" element={<OverviewPage />} />

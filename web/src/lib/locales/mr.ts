@@ -2401,4 +2401,41 @@ export const mr: Record<string, string> = {
     'प्रति जागा किंमत',
   'Total':
     'एकूण',
+  // Home: a member's own, the next trip or ride, figures and what is left to set up
+  'Home':
+    'मुख्यपृष्ठ',
+  'Hello, {name}':
+    'नमस्कार, {name}',
+  '{taken} of {offered}':
+    '{offered} पैकी {taken}',
+  'Requests waiting':
+    'प्रलंबित विनंत्या',
+  'No rides ahead':
+    'पुढे कोणतीही राइड नाही',
+  'Publish one, and passengers going your way can book a seat.':
+    'एक राइड प्रकाशित करा, आणि तुमच्या मार्गाने जाणारे प्रवासी जागा बुक करू शकतील.',
+  'Quick actions':
+    'झटपट कामे',
+  'Owed to you':
+    'तुम्हाला येणे बाकी',
+  'Paid in the last 7 days':
+    'मागील 7 दिवसांत मिळाले',
+  'Add someone to tell in an emergency':
+    'आपत्कालीन स्थितीत कळवण्यासाठी कोणाला तरी जोडा',
+  'Say what you like on a ride, to be matched on it':
+    'राइडमध्ये तुम्हाला काय आवडते ते सांगा, म्हणजे त्यानुसार जुळणी होईल',
+  'Your next trip':
+    'तुमचा पुढचा प्रवास',
+  'No trips planned yet':
+    'अजून कोणताही प्रवास ठरलेला नाही',
+  'Say where you are going, and see who is driving that way.':
+    'तुम्ही कुठे जात आहात ते सांगा, आणि त्या मार्गाने कोण गाडी चालवत आहे ते पाहा.',
+  'Trips ahead':
+    'पुढचे प्रवास',
+  'Trips taken':
+    'पूर्ण झालेले प्रवास',
+  'Unread notifications':
+    'न वाचलेल्या सूचना',
+  'Recent trips':
+    'अलीकडचे प्रवास',
 };
