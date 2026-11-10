@@ -1,5 +1,26 @@
 # Progress
 
+## 2026-11-10 (later) — publishing a ride a step at a time
+
+- **Five steps**: the route with its map and meeting points; when and in which car, the seats and
+  how bookings are confirmed; the times and price of each stretch; who rides and how, with the
+  return and weekly repeats; and a review of all of it, each part a tap from its own step. A
+  progress line names the step (in words on a phone) and goes back to any step reached.
+- **Checked as it goes**: Next checks the step being left and stays on it with the field to fix
+  focused; mistakes further on wait until the driver gets there. Publishing checks everything and
+  goes back to the first step with something to fix. A refusal from the server is shown on the
+  review with everything kept.
+- **Confirmed**: the ride, its time and how many rides were published, then My rides or another.
+- Still one form, one schema and the same request: nothing about what is published changed.
+  Back on the route, the route already worked out for those stops is shown, not asked for again;
+  the review checks an electric car's range against the car actually chosen.
+- The assistant's text says publishing is now in steps.
+- **Checked in Edge** at 390 px (light and dark) and 1440 px on a throwaway backend: every step
+  walked to a published ride, read back from the server; a step left without a time stays with
+  the field focused; no sideways scroll.
+- **Verified**: web 326 tests, type check, ESLint and the production build; the assistant's 24
+  tests. 22 new lines in Hindi and Marathi.
+
 ## 2026-11-10 — a home for each member
 
 - **Home**, the first screen after signing in and the first link in the navigation, for passengers
