@@ -76,13 +76,17 @@ Cancelling early helps everyone: the seat can still go to someone else.
 
 - Add your car in My vehicles first. For an electric car, give its range on a full charge: a
   stretch longer than that cannot be published.
-- Publish a ride: the car, the time you leave, the seats and your stops. Once two stops have
-  places, the route is worked out and fills in the minutes to each stop and a suggested price
-  for each stretch, ₹2 a kilometre per seat. Change any of them; what you type is kept. Each
-  price is for the stretch that ends at that stop, and passengers can book between any two
-  stops. Choose whether bookings are confirmed instantly or wait for you to accept. Optional:
-  a promise of at most two passengers on the back seat, minutes you will go out of your way for
-  pickups, notes, women-only, a return ride and weekly repeats.
+- Publish a ride, in five steps: the route (your stops, and on the map where you meet
+  passengers at each), when you leave and in which car with how many seats, the times and
+  prices, who rides and how, and a review of it all. Once two stops have places, the route is
+  worked out and fills in the minutes to each stop and a suggested price for each stretch, ₹2 a
+  kilometre per seat. Change any of them; what you type is kept. Each price is for the stretch
+  that ends at that stop, and passengers can book between any two stops. Choose whether bookings
+  are confirmed instantly or wait for you to accept. Optional: a promise of at most two
+  passengers on the back seat, minutes you will go out of your way for pickups, notes,
+  women-only, a return ride and weekly repeats. Next checks each step before going on; nothing
+  is published until you press Publish ride on the review, and any step can be gone back to
+  from there.
 - My rides: accept or decline requests, see who is coming, chat and call. A ride can be started
   from 1 hour before its departure. Check each passenger's 4-digit boarding code, mark anyone who
   did not board, and complete the ride when you arrive.
