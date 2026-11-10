@@ -2509,7 +2509,7 @@ describe('series and the back-office browser', () => {
     });
     open('/admin/rides');
 
-    expect(await screen.findByText('3 seats offered, 1 bookings', { exact: false })).toBeInTheDocument();
+    expect(await screen.findByText('3 seats offered, 1 booking', { exact: false })).toBeInTheDocument();
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'Scheduled');
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/admin/rides?status=SCHEDULED'))).toBe(true));
   });

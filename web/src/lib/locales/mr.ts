@@ -965,8 +965,6 @@ export const mr: Record<string, string> = {
     'कोणताही प्रवास नाही.',
   'No bookings.':
     'कोणतेही बुकिंग नाही.',
-  '{n} seats offered, {b} bookings':
-    '{n} जागा उपलब्ध, {b} बुकिंग',
   'with {driver}, {n} seats':
     '{driver} सोबत, {n} जागा',
   // Referral
@@ -2488,4 +2486,13 @@ export const mr: Record<string, string> = {
     'काल',
   'Your emergency contacts':
     'तुमचे आपत्कालीन संपर्क',
+  // Back office: a ride's seats and bookings, one or many
+  '1 seat offered':
+    '1 जागा दिली',
+  '{n} seats offered':
+    '{n} जागा दिल्या',
+  '1 booking':
+    '1 बुकिंग झाली',
+  '{n} bookings':
+    '{n} बुकिंग झाल्या',
 };

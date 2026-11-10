@@ -708,7 +708,8 @@ export function AdminRidesPage() {
             <Link to={`/users/${ride.driverId}`} className="text-teal-800 underline">
               {ride.driverName}
             </Link>{' '}
-            · {t('{n} seats offered, {b} bookings', { n: ride.seatsOffered, b: ride.bookings })}
+            · {ride.seatsOffered === 1 ? t('1 seat offered') : t('{n} seats offered', { n: ride.seatsOffered })},{' '}
+            {ride.bookings === 1 ? t('1 booking') : t('{n} bookings', { n: ride.bookings })}
           </p>
           <p className="mt-1">
             <StatusBadge status={ride.status} />

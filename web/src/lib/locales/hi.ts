@@ -965,8 +965,6 @@ export const hi: Record<string, string> = {
     'कोई सवारी नहीं।',
   'No bookings.':
     'कोई बुकिंग नहीं।',
-  '{n} seats offered, {b} bookings':
-    '{n} सीटें उपलब्ध, {b} बुकिंग',
   'with {driver}, {n} seats':
     '{driver} के साथ, {n} सीटें',
   // Referral
@@ -2488,4 +2486,13 @@ export const hi: Record<string, string> = {
     'कल',
   'Your emergency contacts':
     'आपके आपातकालीन संपर्क',
+  // Back office: a ride's seats and bookings, one or many
+  '1 seat offered':
+    '1 सीट दी गई',
+  '{n} seats offered':
+    '{n} सीटें दी गईं',
+  '1 booking':
+    '1 बुकिंग',
+  '{n} bookings':
+    '{n} बुकिंग',
 };
