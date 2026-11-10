@@ -42,18 +42,28 @@ export function wantRoute(wanted: WantedRoute): void {
 }
 
 /**
- * The search wanted, once. Null when there is none, or it names a place no longer listed; a
- * date already past, or seats out of range, are left out rather than carried over.
+ * The search wanted, left in place: a render React throws away (a page still loading, say) must
+ * not lose it, so it is forgotten separately, once the page is on screen. Null when there is none,
+ * or it names a place no longer listed; a date already past, or seats out of range, are left out
+ * rather than carried over.
  */
-export function takeWantedRoute(today: string): WantedRoute | null {
+export function readWantedRoute(today: string): WantedRoute | null {
   try {
     const stored = JSON.parse(sessionStorage.getItem(WANTED) ?? 'null') as Partial<WantedRoute> | null;
-    sessionStorage.removeItem(WANTED);
     if (!stored?.from || !stored.to || !placeNamed(stored.from) || !placeNamed(stored.to)) return null;
     const date = typeof stored.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(stored.date) && stored.date >= today ? stored.date : undefined;
     const seats = Number.isInteger(stored.seats) && stored.seats! >= 1 && stored.seats! <= 8 ? stored.seats : undefined;
     return { from: stored.from, to: stored.to, date, seats };
   } catch {
     return null;
+  }
+}
+
+/** The search wanted has been used: it is not offered again. */
+export function forgetWantedRoute(): void {
+  try {
+    sessionStorage.removeItem(WANTED);
+  } catch {
+    // Nothing was kept.
   }
 }
