@@ -1,5 +1,30 @@
 # Progress
 
+## 2026-11-10 — a home for each member
+
+- **Home**, the first screen after signing in and the first link in the navigation, for passengers
+  and drivers; administrators keep the back office.
+- **A passenger's**: the next trip with its status and how soon it leaves; a search to start from,
+  carried to the search page; trips ahead, trips taken and unread notifications, each leading to
+  where it comes from; what is left to set up (contact confirmed, someone to tell in an emergency,
+  ride preferences); the last three trips taken with their fares.
+- **A driver's**: the next ride with its seats booked and requests waiting, the figures My rides
+  gives; publishing, rides, vehicles and earnings a tap away; rides ahead, what is owed and what was
+  paid in the last 7 days; the set-up list, moved here from My rides.
+- Every figure is the member's own bookings, rides or earnings as the server sent them; one not yet
+  in is left out rather than shown as 0. Nothing is a forecast.
+- **One way out of signing in**: by password, sign-up or Google, to the page the member was headed
+  to, the search chosen on the front page, or home. Google sign-in had gone home and left that
+  search waiting.
+- **Fixed**: the search page took the front page's search out of storage while rendering, so a render
+  React threw away lost it and the search opened on Kolhapur to Pune. Seen as a test failing 2 runs
+  in 6; 5 runs clean after.
+- **Checked in Edge** at 390 and 1440 px, light and dark, on a throwaway backend with made-up
+  accounts, rides and bookings: no sideways scroll, no tap target under 44 px, the countdown made
+  readable on the dark card; and the three ways of signing in landing where they should.
+- **Verified**: web 324 tests, type check, ESLint and the production build. 18 new lines in Hindi
+  and Marathi.
+
 ## 2026-11-08 (night) — search results and ride details
 
 - **Results**: the car under its driver on the card; for a party, the price of one seat under the
