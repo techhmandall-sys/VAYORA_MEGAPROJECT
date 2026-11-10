@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppRoutes } from './App';
 import { AuthProvider } from './lib/auth';
@@ -10,7 +10,14 @@ import { setFormatLanguage, todayInIndia } from './lib/format';
 import { placeNamed } from './lib/places';
 import { LanguageProvider, type Language } from './lib/i18n';
 import { startRecording } from './lib/recorder';
+import { load } from './pageLoaders';
 import type { Booking, Candidate, Role, Session } from './lib/types';
+
+// Every screen's code, compiled once before any test. A screen's code is loaded when it is first
+// opened, and the first test to open one would otherwise spend its own wait compiling it.
+beforeAll(async () => {
+  await Promise.all(Object.values(load).map((loader) => loader()));
+}, 60_000);
 
 // A test has no microphone: recording is whatever a test makes it. Where a test makes nothing,
 // no microphone is offered, as the services in most tests cannot listen anyway.
