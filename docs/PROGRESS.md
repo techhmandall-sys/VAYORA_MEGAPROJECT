@@ -1,5 +1,20 @@
 # Progress
 
+## 2026-11-10 (evening) — who you are, your notifications by day, your own people in an emergency
+
+- **Account** opens with the member: photo or initials, name, kind of account and address, a badge
+  for each of email and phone the server says is confirmed (or a link that opens where to confirm
+  one), and their page as others see it a tap away.
+- **Notifications** in days: Today, Yesterday, then each earlier day by its date. Each has an icon
+  and colour for its kind, from the type the server sends, and a quieter "Mark as read".
+- **Emergency panel**: under "Call 112", the member's own emergency contacts, each a call button
+  with their relation; with none, a link to add one. The phone makes the call: nothing new is
+  stored or sent, and the alert to staff is unchanged.
+- **Checked in Edge** at 390 and 1440 px on a throwaway backend with a made-up contact: no sideways
+  scroll; the contact's call button under 112.
+- **Verified**: web 331 tests (each of the three commits on its own too), type check, ESLint and the
+  production build. 3 new lines in Hindi and Marathi.
+
 ## 2026-11-10 (later) — publishing a ride a step at a time
 
 - **Five steps**: the route with its map and meeting points; when and in which car, the seats and
