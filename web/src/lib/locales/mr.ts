@@ -2481,4 +2481,7 @@ export const mr: Record<string, string> = {
     'माझ्या प्रवासांमध्ये पाहा',
   'Publish another ride':
     'आणखी एक प्रवास प्रकाशित करा',
+  // Account, notifications and the emergency panel: who you are, days, your own contacts
+  'Your emergency contacts':
+    'तुमचे आपत्कालीन संपर्क',
 };

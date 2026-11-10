@@ -1,8 +1,10 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Phone } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { api } from '../lib/api';
 import { useT } from '../lib/i18n';
-import type { SosRaised } from '../lib/types';
+import type { EmergencyContact, SosRaised } from '../lib/types';
 import { Button } from './ui';
 
 const EMERGENCY_NUMBER = '112';
@@ -29,6 +31,8 @@ export function SosPanel({ onClose }: { onClose: () => void }) {
     mutationFn: async () => api<SosRaised>('/sos', { method: 'POST', body: (await position()) ?? {} }),
   });
   const raised = raise.data;
+  // The member's own people, a tap away: the same list as on the account page.
+  const contacts = useQuery({ queryKey: ['me', 'contacts'], queryFn: () => api<EmergencyContact[]>('/me/emergency-contacts') });
 
   return (
     <section aria-label={t('Emergency')} className="mx-auto max-w-5xl animate-sheet-in px-4 pt-4 sm:px-6">
@@ -42,6 +46,33 @@ export function SosPanel({ onClose }: { onClose: () => void }) {
             {t('Call 112')}
           </a>
         </p>
+        {contacts.data && contacts.data.length > 0 && (
+          <div>
+            <p className="font-semibold">{t('Your emergency contacts')}</p>
+            <ul className="mt-2 flex flex-wrap gap-2">
+              {contacts.data.map((contact) => (
+                <li key={contact.id}>
+                  <a
+                    href={`tel:${contact.phone.replace(/[^\d+]/g, '')}`}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full bg-surface px-4 text-[15px] font-semibold text-red-900 shadow-sm ring-1 ring-inset ring-red-200 transition-transform active:scale-[0.97] focus:outline-none focus-visible:ring-4 focus-visible:ring-red-600/40"
+                  >
+                    <Phone aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
+                    {t('Call {name}', { name: contact.name })}
+                    {/* Read as "Call Meera (Sister)"; a flex container draws no space. */}{' '}
+                    {contact.relation &&<span className="font-normal text-red-800">{`(${contact.relation})`}</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {contacts.data?.length === 0 && (
+          <p>
+            <Link to="/account#emergency-contacts" onClick={onClose} className="font-semibold underline underline-offset-2">
+              {t('Add someone to tell in an emergency')}
+            </Link>
+          </p>
+        )}
         {!raised && (
           <>
             <p>{t('You can also alert the VAYORA administrators. They see it in a queue; they are not an emergency service.')}</p>

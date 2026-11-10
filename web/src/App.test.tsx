@@ -4303,6 +4303,32 @@ describe('easier on a phone', () => {
   });
 });
 
+describe('who you are, the days of your notifications, and your own people in an emergency', () => {
+  it('puts the member\'s own emergency contacts a tap away under 112', async () => {
+    signIn('PASSENGER');
+    serve({
+      'GET /bookings': () => json([]),
+      'GET /me/emergency-contacts': () => json([{ id: 1, name: 'Meera', phone: '+91 98000 00001', relation: 'Sister' }, { id: 2, name: 'Ravi', phone: '9800000002', relation: null }]),
+    });
+    open('/bookings');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Emergency' }));
+    const panel = within(screen.getByRole('region', { name: 'Emergency' }));
+    expect(await panel.findByRole('link', { name: 'Call Meera (Sister)' })).toHaveAttribute('href', 'tel:+919800000001');
+    expect(panel.getByRole('link', { name: 'Call Ravi' })).toHaveAttribute('href', 'tel:9800000002');
+  });
+
+  it('offers to add someone when the member has no emergency contact', async () => {
+    signIn('PASSENGER');
+    serve({ 'GET /bookings': () => json([]), 'GET /me/emergency-contacts': () => json([]) });
+    open('/bookings');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Emergency' }));
+    const panel = within(screen.getByRole('region', { name: 'Emergency' }));
+    expect(await panel.findByRole('link', { name: 'Add someone to tell in an emergency' })).toHaveAttribute('href', '/account#emergency-contacts');
+  });
+});
+
 describe('the assistant', () => {
   const on = { enabled: true, provider: 'gemini', max_messages: 20, max_message_chars: 2000 };
   // As newer browsers do, scrolling answers with a promise: an effect returning it would crash the page.
