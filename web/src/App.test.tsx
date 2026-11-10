@@ -4304,6 +4304,22 @@ describe('easier on a phone', () => {
 });
 
 describe('who you are, the days of your notifications, and your own people in an emergency', () => {
+  it('groups notifications by day, newest first', async () => {
+    signIn('PASSENGER');
+    const at = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 3_600_000).toISOString();
+    const one = (id: string, createdAt: string) =>
+      ({ id, type: 'BOOKING_CONFIRMED', message: `Notification ${id}`, text: null, bookingId: null, createdAt, read: true });
+    serve({ 'GET /notifications': () => json([one('a', at(0)), one('b', at(0.1)), one('c', at(24 * 5))]) });
+    open('/notifications');
+
+    const today = await screen.findByRole('region', { name: 'Today' });
+    expect(within(today).getAllByRole('listitem')).toHaveLength(2);
+    // Five days back is named by its date.
+    const days = screen.getAllByRole('region');
+    expect(days).toHaveLength(2);
+    expect(within(days[1]).getByText('Notification c')).toBeInTheDocument();
+  });
+
   it('puts the member\'s own emergency contacts a tap away under 112', async () => {
     signIn('PASSENGER');
     serve({
