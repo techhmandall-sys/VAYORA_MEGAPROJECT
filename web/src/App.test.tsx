@@ -4304,6 +4304,30 @@ describe('easier on a phone', () => {
 });
 
 describe('who you are, the days of your notifications, and your own people in an emergency', () => {
+  const profile = { email: 'user@example.test', emailVerified: true, phone: null, phoneVerified: false,
+    bio: null, birthYear: null, gender: null, smoking: null, pets: null, music: null, chattiness: null };
+
+  it('heads the account with the member, what is confirmed, and their page as others see it', async () => {
+    signIn('PASSENGER');
+    serve({ 'GET /me/profile': () => json(profile), 'GET /me/emergency-contacts': () => json([]) });
+    open('/account');
+
+    expect(await screen.findByText('Passenger · user@example.test')).toBeInTheDocument();
+    expect(screen.getByText('Email confirmed')).toBeInTheDocument();
+    expect(screen.queryByText('Phone confirmed')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'See your profile as others see it' })).toHaveAttribute('href', '/users/1');
+  });
+
+  it('points a member with nothing confirmed at where it is done, and opens it', async () => {
+    signIn('PASSENGER');
+    serve({ 'GET /me/profile': () => json({ ...profile, emailVerified: false }), 'GET /me/emergency-contacts': () => json([]) });
+    open('/account');
+
+    await userEvent.click(await screen.findByRole('link', { name: 'Confirm your email or phone' }));
+    const row = screen.getAllByText('Email and phone').map((element) => element.closest('details')).find(Boolean)!;
+    await waitFor(() => expect(row).toHaveAttribute('open'));
+  });
+
   it('groups notifications by day, newest first', async () => {
     signIn('PASSENGER');
     const at = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 3_600_000).toISOString();

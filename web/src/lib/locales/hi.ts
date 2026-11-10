@@ -2482,6 +2482,8 @@ export const hi: Record<string, string> = {
   'Publish another ride':
     'एक और सवारी प्रकाशित करें',
   // Account, notifications and the emergency panel: who you are, days, your own contacts
+  'See your profile as others see it':
+    'दूसरों को दिखने वाली अपनी प्रोफ़ाइल देखें',
   'Yesterday':
     'कल',
   'Your emergency contacts':

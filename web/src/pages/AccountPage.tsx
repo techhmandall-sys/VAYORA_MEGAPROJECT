@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, ChevronDown, Contact, Gift, IdCard, Mail, ShieldAlert, UserRound, Wallet, type LucideIcon } from 'lucide-react';
+import { BadgeCheck, Bell, ChevronDown, ChevronRight, CircleAlert, Contact, Gift, IdCard, Mail, ShieldAlert, UserRound, Wallet, type LucideIcon } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import { useToast } from '../components/toast';
 import { Button, ConfirmButton, Notice, Page, QueryState, SelectField, TextField } from '../components/ui';
 import { api } from '../lib/api';
 import { DriverPaymentEditor } from '../components/payment';
-import { initialsOf, PhotoEditor } from '../components/photo';
+import { initialsOf, Photo, PhotoEditor } from '../components/photo';
 import { PushChoice } from '../components/push';
 import { useAuth } from '../lib/auth';
 import { msg, useT } from '../lib/i18n';
@@ -476,6 +476,64 @@ function SettingsGroup({ title, children }: { title: string; children: ReactNode
   );
 }
 
+const roleNames = { PASSENGER: msg('Passenger'), DRIVER: msg('Driver'), ADMIN: msg('Administrator') } as const;
+
+/**
+ * Who the member is, at the top of their account: photo, name, kind of account, and what is
+ * confirmed, from the profile as the server has it. A member's page as others see it is a tap away.
+ */
+function AccountHeader({ profile }: { profile: MyProfile }) {
+  const t = useT();
+  const { user } = useAuth();
+  if (!user) return null;
+  const chip = 'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[13px] font-semibold';
+  return (
+    <div className="rounded-3xl bg-surface p-5 shadow-card ring-1 ring-slate-900/[0.04]">
+      <div className="flex items-center gap-4">
+        {/* Beside the name it shows, so no name of its own: "Your photo" is the one under Profile. */}
+        <Photo path={`/users/${user.id}/photo`} alt="" initials={initialsOf(user.fullName)} size="h-16 w-16" />
+        <div className="min-w-0">
+          <p className="truncate text-[20px] font-bold tracking-tight text-slate-950">{user.fullName}</p>
+          <p className="truncate text-sm text-slate-500">{[t(roleNames[user.role]), profile.email ?? profile.phone].filter(Boolean).join(' · ')}</p>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {profile.emailVerified && (
+          <span className={`${chip} bg-emerald-100 text-emerald-800`}>
+            <BadgeCheck aria-hidden="true" className="h-4 w-4" />
+            {t('Email confirmed')}
+          </span>
+        )}
+        {profile.phoneVerified && (
+          <span className={`${chip} bg-emerald-100 text-emerald-800`}>
+            <BadgeCheck aria-hidden="true" className="h-4 w-4" />
+            {t('Phone confirmed')}
+          </span>
+        )}
+        {!profile.emailVerified && !profile.phoneVerified && (
+          // Through the router, so the row it points at opens as from any other link to it.
+          <Link
+            to="#contact"
+            className={`${chip} min-h-9 bg-amber-100 text-amber-900 hover:bg-amber-200 touch:min-h-11 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-500/40`}
+          >
+            <CircleAlert aria-hidden="true" className="h-4 w-4" />
+            {t('Confirm your email or phone')}
+          </Link>
+        )}
+        {user.role !== 'ADMIN' && (
+          <Link
+            to={`/users/${user.id}`}
+            className="ml-auto inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-sm font-semibold text-teal-800 hover:underline focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-600/30"
+          >
+            {t('See your profile as others see it')}
+            <ChevronRight aria-hidden="true" className="h-4 w-4" />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AccountPage() {
   const t = useT();
   const { user } = useAuth();
@@ -493,6 +551,7 @@ export function AccountPage() {
       <QueryState isPending={profile.isPending} error={profile.error} isEmpty={false} empty="" onRetry={() => void profile.refetch()} />
       {mine && (
         <>
+          <AccountHeader profile={mine} />
           <SettingsGroup title={t('You')}>
             <SettingsRow id="profile" icon={UserRound} tint="bg-sky-900" title={t('Profile')} status={user?.fullName}>
               {user && (
