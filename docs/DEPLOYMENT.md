@@ -221,7 +221,8 @@ Then open `https://<your address>` and sign in as the administrator you set in `
 later: `git pull && sh scripts/deploy.sh`.
 
 Before others use it: texts and calls stay simulated until switched on, and the screens
-say so. Administrators can read every confirmation code in the simulated outbox. Do not run
+say so. Administrators can read every confirmation and password reset code in the simulated
+outbox, so until a real sender is set they could take over a member's account. Do not run
 `scripts/demo-data.mjs` against a public server: its accounts share one password.
 
 **Backups.** `sh scripts/backup.sh` writes the databases to `backups/<date>/`. Copy that folder off
@@ -242,6 +243,12 @@ services: HTTPS, closed ports, each path reaching its service, a WebSocket throu
 up and searching, and a backup restored. **It has never run on a real server or with a real
 certificate.** The service worker did not register against the local certificate, as browsers refuse
 one; expect it to with a real one, unconfirmed.
+
+Two later changes to the edge (`infra/edge/Caddyfile`, 2026-11-12) have not been tried through it:
+the assistant's path, `/v1/assistant`, now reaches intel, and the app's pages carry a content
+security policy. That policy was checked separately: the built app's public pages, loaded in Edge
+under exactly that policy with Google's button, had nothing refused. Pages behind sign-in, the map
+and the assistant have not been checked under it.
 
 ## What a real deployment would need
 

@@ -19,9 +19,19 @@ below is the authors' recommendation, with reasons.
 
 ## Where things stand
 
-As of 2026-10-21: of 95 features, **83 verified, 11 partial, 1 not started**, about 93%
-counting a partial feature as half. Everything left needs a decision, an outside service
-or data that does not exist; nothing remains that is only a matter of building.
+As of 2026-11-12: of the 89 features still in scope (the team removed 6 of the 95 on 2026-11-02),
+**84 verified and 5 partial**, about 97% counting a partial feature as half. The five are masked
+calling (61) and SMS (64), which need a Twilio account; Hindi and Marathi (71), which need a native
+speaker's review; and the durability model (77) and demand calibration (89), which need real rides
+and searches. Nothing remains that is only a matter of building.
+
+Outside the 95, built on 2026-11-12: resetting a forgotten password, signing out so a session
+ends at once, a member's copy of their data and deleting their account; and experiment X7
+(EXPERIMENT_PROTOCOL.md section 32). Still open: rebuilding every current result in one run
+(`scripts/reproduce.sh` covers only the earlier world's runs) and archiving it, and running the
+online setup on a real server, which needs one and a domain.
+
+The tables below are as written on 2026-10-21, with lines struck through as items were done.
 
 ## What is left, by what it needs
 
@@ -44,11 +54,11 @@ mock that says so, as payments and SMS already are.
 
 | # | Feature | Needs |
 |---|---|---|
-| 2 | Google sign-in, tried for real | A Google Cloud OAuth client ID; everything else is built |
+| ~~2~~ | ~~Google sign-in, tried for real~~ | Done, 2026-11-02: a real Gmail account signed in and was linked |
 | 1, 6, 64 | Phone sign-up, real SMS codes and notifications | An SMS gateway account; built for Twilio on 2026-10-20, off until its settings are set, and untried |
 | 63 | Email with a real provider | Built for any SMTP server; needs an account with one to try it |
 | 61 | Masked calling | A telephony provider; built as a labelled mock on 2026-10-17, and as a Twilio call bridge on 2026-10-20, off until its settings are set, and untried |
-| 46 | Card, UPI and wallet doing something different | A payment gateway in test mode; built for Razorpay on 2026-10-20, off until its keys are set, and untried |
+| ~~46~~ | ~~Card, UPI and wallet doing something different~~ | Done as the team changed it on 2026-11-02: cash or UPI, paid to the driver directly; Razorpay was removed |
 | 7, 8 | Government ID verification and a real verified badge | An identity verification provider, and a privacy review; built as a labelled mock (the driver's declaration of which document they hold) on 2026-10-19 |
 | 58 | Insurance badge | An insurer; built as a labelled mock (the driver's declaration) on 2026-10-17 |
 | ~~91~~ | ~~Last-mile access beyond walking~~ | Done, 2026-10-20: walks on footpaths, buses, and an auto-rickshaw estimate with Pune's published meter fare; other towns' fares are not published in full | |

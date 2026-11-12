@@ -24,7 +24,7 @@ more bookings and still move fewer people.
 | Features | 84 verified and 5 partial of the 89 still in scope, the team having removed 6 of the original 95 on 2026-11-02: about 97% counting a partial feature as half. The five need accounts, a native speaker or real data, not more code ([feature matrix](docs/FEATURE_MATRIX.md)) |
 | Routes | Any route in India in the app, from 126 listed cities or a point on the map. Road distances between Kolhapur and Pune; elsewhere a labelled straight line until a bigger map is built ([how](docs/DEPLOYMENT.md#road-routes-across-india)) |
 | Interface | A side bar, or tabs on a phone, in light and dark, in the VAYORA brand. Each member starts on a home of their own; screens keep themselves current without a reload |
-| Tests | 310 Java, 331 web, 305 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
+| Tests | 328 Java, 334 web, 339 Python, 28 gateway, all passing ([what each covers](docs/TESTING.md)) |
 | Languages | English, Hindi and Marathi, on every screen, notification and error message |
 | Research | On Kolhapur to Pune alone. A SimPy simulator of the corridor: 60 simulated days, 30 seeds per variant, train and validation on disjoint seeds |
 | Data | All synthetic, plus one public dataset of real hotel cancellations used as a check |
@@ -76,9 +76,13 @@ reproduces the earlier world's committed numbers (B0 30.77, B3 31.11) to every d
   (experiments X3 and X5, protocol sections 29 and 31). Both exceptions, at the heaviest demand, are
   settings where the ceiling's own assumption fails. Even the oracle reaches only 78% of its ceiling
   in the base world.
-- **None of this depends on the supply, demand or cancellation rate assumed** (experiment X5):
-  reconfirmation's effect stays within ±0.10 of zero in all nine settings tried, and survival ranking
-  keeps its gain at 6, 12 and 20 rides a day.
+- **Moved one at a time, the supply, demand and cancellation rate assumed change none of this**
+  (experiment X5): reconfirmation's effect stays within ±0.10 of zero in all nine settings tried, and
+  survival ranking keeps its gain at 6, 12 and 20 rides a day.
+- **Moved together, they make asking cost rides more often than not** (experiment X7, protocol
+  section 32). Across 20 settings that also vary how passengers respond to being asked, B4's whole 95%
+  interval lies below B3's in 13 and above it in one. In five it is not within ±0.10, at worst −0.28.
+  An oracle never gains more than +0.18.
 - **On real hotel cancellations, features do help.** The same kinds of model rank who
   cancels better than lead time alone (concordance 0.597 for Cox and 0.653 for gradient
   boosting, against 0.544), which suggests the simulated world understates what booking
@@ -109,7 +113,9 @@ and their own reliability record. They put a UPI ID or QR code on their account,
 drive and found nothing.
 
 **Every member** has a profile with photo and preferences, confirms an email or phone by
-code, keeps emergency contacts, and has an emergency button that puts **112** first. A
+code, keeps emergency contacts, and has an emergency button that puts **112** first. They can
+reset a forgotten password with a code, sign out so the session ends at once, download what
+VAYORA keeps about them, and delete their account. A
 seat-release reminder 48 hours before boarding asks, without any penalty, whether plans
 have changed.
 
@@ -216,8 +222,9 @@ certificate, not yet on a real server.
 
 Out of the box nothing leaves the platform: VAYORA moves no money, since passengers pay their driver directly,
 codes and messages go to a simulated outbox an administrator can read, and calls are
-simulated. Each real service below turns on when its settings are in `.env`. Each is
-tested against a stand-in; only Google has been tried against the real service.
+simulated. Each real service below turns on when its settings are in `.env`, except email,
+whose settings also go in core-api's `environment` in `docker-compose.yml`. Each is tested
+against a stand-in; only Google has been tried against the real service.
 
 | Service | What it switches on | Settings |
 |---|---|---|

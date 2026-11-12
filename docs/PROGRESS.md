@@ -1,5 +1,31 @@
 # Progress
 
+## 2026-11-12 — a forgotten password, leaving, and the assumptions moved together
+
+- **Accounts.** The account work begun earlier that day had never been run, and parts of it could
+  not work: the export read columns that do not exist, deletion broke the rule that an account has
+  an email or a phone, and its checks named ride and booking states that do not exist. Rebuilt and
+  tested:
+  - **Password reset** by a code to the account's email or phone. Neither step says whether an
+    account exists, a too-early request included, and a reset lifts the lock from wrong passwords.
+  - **Signing out** revokes the token in Redis.
+  - **A member's copy of their data**, as one JSON document.
+  - **Deleting an account** (migration V42) removes what identifies the member and ends every
+    session. It keeps the row, marked deleted, for the trips and the research log that refer to
+    it, and is refused while a ride or booking is still to come.
+- **The online setup.** The assistant's path now reaches intel through the edge. The app's pages
+  get a content security policy, checked in Edge on the built app's public pages, with nothing
+  refused. For that the theme script moved to its own file, the offline page's button became a
+  link, and zod stopped trying `new Function`.
+- **Rickshaw fares.** Mumbai, Thane and Navi Mumbai now have the Mumbai region's fare of
+  1 September 2026 (Rs 27 for 1.5 km, Rs 18.22 a km after). The figures entered that morning were
+  from 2022. Nashik and Nagpur were removed, as no source for theirs could be found.
+- **Experiment X7** finished and was judged (EXPERIMENT_PROTOCOL.md section 32). H7.2 holds and H7.1
+  does not: moved together, the assumptions make reconfirmation cost rides at 13 of 20 points.
+- **Lint.** ruff had flagged two FastAPI dependencies in the assistant's endpoints since
+  2026-11-08. `pyproject.toml` now tells it that `Depends` belongs in a default.
+- Tests: 328 Java, 334 web, 339 Python, 28 gateway, all passing.
+
 ## 2026-11-10 (evening) — who you are, your notifications by day, your own people in an emergency
 
 - **Account** opens with the member: photo or initials, name, kind of account and address, a badge

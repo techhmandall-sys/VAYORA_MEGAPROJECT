@@ -1,7 +1,7 @@
 # Known limitations
 
 What the project does not do, does only in part, or does in a way a reader could
-mistake for more. Updated 2026-11-01.
+mistake for more. Updated 2026-11-12.
 
 ## Nothing here is evidence about real people
 
@@ -35,7 +35,13 @@ mistake for more. Updated 2026-11-01.
   to search again, across supply densities of 6, 12 and 20 rides a day (an earlier world,
   section 7), at every survival threshold tried (section 14), and at every cancellation
   rate tried, down to one like the hotels' (section 23). Why refills add so little is
-  section 11.
+  section 11. Each of these moved one assumption at a time.
+- **Moved together, the assumptions make asking cost rides more often than not** (experiment
+  X7, EXPERIMENT_PROTOCOL.md section 32). At 20 points that vary the response to being asked,
+  demand, supply and the cancellation rate at once, B4 − B3 lies wholly below zero at 13 and
+  wholly above it at one. It is not shown within ±0.10 at five, and the worst is −0.28. An oracle
+  never gains more than +0.18. The h3 model is used at every point, outside the world it was
+  trained in, which may be part of why.
 - **Counted in seats rather than bookings, asking does add a little** (+0.14 seats per 100
   searches, section 20). This was found after the fact and is not a result; the primary
   metric counts a booking once whatever its party size.
@@ -103,9 +109,17 @@ mistake for more. Updated 2026-11-01.
   down word for word and answered, through Edge at phone and laptop size, in 3.5 to 3.9 s.
   Hindi and Marathi speech, real microphones and noisy streets are untried. Recordings go to
   Google like typed questions, and the page says so. The microphone needs https (or localhost).
-- **There is no way to reset a forgotten password.** core-api has no reset: it would need a
-  code sent by email or text, which are simulated unless real services are connected, and a
-  table of reset codes. The sign-in page offers none rather than a link that leads nowhere.
+- **A forgotten password is reset with a code that goes to the simulated outbox** unless a real
+  email or SMS service is configured, so on a local run only an administrator can read it. Built
+  on 2026-11-12. An administrator's own password cannot be reset this way: it comes from
+  configuration. A reset does not end sessions already signed in elsewhere.
+- **Deleting an account erases the person, not the record of their trips.** What identifies them
+  goes. Their rides, bookings, ratings, reports, emergency alerts and research events stay, under
+  "Deleted member", because other members' trips, earnings and reputations rest on them. So do
+  the chat messages they sent, under the name they had, since core-api does not write to the
+  gateway's chat. So do their vehicles, without photos. An account cannot be deleted while it
+  drives or holds a seat on a ride still to come. The copy of a member's data covers what
+  core-api keeps: chat and live positions are not in it.
 - **The front page shows no live rides.** Only signing in and signing up are open to visitors, so
   listing real rides there would need a public endpoint, and a decision on how much of a ride a
   stranger may see. Until then it offers routes to start a search from, and the visitor's own
@@ -116,8 +130,10 @@ mistake for more. Updated 2026-11-01.
   point from the nearest city that is, and a driver's stop keeps that city's name.
 - A stop can be at most 48 hours after departure, so the very longest routes in India have to be
   split into separate rides. The form says so when a time is too long.
-- Rickshaw fares exist only where a fare is published and entered (Kolhapur and Pune as shipped).
-  Elsewhere a rickshaw is shown with no fare.
+- Rickshaw fares exist only where a published fare gives both how far its minimum goes and the
+  rate after it: Pune, and the Mumbai region's fare of 1 September 2026 for Mumbai, Thane and
+  Navi Mumbai (entered on 2026-11-12). Elsewhere a rickshaw is shown with no fare. A fare is
+  entered by hand and is not updated when a transport authority revises it.
 - **Signing up with a phone number proves nothing about the number.** It is unconfirmed
   until a code proves it, and the code goes only to the simulated outbox. Someone can sign
   up with a number that is not theirs, and the real owner then cannot use it until an
@@ -309,19 +325,22 @@ mistake for more. Updated 2026-11-01.
 ## Security
 
 - The access token lives in the browser's `sessionStorage`, readable by any script on
-  the page. There is no refresh token; a session lasts 12 hours and cannot be revoked.
+  the page. Signing out and deleting the account revoke it, but only core-api checks that, and
+  only while Redis is up. The gateway and intel accept a revoked token until it expires, though
+  the gateway puts it out of a ride's chat within 15 seconds. There is no refresh token.
 - Only sign-in and confirmation codes are limited, and only per account: five wrong
   passwords in 15 minutes lock that address's password sign-in for the rest of the
   window, which anyone can set off on purpose; codes are one a minute, ten a day, five
   guesses each. Nothing is limited per client, so a few guesses at each of many accounts
   go unchecked.
-- An administrator can read every confirmation code in the simulated outbox. That is
-  the point of it, and it must not exist alongside a real sender.
+- An administrator can read every code in the simulated outbox, password reset codes
+  included, and so could take over a member's account. That is the point of a simulated
+  sender, and it must not exist alongside a real one.
 - Registration reveals whether an email is already registered.
-- The web server sends the basic security headers, but there is no content security
-  policy and no HSTS.
+- A content security policy and HSTS exist only online, from the edge server. On a local run
+  the web server sends the basic security headers only.
 - Every signed-in request costs one extra database lookup, to check the account is not
-  suspended.
+  suspended or deleted, and one Redis lookup, to check the token was not revoked.
 - The development defaults in `docker-compose.yml` (database password, JWT secret) are
   public. They must be replaced for any deployment.
 
