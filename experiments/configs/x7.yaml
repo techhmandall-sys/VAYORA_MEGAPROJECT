@@ -1,0 +1,34 @@
+# Experiment X7 (docs/EXPERIMENT_PROTOCOL.md, sections 26 and 32): the assumptions moved together. A
+# Latin hypercube over five ranges, its seed fixed here before any point was drawn or run. Read by
+# experiments/analysis/joint.py: `design` writes the points into the sweeps below, and running it
+# without arguments judges them. Written on 2026-11-08.
+points: 20
+seed: 20261108
+# Each range is [low, high]. The last multiplies every passenger type's Weibull scale in world.yaml.
+ranges:
+  demand.intervention_response.early_release_probability: [0.25, 1.0]
+  demand.intervention_response.annoyed_cancel_probability: [0.0, 0.05]
+  demand.searches_per_day: [30, 120]
+  supply.rides_per_day: [6, 20]
+  weibull_scale_multiplier: [1, 3]
+# Places each drawn value is rounded to, so a point can be written down and read back exactly. Four keep
+# every value inside its stratum of the hypercube to within 0.00005.
+decimals: 4
+
+# World h3 and model h3. B3 is each point's baseline; B4 and ORACLE are compared with it.
+baseline: variants/B3.yaml
+variants: [variants/B4.yaml, variants/ORACLE.yaml]
+# The points are split, in order, across these sweeps, run side by side, each with its own run id.
+parts:
+  - {config: sweeps/joint_lhs_1.yaml, run: 5eeb0000-0000-4000-8000-000000000019}
+  - {config: sweeps/joint_lhs_2.yaml, run: 5eeb0000-0000-4000-8000-000000000020}
+  - {config: sweeps/joint_lhs_3.yaml, run: 5eeb0000-0000-4000-8000-000000000021}
+  - {config: sweeps/joint_lhs_4.yaml, run: 5eeb0000-0000-4000-8000-000000000022}
+
+# How section 26's words are read:
+# - H7.1: at every point where the mean of ORACLE - B3 is below oracle_threshold, B4 - B3 is equivalent
+#   to zero by two one-sided tests at analysis.yaml's margin and alpha.
+# - H7.2: at every point, the mean of ORACLE - B3 is below oracle_cap.
+# Both in completed rides per 100 searches.
+oracle_threshold: 0.20
+oracle_cap: 0.5
