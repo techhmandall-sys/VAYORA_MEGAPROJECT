@@ -6,7 +6,8 @@ import { Link } from 'react-router-dom';
 import { reportReasons } from '../components/report';
 import { CountUp } from '../components/countup';
 import { LiveStatus } from '../components/live';
-import { Button, Card, ConfirmButton, Meter, Notice, Page, QueryState, SelectField, StatusBadge, TextField } from '../components/ui';
+import { initialsOf } from '../components/photo';
+import { Avatar, Button, Card, ConfirmButton, Meter, Notice, Page, QueryState, SelectField, StatusBadge, TextField } from '../components/ui';
 import { api } from '../lib/api';
 import { msg, useT } from '../lib/i18n';
 import { LIVE_MS } from '../lib/live';
@@ -225,45 +226,47 @@ export function MembersPage() {
         empty={t('No member matches.')}
         onRetry={() => void members.refetch()}
       />
+      {/* A list rather than a table, so a phone shows every member whole: name and address, then
+          kind, when they joined and their standing, each said with its label. */}
       {members.data && members.data.length > 0 && (
-        <Card>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <caption className="sr-only">{t('Members, newest first')}</caption>
-              <thead className="border-b border-slate-200 text-slate-600">
-                <tr>
-                  <th scope="col" className="py-2 pr-4 font-medium">{t('Name')}</th>
-                  <th scope="col" className="py-2 pr-4 font-medium">{t('Email')}</th>
-                  <th scope="col" className="py-2 pr-4 font-medium">{t('Role')}</th>
-                  <th scope="col" className="py-2 pr-4 font-medium">{t('Joined')}</th>
-                  <th scope="col" className="py-2 font-medium">{t('Standing')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {members.data.map((member) => (
-                  <tr key={member.id} className="border-b border-slate-100 last:border-0">
-                    <td className="py-2 pr-4">{member.fullName}</td>
-                    <td className="py-2 pr-4">{member.email ?? t('Signed up by phone')}</td>
-                    <td className="py-2 pr-4">{t(roleLabels[member.role])}</td>
-                    <td className="py-2 pr-4">{formatDateTime(member.memberSince)}</td>
-                    <td className="py-2">
-                      {member.status === 'SUSPENDED' ? (
-                        <span className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium text-red-800">{t('Suspended')}</span>
-                          <Button tone="secondary" disabled={reinstate.isPending} onClick={() => reinstate.mutate(member.id)}>
-                            {t('Reinstate {name}', { name: member.fullName })}
-                          </Button>
-                        </span>
-                      ) : (
-                        t('Active')
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        <ul aria-label={t('Members, newest first')} className="divide-y divide-slate-900/[0.06] overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-slate-900/[0.04]">
+          {members.data.map((member) => (
+            <li key={member.id} className="grid gap-3 px-4 py-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+              <div className="flex min-w-0 items-center gap-3">
+                <Avatar initials={initialsOf(member.fullName)} size="sm" />
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-900">{member.fullName}</p>
+                  <p className="truncate text-[13px] text-slate-500">{member.email ?? t('Signed up by phone')}</p>
+                </div>
+              </div>
+              <dl className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] sm:justify-end">
+                <div>
+                  <dt className="sr-only">{t('Role')}</dt>
+                  <dd className="rounded-full bg-slate-900/[0.06] px-2.5 py-1 font-semibold text-slate-700">{t(roleLabels[member.role])}</dd>
+                </div>
+                <div className="flex gap-1.5">
+                  <dt className="text-slate-500">{t('Joined')}</dt>
+                  <dd className="text-slate-700">{formatDate(member.memberSince)}</dd>
+                </div>
+                <div>
+                  <dt className="sr-only">{t('Standing')}</dt>
+                  <dd className="flex flex-wrap items-center gap-2">
+                    {member.status === 'SUSPENDED' ? (
+                      <>
+                        <span className="rounded-full bg-red-100 px-2.5 py-1 font-semibold text-red-800">{t('Suspended')}</span>
+                        <Button tone="secondary" disabled={reinstate.isPending} onClick={() => reinstate.mutate(member.id)}>
+                          {t('Reinstate {name}', { name: member.fullName })}
+                        </Button>
+                      </>
+                    ) : (
+                      <span className="rounded-full bg-emerald-100 px-2.5 py-1 font-semibold text-emerald-800">{t('Active')}</span>
+                    )}
+                  </dd>
+                </div>
+              </dl>
+            </li>
+          ))}
+        </ul>
       )}
     </Page>
   );
