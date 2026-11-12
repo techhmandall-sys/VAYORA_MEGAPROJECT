@@ -180,6 +180,37 @@ vayora:
         per-km: 20
         since: 2026-09-01
         source: "Pune Regional Transport Authority, as reported by Punekar News, 4 August 2026"
+      # One fare for the whole Mumbai Metropolitan Region, set by its transport authority (MMRTA) and
+      # in force from 1 September 2026, when it replaced the fare of 1 February 2025 (Rs 26, Rs 17.14).
+      # Meters had until the end of November 2026 to be recalibrated; until then a driver may charge it
+      # from the RTO's printed fare table. Listed by town so that the nearest one names the fare.
+      - town: Mumbai
+        lat: 19.0760
+        lon: 72.8777
+        radius-km: 25
+        minimum-fare: 27
+        minimum-km: 1.5
+        per-km: 18.22
+        since: 2026-09-01
+        source: "Mumbai Metropolitan Region Transport Authority, as reported by The Free Press Journal and Business Today, August and September 2026"
+      - town: Thane
+        lat: 19.2183
+        lon: 72.9781
+        radius-km: 15
+        minimum-fare: 27
+        minimum-km: 1.5
+        per-km: 18.22
+        since: 2026-09-01
+        source: "Mumbai Metropolitan Region Transport Authority, as reported by The Free Press Journal and Business Today, August and September 2026"
+      - town: Navi Mumbai
+        lat: 19.0330
+        lon: 73.0297
+        radius-km: 20
+        minimum-fare: 27
+        minimum-km: 1.5
+        per-km: 18.22
+        since: 2026-09-01
+        source: "Mumbai Metropolitan Region Transport Authority, as reported by The Free Press Journal and Business Today, August and September 2026"
   pricing:
     # Per seat. Only a suggestion offered to the driver, never applied automatically.
     suggested-rupees-per-km: 2.0

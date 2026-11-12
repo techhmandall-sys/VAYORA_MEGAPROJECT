@@ -30,6 +30,11 @@ class RickshawsTest {
 
     private static final Fare PUNE = new Fare("Pune", 18.5204, 73.8567, 25, new BigDecimal("30"), 1.5,
             new BigDecimal("20"), LocalDate.of(2026, 9, 1), "Pune RTA, as reported");
+    // The Mumbai region's fare from 1 September 2026, the same in every town of the region.
+    private static final Fare MUMBAI = new Fare("Mumbai", 19.0760, 72.8777, 25, new BigDecimal("27"), 1.5,
+            new BigDecimal("18.22"), LocalDate.of(2026, 9, 1), "MMRTA, as reported");
+    private static final Fare THANE = new Fare("Thane", 19.2183, 72.9781, 15, new BigDecimal("27"), 1.5,
+            new BigDecimal("18.22"), LocalDate.of(2026, 9, 1), "MMRTA, as reported");
 
     private static Rickshaws rickshaws(double offerBeyondMetres, Fare... fares) {
         Map<String, String> stored = new HashMap<>();
@@ -55,6 +60,24 @@ class RickshawsTest {
         assertThat(Rickshaws.meter(PUNE, 4.0)).isEqualTo(80);    // 30 + 20 x 2.5
         assertThat(Rickshaws.meter(PUNE, 2.26)).isEqualTo(45);   // 45.2
         assertThat(Rickshaws.meter(PUNE, 2.275)).isEqualTo(46);  // 45.5, half up
+    }
+
+    @Test
+    void aRateInPaiseIsChargedToTheRupee() {
+        assertThat(Rickshaws.meter(MUMBAI, 1.0)).isEqualTo(27);
+        assertThat(Rickshaws.meter(MUMBAI, 1.5)).isEqualTo(27);
+        assertThat(Rickshaws.meter(MUMBAI, 2.3)).isEqualTo(42);  // 27 + 18.22 x 0.8 = 41.576
+        assertThat(Rickshaws.meter(MUMBAI, 4.5)).isEqualTo(82);  // 27 + 18.22 x 3 = 81.66
+    }
+
+    @Test
+    void whereTwoTownsCirclesOverlapTheNearestTownNamesTheFare() {
+        RickshawProperties region = new RickshawProperties(1000, List.of(MUMBAI, THANE));
+
+        // Both points are within Mumbai's 25 km; only the first is within Thane's 15.
+        assertThat(region.at(new Point(19.2000, 72.9700))).map(Fare::town).contains("Thane");
+        assertThat(region.at(new Point(19.0500, 72.8500))).map(Fare::town).contains("Mumbai");
+        assertThat(region.at(NEAR_KOLHAPUR)).isEmpty();
     }
 
     @Test
