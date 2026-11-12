@@ -10,8 +10,10 @@ unmodified world, which is only right when the swept parameters cannot affect it
 and each cell is compared with its own. Everything is paired by
 seed and every figure is read back from the event log through metrics.sql.
 
-A config may name the world it varies (``world: worlds/...yaml``; world.yaml otherwise), and may list
-named ``cells``, each setting several values together, instead of a grid of ``parameters``.
+A config may name the world it varies (``world: worlds/...yaml``; world.yaml otherwise), may list
+named ``cells``, each setting several values together, instead of a grid of ``parameters``, and may
+compare several ``variants`` with the baseline instead of one ``variant``. ``--resume`` continues a
+sweep stopped part-way.
 
 Writes experiments/reports/sweep-<name>-<run id>.json and .md.
 """
@@ -82,31 +84,57 @@ def sweep_world(config: dict[str, Any]) -> Path:
     return CONFIGS / config.get("world", "world.yaml")
 
 
+def sweep_variants(config: dict[str, Any]) -> list[str]:
+    """The variants a sweep compares with its baseline: `variant`, or the list `variants`."""
+    return list(config["variants"]) if "variants" in config else [config["variant"]]
+
+
+def completed(conn: psycopg.Connection, run_id: uuid.UUID) -> set[tuple[str, int]]:
+    """For a sweep resumed after a crash: the (variant, seed) pairs it finished.
+
+    A sweep writes one pair at a time, committing every few thousand events, so only the pair it was
+    writing last can be incomplete. Its events are deleted, and every other pair is kept.
+    """
+    last = conn.execute("SELECT variant, seed FROM events WHERE run_id = %s ORDER BY id DESC LIMIT 1",
+                        (run_id,)).fetchone()
+    if last:
+        conn.execute("DELETE FROM events WHERE run_id = %s AND variant = %s AND seed = %s", (run_id, *last))
+        conn.commit()
+    return {(v, s) for v, s in conn.execute(
+        "SELECT DISTINCT variant, seed FROM events WHERE run_id = %s", (run_id,)).fetchall()}
+
+
 def run(conn: psycopg.Connection, world: World, variant: Variant, label: str, seeds: range,
-        run_id: uuid.UUID) -> None:
+        run_id: uuid.UUID, done: set[tuple[str, int]] = frozenset()) -> None:
     labelled = dataclasses.replace(variant, name=label)
     for seed in seeds:
+        if (label, seed) in done:
+            continue
         with EventWriter(conn, run_id=run_id, variant=label, seed=seed) as writer:
             Simulation(world, labelled, seed, writer).run()
 
 
 def run_sweep(conn: psycopg.Connection, config: dict[str, Any], world: World, seeds: range,
-              run_id: uuid.UUID) -> list[tuple[str, dict[str, Any], str | None]]:
+              run_id: uuid.UUID, *, resume: bool = False) -> list[tuple[str, dict[str, Any], str | None]]:
     baseline = load_variant(CONFIGS / config["baseline"])
-    variant = load_variant(CONFIGS / config["variant"])
+    variants = [load_variant(CONFIGS / path) for path in sweep_variants(config)]
     per_cell = config.get("baseline_per_cell", False)
+    done = completed(conn, run_id) if resume else frozenset()
     if not per_cell:
-        run(conn, world, baseline, baseline.name, seeds, run_id)
+        run(conn, world, baseline, baseline.name, seeds, run_id, done)
     labelled = []
     for name, cell in named_cells(config):
-        changed, varied = apply_cell(world, variant, cell)
-        validate(changed)
-        validate_variant(varied)
         if per_cell:
-            run(conn, changed, baseline, cell_label(baseline.name, cell, name), seeds, run_id)
-        label = cell_label(variant.name, cell, name)
-        run(conn, changed, varied, label, seeds, run_id)
-        labelled.append((label, cell, name))
+            changed, _ = apply_cell(world, baseline, cell)
+            validate(changed)
+            run(conn, changed, baseline, cell_label(baseline.name, cell, name), seeds, run_id, done)
+        for variant in variants:
+            changed, varied = apply_cell(world, variant, cell)
+            validate(changed)
+            validate_variant(varied)
+            label = cell_label(variant.name, cell, name)
+            run(conn, changed, varied, label, seeds, run_id, done)
+            labelled.append((label, cell, name))
     return labelled
 
 
@@ -180,6 +208,8 @@ def main() -> None:
     parser.add_argument("--world", type=Path, default=None,
                         help="the world to vary; by default the one the config names, else world.yaml")
     parser.add_argument("--run-id", type=uuid.UUID, default=None)
+    parser.add_argument("--resume", action="store_true",
+                        help="continue a sweep stopped part-way, keeping every (variant, seed) it finished")
     args = parser.parse_args()
 
     url = os.environ.get("VAYORA_DB_URL")
@@ -191,7 +221,8 @@ def main() -> None:
 
     dsn = make_url(url).set(drivername="postgresql").render_as_string(hide_password=False)
     with psycopg.connect(dsn) as conn:
-        labelled = run_sweep(conn, config, load_world(args.world or sweep_world(config)), seeds, run_id)
+        labelled = run_sweep(conn, config, load_world(args.world or sweep_world(config)), seeds, run_id,
+                             resume=args.resume)
     engine = create_engine(make_url(url).set(drivername="postgresql+psycopg"))
     with engine.connect() as conn:
         report = build_report(conn, config, labelled, run_id)

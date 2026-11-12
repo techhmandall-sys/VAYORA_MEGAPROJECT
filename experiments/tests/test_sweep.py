@@ -4,8 +4,8 @@ import uuid
 import pytest
 import yaml
 
-from experiments.sweep import (CONFIGS, build_report, cell_label, cells, named_cells, run_sweep,
-                               sweep_world, to_markdown)
+from experiments.sweep import (CONFIGS, build_report, cell_label, cells, completed, named_cells,
+                               run_sweep, sweep_variants, sweep_world, to_markdown)
 from sim.config import apply_cell, load_variant, load_world, with_parameter
 
 WORLD = load_world(CONFIGS / "world.yaml")
@@ -70,7 +70,9 @@ def test_every_shipped_sweep_names_real_variants_and_real_parameters():
     for path in sweeps:
         config = yaml.safe_load(path.read_text(encoding="utf-8"))
         load_variant(CONFIGS / config["baseline"])
-        variant = load_variant(CONFIGS / config["variant"])
+        variant = load_variant(CONFIGS / sweep_variants(config)[0])
+        for other in sweep_variants(config)[1:]:
+            load_variant(CONFIGS / other)
         world = load_world(sweep_world(config))
         for _, cell in named_cells(config):
             apply_cell(world, variant, cell)
@@ -155,3 +157,40 @@ def test_a_named_cell_sets_several_values_at_once_and_is_stored_under_its_name()
 def test_a_sweep_varies_the_world_its_config_names():
     assert sweep_world({}) == CONFIGS / "world.yaml"
     assert sweep_world({"world": "worlds/proximity_w0.5.yaml"}) == CONFIGS / "worlds" / "proximity_w0.5.yaml"
+
+
+def _quiet_world():
+    return dataclasses.replace(WORLD, demand=dataclasses.replace(WORLD.demand, searches_per_day=20))
+
+
+def _counts(pg_conn, run_id):
+    return dict(((v, seed), n) for v, seed, n in pg_conn.execute(
+        "SELECT variant, seed, COUNT(*) FROM events WHERE run_id = %s GROUP BY 1, 2", (run_id,)).fetchall())
+
+
+def test_several_variants_share_each_cells_baseline(pg_conn, sa_conn):
+    run_id = uuid.uuid4()
+    config = {"name": "t", "baseline": "variants/B3.yaml", "variants": ["variants/B4.yaml", "variants/ORACLE.yaml"],
+              "baseline_per_cell": True, "cells": [{"name": "p1", "set": {"supply.rides_per_day": 8}}]}
+
+    labelled = run_sweep(pg_conn, config, _quiet_world(), range(1, 3), run_id)
+    report = build_report(sa_conn, config, labelled, run_id)
+
+    assert [c["variant"] for c in report["cells"]] == ["B4[p1]", "ORACLE[p1]"]
+    assert {v for v, _ in _counts(pg_conn, run_id)} == {"B3[p1]", "B4[p1]", "ORACLE[p1]"}
+
+
+def test_a_resumed_sweep_redoes_only_the_pair_it_may_have_left_half_written(pg_conn):
+    run_id = uuid.uuid4()
+    config = {"name": "t", "baseline": "variants/B3.yaml", "variant": "variants/B4.yaml",
+              "baseline_per_cell": True, "parameters": {"supply.rides_per_day": [8]}}
+    run_sweep(pg_conn, config, _quiet_world(), range(1, 3), run_id)
+    whole = _counts(pg_conn, run_id)
+    last = pg_conn.execute("SELECT variant, seed FROM events WHERE run_id = %s ORDER BY id DESC LIMIT 1",
+                           (run_id,)).fetchone()
+
+    done = completed(pg_conn, run_id)
+
+    assert tuple(last) not in done and len(done) == len(whole) - 1
+    run_sweep(pg_conn, config, _quiet_world(), range(1, 3), run_id, resume=True)
+    assert _counts(pg_conn, run_id) == whole
