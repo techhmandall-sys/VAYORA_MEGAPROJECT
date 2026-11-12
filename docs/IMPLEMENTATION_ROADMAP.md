@@ -27,9 +27,10 @@ and searches. Nothing remains that is only a matter of building.
 
 Outside the 95, built on 2026-11-12: resetting a forgotten password, signing out so a session
 ends at once, a member's copy of their data and deleting their account; and experiment X7
-(EXPERIMENT_PROTOCOL.md section 32). Still open: rebuilding every current result in one run
-(`scripts/reproduce.sh` covers only the earlier world's runs) and archiving it, and running the
-online setup on a real server, which needs one and a domain.
+(EXPERIMENT_PROTOCOL.md section 32). Still open: adding the soonest-first ladder and experiments X1
+to X7 to `scripts/reproduce.sh`, which rebuilds the main ladder, the robustness runs, the hotel
+comparison and the earlier sweeps; archiving the results; and running the online setup on a real
+server, which needs one and a domain.
 
 The tables below are as written on 2026-10-21, with lines struck through as items were done.
 
