@@ -15,3 +15,7 @@ target-version = "py311"
 [tool.ruff.lint]
 # Errors, undefined and unused names, and the bug-prone patterns flake8-bugbear finds.
 select = ["E9", "F", "B"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's way to declare what an endpoint depends on is a call in a parameter's default, read once.
+extend-immutable-calls = ["fastapi.Depends"]
