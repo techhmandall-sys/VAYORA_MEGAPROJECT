@@ -1,0 +1,952 @@
+{
+  "config": {
+    "points": 20,
+    "seed": 20261108,
+    "ranges": {
+      "demand.intervention_response.early_release_probability": [
+        0.25,
+        1.0
+      ],
+      "demand.intervention_response.annoyed_cancel_probability": [
+        0.0,
+        0.05
+      ],
+      "demand.searches_per_day": [
+        30,
+        120
+      ],
+      "supply.rides_per_day": [
+        6,
+        20
+      ],
+      "weibull_scale_multiplier": [
+        1,
+        3
+      ]
+    },
+    "decimals": 4,
+    "baseline": "variants/B3.yaml",
+    "variants": [
+      "variants/B4.yaml",
+      "variants/ORACLE.yaml"
+    ],
+    "parts": [
+      {
+        "config": "sweeps/joint_lhs_1.yaml",
+        "run": "5eeb0000-0000-4000-8000-000000000019"
+      },
+      {
+        "config": "sweeps/joint_lhs_2.yaml",
+        "run": "5eeb0000-0000-4000-8000-000000000020"
+      },
+      {
+        "config": "sweeps/joint_lhs_3.yaml",
+        "run": "5eeb0000-0000-4000-8000-000000000021"
+      },
+      {
+        "config": "sweeps/joint_lhs_4.yaml",
+        "run": "5eeb0000-0000-4000-8000-000000000022"
+      }
+    ],
+    "oracle_threshold": 0.2,
+    "oracle_cap": 0.5
+  },
+  "analysis": {
+    "equivalence_margin": 0.1,
+    "equivalence_alpha": 0.05,
+    "bootstrap": {
+      "resamples": 20000,
+      "seed": 20261029
+    },
+    "bootstrapped_measures": [
+      "per_100",
+      "seats_per_100"
+    ]
+  },
+  "hypotheses": {
+    "H7.1": {
+      "rule": "where ORACLE - B3 is below 0.2, B4 - B3 is equivalent to zero",
+      "points_judged": [
+        "p01",
+        "p02",
+        "p03",
+        "p04",
+        "p05",
+        "p06",
+        "p07",
+        "p08",
+        "p09",
+        "p10",
+        "p11",
+        "p12",
+        "p13",
+        "p14",
+        "p15",
+        "p16",
+        "p17",
+        "p18",
+        "p19",
+        "p20"
+      ],
+      "not_equivalent": [
+        "p05",
+        "p08",
+        "p09",
+        "p12",
+        "p15"
+      ],
+      "holds": false
+    },
+    "H7.2": {
+      "rule": "ORACLE - B3 is below 0.5 at every point",
+      "over_cap": [],
+      "holds": true
+    }
+  },
+  "exploratory": {
+    "spearman": -0.08120300751879699,
+    "largest_b4": 0.2829443904049351
+  },
+  "points": [
+    {
+      "point": "p01",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.6993,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0225,
+        "demand.searches_per_day": 78.361,
+        "supply.rides_per_day": 10.4998,
+        "weibull_scale_multiplier": 2.9946
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.6993,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0225,
+        "demand.searches_per_day": 78.361,
+        "supply.rides_per_day": 10.4998,
+        "demand.types.committed.weibull_scale_hours": 7486.5,
+        "demand.types.flexible.weibull_scale_hours": 1197.84,
+        "demand.types.opportunistic.weibull_scale_hours": 329.406,
+        "demand.types.deadline_bound.weibull_scale_hours": 1796.76
+      },
+      "b3_mean": 23.977976484050995,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.03949513664802187,
+        "ci_low": -0.07412388910850828,
+        "ci_high": -0.004866384187535454,
+        "bootstrap_ci_low": -0.07103371056761977,
+        "bootstrap_ci_high": -0.004893351068694153
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.03548139223958439,
+        "ci_low": 0.015084489811282947,
+        "ci_high": 0.055878294667885825,
+        "bootstrap_ci_low": 0.01614034413482838,
+        "bootstrap_ci_high": 0.05476647699543529
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.0006279343803961503,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p02",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.5298,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0428,
+        "demand.searches_per_day": 97.2065,
+        "supply.rides_per_day": 9.3093,
+        "weibull_scale_multiplier": 2.5884
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.5298,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0428,
+        "demand.searches_per_day": 97.2065,
+        "supply.rides_per_day": 9.3093,
+        "demand.types.committed.weibull_scale_hours": 6471.0,
+        "demand.types.flexible.weibull_scale_hours": 1035.36,
+        "demand.types.opportunistic.weibull_scale_hours": 284.724,
+        "demand.types.deadline_bound.weibull_scale_hours": 1553.04
+      },
+      "b3_mean": 17.715282562393547,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.012996428058854488,
+        "ci_low": -0.04590253877815812,
+        "ci_high": 0.019909682660449145,
+        "bootstrap_ci_low": -0.04417563828928133,
+        "bootstrap_ci_high": 0.017352651482698864
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.049095732293473485,
+        "ci_low": 0.03104832943266423,
+        "ci_high": 0.06714313515428275,
+        "bootstrap_ci_low": 0.031972687334432766,
+        "bootstrap_ci_high": 0.0656083014344851
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 4.087502382826147e-06,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p03",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.4829,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0225,
+        "demand.searches_per_day": 114.3671,
+        "supply.rides_per_day": 14.516,
+        "weibull_scale_multiplier": 2.328
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.4829,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0225,
+        "demand.searches_per_day": 114.3671,
+        "supply.rides_per_day": 14.516,
+        "demand.types.committed.weibull_scale_hours": 5820.0,
+        "demand.types.flexible.weibull_scale_hours": 931.2,
+        "demand.types.opportunistic.weibull_scale_hours": 256.08,
+        "demand.types.deadline_bound.weibull_scale_hours": 1396.8
+      },
+      "b3_mean": 23.073019738389412,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.025941536931539725,
+        "ci_low": -0.05769444746071206,
+        "ci_high": 0.005811373597632615,
+        "bootstrap_ci_low": -0.05562833333175297,
+        "bootstrap_ci_high": 0.004750029267487082
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.03174206147683935,
+        "ci_low": 0.004717357541490112,
+        "ci_high": 0.05876676541218859,
+        "bootstrap_ci_low": 0.0069057776327737415,
+        "bootstrap_ci_high": 0.05754042615239454
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 2.4018141999014306e-05,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p04",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.4584,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0054,
+        "demand.searches_per_day": 63.2994,
+        "supply.rides_per_day": 17.5082,
+        "weibull_scale_multiplier": 2.8662
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.4584,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0054,
+        "demand.searches_per_day": 63.2994,
+        "supply.rides_per_day": 17.5082,
+        "demand.types.committed.weibull_scale_hours": 7165.5,
+        "demand.types.flexible.weibull_scale_hours": 1146.48,
+        "demand.types.opportunistic.weibull_scale_hours": 315.282,
+        "demand.types.deadline_bound.weibull_scale_hours": 1719.72
+      },
+      "b3_mean": 39.587124533515265,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.006792017501881512,
+        "ci_low": -0.04618338823687169,
+        "ci_high": 0.03259935323310866,
+        "bootstrap_ci_low": -0.04490213160079326,
+        "bootstrap_ci_high": 0.029055097859220832
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.04050072017327958,
+        "ci_low": 0.019027133865408143,
+        "ci_high": 0.06197430648115102,
+        "bootstrap_ci_low": 0.019947151995415028,
+        "bootstrap_ci_high": 0.060735780129772966
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 1.9815815257901094e-05,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p05",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.8946,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0015,
+        "demand.searches_per_day": 36.2583,
+        "supply.rides_per_day": 7.3742,
+        "weibull_scale_multiplier": 1.6358
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.8946,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0015,
+        "demand.searches_per_day": 36.2583,
+        "supply.rides_per_day": 7.3742,
+        "demand.types.committed.weibull_scale_hours": 4089.5,
+        "demand.types.flexible.weibull_scale_hours": 654.32,
+        "demand.types.opportunistic.weibull_scale_hours": 179.938,
+        "demand.types.deadline_bound.weibull_scale_hours": 981.48
+      },
+      "b3_mean": 28.952320292186073,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": 0.0994729168797118,
+        "ci_low": 0.054182523061651895,
+        "ci_high": 0.1447633106977717,
+        "bootstrap_ci_low": 0.05833436440132303,
+        "bootstrap_ci_high": 0.14273038050549985
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.18088465648527113,
+        "ci_low": 0.1385310081703796,
+        "ci_high": 0.22323830480016266,
+        "bootstrap_ci_low": 0.14132033272827682,
+        "bootstrap_ci_high": 0.22158286955551057
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.49058675074071856,
+        "equivalent": false
+      }
+    },
+    {
+      "point": "p06",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.434,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0479,
+        "demand.searches_per_day": 83.2965,
+        "supply.rides_per_day": 8.2968,
+        "weibull_scale_multiplier": 2.6601
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.434,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0479,
+        "demand.searches_per_day": 83.2965,
+        "supply.rides_per_day": 8.2968,
+        "demand.types.committed.weibull_scale_hours": 6650.25,
+        "demand.types.flexible.weibull_scale_hours": 1064.04,
+        "demand.types.opportunistic.weibull_scale_hours": 292.611,
+        "demand.types.deadline_bound.weibull_scale_hours": 1596.06
+      },
+      "b3_mean": 18.56405697285929,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.010767284812621843,
+        "ci_low": -0.04028181671753784,
+        "ci_high": 0.018747247092294153,
+        "bootstrap_ci_low": -0.038644373482837766,
+        "bootstrap_ci_high": 0.017065824783539015
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.043842091805738906,
+        "ci_low": 0.020857909562175397,
+        "ci_high": 0.06682627404930241,
+        "bootstrap_ci_low": 0.02202779581758257,
+        "bootstrap_ci_high": 0.06512038021728506
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 4.820567712743741e-07,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p07",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.7397,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0199,
+        "demand.searches_per_day": 72.1234,
+        "supply.rides_per_day": 13.2371,
+        "weibull_scale_multiplier": 1.5763
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.7397,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0199,
+        "demand.searches_per_day": 72.1234,
+        "supply.rides_per_day": 13.2371,
+        "demand.types.committed.weibull_scale_hours": 3940.75,
+        "demand.types.flexible.weibull_scale_hours": 630.52,
+        "demand.types.opportunistic.weibull_scale_hours": 173.393,
+        "demand.types.deadline_bound.weibull_scale_hours": 945.78
+      },
+      "b3_mean": 30.037350366963494,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.02056797276041505,
+        "ci_low": -0.06143819236081027,
+        "ci_high": 0.020302246839980175,
+        "bootstrap_ci_low": -0.058057090756165504,
+        "bootstrap_ci_high": 0.018788111512030786
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.11774263247543715,
+        "ci_low": 0.07892807113454683,
+        "ci_high": 0.15655719381632746,
+        "bootstrap_ci_low": 0.08289264081309468,
+        "bootstrap_ci_high": 0.15489674940312217
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.00021410813911162735,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p08",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.6568,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0407,
+        "demand.searches_per_day": 85.7601,
+        "supply.rides_per_day": 18.683,
+        "weibull_scale_multiplier": 1.0579
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.6568,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0407,
+        "demand.searches_per_day": 85.7601,
+        "supply.rides_per_day": 18.683,
+        "demand.types.committed.weibull_scale_hours": 2644.75,
+        "demand.types.flexible.weibull_scale_hours": 423.16,
+        "demand.types.opportunistic.weibull_scale_hours": 116.369,
+        "demand.types.deadline_bound.weibull_scale_hours": 634.74
+      },
+      "b3_mean": 33.754128810715216,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.07346921768793303,
+        "ci_low": -0.11621002177482093,
+        "ci_high": -0.030728413601045133,
+        "bootstrap_ci_low": -0.11251835228588285,
+        "bootstrap_ci_high": -0.031273602482475016
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.09166331873440138,
+        "ci_low": 0.059794254355518404,
+        "ci_high": 0.12353238311328435,
+        "bootstrap_ci_low": 0.062263533189321804,
+        "bootstrap_ci_high": 0.12184520968352214
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.10716956185075377,
+        "equivalent": false
+      }
+    },
+    {
+      "point": "p09",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.3425,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0136,
+        "demand.searches_per_day": 30.2011,
+        "supply.rides_per_day": 16.5088,
+        "weibull_scale_multiplier": 2.1492
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.3425,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0136,
+        "demand.searches_per_day": 30.2011,
+        "supply.rides_per_day": 16.5088,
+        "demand.types.committed.weibull_scale_hours": 5373.0,
+        "demand.types.flexible.weibull_scale_hours": 859.68,
+        "demand.types.opportunistic.weibull_scale_hours": 236.412,
+        "demand.types.deadline_bound.weibull_scale_hours": 1289.52
+      },
+      "b3_mean": 45.14203545047699,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.1295406744989729,
+        "ci_low": -0.18187788006636735,
+        "ci_high": -0.07720346893157848,
+        "bootstrap_ci_low": -0.18016137319942316,
+        "bootstrap_ci_high": -0.0811982577775038
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.014423090027432769,
+        "ci_low": -0.004849046211225663,
+        "ci_high": 0.0336952262660912,
+        "bootstrap_ci_low": -0.003673547049279114,
+        "bootstrap_ci_high": 0.0326503703846335
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.8711172409988162,
+        "equivalent": false
+      }
+    },
+    {
+      "point": "p10",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.8354,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0116,
+        "demand.searches_per_day": 105.6609,
+        "supply.rides_per_day": 11.3926,
+        "weibull_scale_multiplier": 1.4723
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.8354,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0116,
+        "demand.searches_per_day": 105.6609,
+        "supply.rides_per_day": 11.3926,
+        "demand.types.committed.weibull_scale_hours": 3680.75,
+        "demand.types.flexible.weibull_scale_hours": 588.92,
+        "demand.types.opportunistic.weibull_scale_hours": 161.953,
+        "demand.types.deadline_bound.weibull_scale_hours": 883.38
+      },
+      "b3_mean": 19.9302947182303,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.06962579158771653,
+        "ci_low": -0.10333459510693152,
+        "ci_high": -0.03591698806850155,
+        "bootstrap_ci_low": -0.10202889276553025,
+        "bootstrap_ci_high": -0.03821395702409185
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.08603942401995408,
+        "ci_low": 0.05932068249715225,
+        "ci_high": 0.11275816554275592,
+        "bootstrap_ci_low": 0.06136752353889064,
+        "bootstrap_ci_high": 0.11202485747566017
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.03779325167693887,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p11",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.9447,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0038,
+        "demand.searches_per_day": 106.9041,
+        "supply.rides_per_day": 13.926,
+        "weibull_scale_multiplier": 2.0497
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.9447,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0038,
+        "demand.searches_per_day": 106.9041,
+        "supply.rides_per_day": 13.926,
+        "demand.types.committed.weibull_scale_hours": 5124.25,
+        "demand.types.flexible.weibull_scale_hours": 819.88,
+        "demand.types.opportunistic.weibull_scale_hours": 225.467,
+        "demand.types.deadline_bound.weibull_scale_hours": 1229.82
+      },
+      "b3_mean": 23.45718634912502,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.06379373048922889,
+        "ci_low": -0.08919922234317457,
+        "ci_high": -0.0383882386352832,
+        "bootstrap_ci_low": -0.0871081797617073,
+        "bootstrap_ci_high": -0.03997133050587384
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.062420166711032836,
+        "ci_low": 0.031862168274226096,
+        "ci_high": 0.09297816514783958,
+        "bootstrap_ci_low": 0.03382347402766572,
+        "bootstrap_ci_high": 0.09061196837087994
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.003397545645426818,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p12",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.9984,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0465,
+        "demand.searches_per_day": 40.0008,
+        "supply.rides_per_day": 15.5329,
+        "weibull_scale_multiplier": 2.4747
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.9984,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0465,
+        "demand.searches_per_day": 40.0008,
+        "supply.rides_per_day": 15.5329,
+        "demand.types.committed.weibull_scale_hours": 6186.75,
+        "demand.types.flexible.weibull_scale_hours": 989.88,
+        "demand.types.opportunistic.weibull_scale_hours": 272.217,
+        "demand.types.deadline_bound.weibull_scale_hours": 1484.82
+      },
+      "b3_mean": 42.98545686943655,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.2829443904049351,
+        "ci_low": -0.3446924709145357,
+        "ci_high": -0.22119630989533448,
+        "bootstrap_ci_low": -0.3425455712578615,
+        "bootstrap_ci_high": -0.22547006974123443
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.07744828362090886,
+        "ci_low": 0.04811822825091412,
+        "ci_high": 0.1067783389909036,
+        "bootstrap_ci_low": 0.05019462816449124,
+        "bootstrap_ci_high": 0.1053075008402863
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.9999993234894795,
+        "equivalent": false
+      }
+    },
+    {
+      "point": "p13",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.8722,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0285,
+        "demand.searches_per_day": 99.3358,
+        "supply.rides_per_day": 9.8396,
+        "weibull_scale_multiplier": 1.9605
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.8722,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0285,
+        "demand.searches_per_day": 99.3358,
+        "supply.rides_per_day": 9.8396,
+        "demand.types.committed.weibull_scale_hours": 4901.25,
+        "demand.types.flexible.weibull_scale_hours": 784.2,
+        "demand.types.opportunistic.weibull_scale_hours": 215.655,
+        "demand.types.deadline_bound.weibull_scale_hours": 1176.3
+      },
+      "b3_mean": 18.547122108182595,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.05687896270383905,
+        "ci_low": -0.09173580982177398,
+        "ci_high": -0.022022115585904105,
+        "bootstrap_ci_low": -0.09011566793288868,
+        "bootstrap_ci_high": -0.02481203234781097
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.08359666939701996,
+        "ci_low": 0.05211773857608019,
+        "ci_high": 0.11507560021795973,
+        "bootstrap_ci_low": 0.05459595952340473,
+        "bootstrap_ci_high": 0.11327433584799214
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.008544804767298075,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p14",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.6069,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0358,
+        "demand.searches_per_day": 58.5715,
+        "supply.rides_per_day": 11.8508,
+        "weibull_scale_multiplier": 1.2171
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.6069,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0358,
+        "demand.searches_per_day": 58.5715,
+        "supply.rides_per_day": 11.8508,
+        "demand.types.committed.weibull_scale_hours": 3042.75,
+        "demand.types.flexible.weibull_scale_hours": 486.84,
+        "demand.types.opportunistic.weibull_scale_hours": 133.881,
+        "demand.types.deadline_bound.weibull_scale_hours": 730.26
+      },
+      "b3_mean": 30.920476529467923,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.04541067472767703,
+        "ci_low": -0.08770500908975865,
+        "ci_high": -0.0031163403655954033,
+        "bootstrap_ci_low": -0.083643092334555,
+        "bootstrap_ci_high": -0.005430626756962306
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.10332148802600992,
+        "ci_low": 0.0739899378417565,
+        "ci_high": 0.13265303821026334,
+        "bootstrap_ci_low": 0.0755202979508128,
+        "bootstrap_ci_high": 0.130658271367591
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.006606999801244357,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p15",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.3016,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0383,
+        "demand.searches_per_day": 46.3767,
+        "supply.rides_per_day": 8.032,
+        "weibull_scale_multiplier": 1.8896
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.3016,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0383,
+        "demand.searches_per_day": 46.3767,
+        "supply.rides_per_day": 8.032,
+        "demand.types.committed.weibull_scale_hours": 4724.0,
+        "demand.types.flexible.weibull_scale_hours": 755.84,
+        "demand.types.opportunistic.weibull_scale_hours": 207.856,
+        "demand.types.deadline_bound.weibull_scale_hours": 1133.76
+      },
+      "b3_mean": 27.39301355535192,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.06612632890085272,
+        "ci_low": -0.10798763076858425,
+        "ci_high": -0.024265027033121195,
+        "bootstrap_ci_low": -0.1041293669817096,
+        "bootstrap_ci_high": -0.02604353963496469
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.06545148898532674,
+        "ci_low": 0.03818160886840298,
+        "ci_high": 0.0927213691022505,
+        "bootstrap_ci_low": 0.040472993109189455,
+        "bootstrap_ci_high": 0.09148263391908577
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.05435686868166615,
+        "equivalent": false
+      }
+    },
+    {
+      "point": "p16",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.5663,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0314,
+        "demand.searches_per_day": 116.3948,
+        "supply.rides_per_day": 19.3336,
+        "weibull_scale_multiplier": 2.2687
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.5663,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0314,
+        "demand.searches_per_day": 116.3948,
+        "supply.rides_per_day": 19.3336,
+        "demand.types.committed.weibull_scale_hours": 5671.75,
+        "demand.types.flexible.weibull_scale_hours": 907.48,
+        "demand.types.opportunistic.weibull_scale_hours": 249.557,
+        "demand.types.deadline_bound.weibull_scale_hours": 1361.22
+      },
+      "b3_mean": 29.27431221337032,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.05853986062636712,
+        "ci_low": -0.08783365718780621,
+        "ci_high": -0.029246064064928027,
+        "bootstrap_ci_low": -0.08613487272272186,
+        "bootstrap_ci_high": -0.03126528479367893
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.04946531593585549,
+        "ci_low": 0.021938995231329503,
+        "ci_high": 0.07699163664038149,
+        "bootstrap_ci_low": 0.02384306681181404,
+        "bootstrap_ci_high": 0.07581955513234245
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.00356981433565629,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p17",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.2715,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0157,
+        "demand.searches_per_day": 70.4087,
+        "supply.rides_per_day": 16.4627,
+        "weibull_scale_multiplier": 2.7353
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.2715,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0157,
+        "demand.searches_per_day": 70.4087,
+        "supply.rides_per_day": 16.4627,
+        "demand.types.committed.weibull_scale_hours": 6838.25,
+        "demand.types.flexible.weibull_scale_hours": 1094.12,
+        "demand.types.opportunistic.weibull_scale_hours": 300.883,
+        "demand.types.deadline_bound.weibull_scale_hours": 1641.18
+      },
+      "b3_mean": 36.2108113022588,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.06623386977856688,
+        "ci_low": -0.093206627213683,
+        "ci_high": -0.039261112343450755,
+        "bootstrap_ci_low": -0.09199619971115741,
+        "bootstrap_ci_high": -0.04107653940715691
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.018876391712224223,
+        "ci_low": 0.0023743628986069437,
+        "ci_high": 0.0353784205258415,
+        "bootstrap_ci_low": 0.003719329161270171,
+        "bootstrap_ci_high": 0.034661933451373896
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.007964134597126507,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p18",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.8073,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0326,
+        "demand.searches_per_day": 56.5948,
+        "supply.rides_per_day": 18.2526,
+        "weibull_scale_multiplier": 1.1797
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.8073,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0326,
+        "demand.searches_per_day": 56.5948,
+        "supply.rides_per_day": 18.2526,
+        "demand.types.committed.weibull_scale_hours": 2949.25,
+        "demand.types.flexible.weibull_scale_hours": 471.88,
+        "demand.types.opportunistic.weibull_scale_hours": 129.767,
+        "demand.types.deadline_bound.weibull_scale_hours": 707.82
+      },
+      "b3_mean": 39.40829949526741,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.07460317418683525,
+        "ci_low": -0.09903457442888819,
+        "ci_high": -0.05017177394478231,
+        "bootstrap_ci_low": -0.09732070533260037,
+        "bootstrap_ci_high": -0.051172085846793905
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.1356490776283972,
+        "ci_low": 0.09560173502134198,
+        "ci_high": 0.17569642023545243,
+        "bootstrap_ci_low": 0.0997737084708078,
+        "bootstrap_ci_high": 0.17463960640394335
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.021068389091535803,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p19",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.3848,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0254,
+        "demand.searches_per_day": 51.4887,
+        "supply.rides_per_day": 12.7609,
+        "weibull_scale_multiplier": 1.3558
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.3848,
+        "demand.intervention_response.annoyed_cancel_probability": 0.0254,
+        "demand.searches_per_day": 51.4887,
+        "supply.rides_per_day": 12.7609,
+        "demand.types.committed.weibull_scale_hours": 3389.5,
+        "demand.types.flexible.weibull_scale_hours": 542.32,
+        "demand.types.opportunistic.weibull_scale_hours": 149.138,
+        "demand.types.deadline_bound.weibull_scale_hours": 813.48
+      },
+      "b3_mean": 35.11499790173382,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.055575578232788324,
+        "ci_low": -0.09669499544889917,
+        "ci_high": -0.014456161016677481,
+        "bootstrap_ci_low": -0.0948028240817143,
+        "bootstrap_ci_high": -0.0181683738017798
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.06235304578765574,
+        "ci_low": 0.03598795280733423,
+        "ci_high": 0.08871813876797725,
+        "bootstrap_ci_low": 0.03734273789487967,
+        "bootstrap_ci_high": 0.08736263650928215
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 0.017591305321463305,
+        "equivalent": true
+      }
+    },
+    {
+      "point": "p20",
+      "values": {
+        "demand.intervention_response.early_release_probability": 0.7126,
+        "demand.intervention_response.annoyed_cancel_probability": 0.009,
+        "demand.searches_per_day": 91.0536,
+        "supply.rides_per_day": 6.4403,
+        "weibull_scale_multiplier": 1.7966
+      },
+      "settings": {
+        "demand.intervention_response.early_release_probability": 0.7126,
+        "demand.intervention_response.annoyed_cancel_probability": 0.009,
+        "demand.searches_per_day": 91.0536,
+        "supply.rides_per_day": 6.4403,
+        "demand.types.committed.weibull_scale_hours": 4491.5,
+        "demand.types.flexible.weibull_scale_hours": 718.64,
+        "demand.types.opportunistic.weibull_scale_hours": 197.626,
+        "demand.types.deadline_bound.weibull_scale_hours": 1077.96
+      },
+      "b3_mean": 13.459884193500795,
+      "b4": {
+        "seeds": 30,
+        "mean_difference": -0.015721380748866545,
+        "ci_low": -0.047485084344802836,
+        "ci_high": 0.016042322847069745,
+        "bootstrap_ci_low": -0.04522032508938416,
+        "bootstrap_ci_high": 0.01414025552858559
+      },
+      "oracle": {
+        "seeds": 30,
+        "mean_difference": 0.060421341053442684,
+        "ci_low": 0.03568523995377398,
+        "ci_high": 0.08515744215311138,
+        "bootstrap_ci_low": 0.0368447949399625,
+        "bootstrap_ci_high": 0.08328790002973424
+      },
+      "b4_equivalence": {
+        "margin": 0.1,
+        "tost_p": 3.877312814766348e-06,
+        "equivalent": true
+      }
+    }
+  ]
+}

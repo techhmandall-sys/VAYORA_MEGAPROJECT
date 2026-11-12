@@ -1563,3 +1563,81 @@ which writes `experiments/reports/x5-robustness.md` and `.json`.
 
 **Not done here.** No supply cell was run in the shifted world, and no demand cell at 6 rides a day.
 
+
+## 32. Experiment X7: the assumptions moved together
+
+Run against the hypotheses of section 26 (committed in `66d73cc` before any run). `configs/x7.yaml` fixed
+the hypercube's seed (20261108), size and ranges, and how H7.1 and H7.2 are read, on 2026-11-08, before any
+point was drawn. Judged by `python -m experiments.analysis.joint`, which writes
+`experiments/reports/x7-joint.md` and `.json`.
+
+**What was run.** A Latin hypercube of 20 points over five ranges: ρ (early release) 0.25 to 1, η (put off
+by being asked) 0 to 0.05, 30 to 120 searches a day, 6 to 20 rides a day, and every passenger type's
+Weibull scale multiplied by 1 to 3. World h3 and model h3 at every point. B3 is each point's baseline, and
+B4 and ORACLE are compared with it seed by seed over seeds 1 to 30. The points are split across four sweeps,
+`joint_lhs_1` to `_4`, runs `5eeb…019` to `…022`.
+
+- **Three of the four sweeps were stopped part-way on 2026-11-08 and finished on 2026-11-12.** The sweep
+  runner's `--resume` deletes the events of the one (variant, seed) pair being written when a run stopped,
+  runs that pair again and skips every finished pair. A pair's events depend only on its world, variant
+  and seed, so the finished run is the one an unbroken run would have written. Part 2 lacked 6 seeds of
+  ORACLE at p10, part 4 lacked 25 of ORACLE at p20, and part 1 had every pair but no report.
+- **Each run holds 450 (variant, seed) pairs**, 15 variant-cells of 30 seeds, checked in the event log
+  before judging.
+- **The sweep runner was extended for this.** A config may compare several `variants` with one baseline
+  per cell, and `--resume` continues a stopped run.
+
+**Results.** Completed rides per 100 searches; 95% intervals; equivalence p by two one-sided tests at the
+±0.10 margin of section 25.
+
+| Point | ρ | η | Searches a day | Rides a day | Scale × | B3 | ORACLE − B3 | B4 − B3 | Equivalence p |
+|---|---|---|---|---|---|---|---|---|---|
+| p01 | 0.699 | 0.022 | 78.4 | 10.5 | 2.99 | 23.98 | +0.035 (+0.015 to +0.056) | −0.039 (−0.074 to −0.005) | 0.0006 |
+| p02 | 0.530 | 0.043 | 97.2 | 9.3 | 2.59 | 17.72 | +0.049 (+0.031 to +0.067) | −0.013 (−0.046 to +0.020) | < 0.0001 |
+| p03 | 0.483 | 0.022 | 114.4 | 14.5 | 2.33 | 23.07 | +0.032 (+0.005 to +0.059) | −0.026 (−0.058 to +0.006) | < 0.0001 |
+| p04 | 0.458 | 0.005 | 63.3 | 17.5 | 2.87 | 39.59 | +0.041 (+0.019 to +0.062) | −0.007 (−0.046 to +0.033) | < 0.0001 |
+| p05 | 0.895 | 0.002 | 36.3 | 7.4 | 1.64 | 28.95 | +0.181 (+0.139 to +0.223) | +0.099 (+0.054 to +0.145) | 0.4906 |
+| p06 | 0.434 | 0.048 | 83.3 | 8.3 | 2.66 | 18.56 | +0.044 (+0.021 to +0.067) | −0.011 (−0.040 to +0.019) | < 0.0001 |
+| p07 | 0.740 | 0.020 | 72.1 | 13.2 | 1.58 | 30.04 | +0.118 (+0.079 to +0.157) | −0.021 (−0.061 to +0.020) | 0.0002 |
+| p08 | 0.657 | 0.041 | 85.8 | 18.7 | 1.06 | 33.75 | +0.092 (+0.060 to +0.124) | −0.073 (−0.116 to −0.031) | 0.1072 |
+| p09 | 0.343 | 0.014 | 30.2 | 16.5 | 2.15 | 45.14 | +0.014 (−0.005 to +0.034) | −0.130 (−0.182 to −0.077) | 0.8711 |
+| p10 | 0.835 | 0.012 | 105.7 | 11.4 | 1.47 | 19.93 | +0.086 (+0.059 to +0.113) | −0.070 (−0.103 to −0.036) | 0.0378 |
+| p11 | 0.945 | 0.004 | 106.9 | 13.9 | 2.05 | 23.46 | +0.062 (+0.032 to +0.093) | −0.064 (−0.089 to −0.038) | 0.0034 |
+| p12 | 0.998 | 0.046 | 40.0 | 15.5 | 2.47 | 42.99 | +0.077 (+0.048 to +0.107) | −0.283 (−0.345 to −0.221) | 1.0000 |
+| p13 | 0.872 | 0.029 | 99.3 | 9.8 | 1.96 | 18.55 | +0.084 (+0.052 to +0.115) | −0.057 (−0.092 to −0.022) | 0.0085 |
+| p14 | 0.607 | 0.036 | 58.6 | 11.9 | 1.22 | 30.92 | +0.103 (+0.074 to +0.133) | −0.045 (−0.088 to −0.003) | 0.0066 |
+| p15 | 0.302 | 0.038 | 46.4 | 8.0 | 1.89 | 27.39 | +0.065 (+0.038 to +0.093) | −0.066 (−0.108 to −0.024) | 0.0544 |
+| p16 | 0.566 | 0.031 | 116.4 | 19.3 | 2.27 | 29.27 | +0.049 (+0.022 to +0.077) | −0.059 (−0.088 to −0.029) | 0.0036 |
+| p17 | 0.272 | 0.016 | 70.4 | 16.5 | 2.74 | 36.21 | +0.019 (+0.002 to +0.035) | −0.066 (−0.093 to −0.039) | 0.0080 |
+| p18 | 0.807 | 0.033 | 56.6 | 18.3 | 1.18 | 39.41 | +0.136 (+0.096 to +0.176) | −0.075 (−0.099 to −0.050) | 0.0211 |
+| p19 | 0.385 | 0.025 | 51.5 | 12.8 | 1.36 | 35.11 | +0.062 (+0.036 to +0.089) | −0.056 (−0.097 to −0.014) | 0.0176 |
+| p20 | 0.713 | 0.009 | 91.1 | 6.4 | 1.80 | 13.46 | +0.060 (+0.036 to +0.085) | −0.016 (−0.047 to +0.016) | < 0.0001 |
+
+| | Result | Holds |
+|---|---|---|
+| H7.1 | ORACLE − B3 is below 0.20 at all 20 points, so every point is judged; B4 − B3 is not shown within ±0.10 at five: p05, p08, p09, p12 and p15 | **no** |
+| H7.2 | ORACLE − B3 is at most +0.181 (p05), below 0.5 everywhere | yes |
+
+**What the results say.**
+- **Reconfirmation is not neutral once the assumptions move together: mostly it costs a little.** B4 − B3
+  has its whole interval below zero at 13 of the 20 points and above it at one; the median is −0.056. Four
+  of the five failures of H7.1 are losses. The worst is p12, −0.283 (−0.345 to −0.221), where people are
+  often put off by being asked (η 0.046), cancellations are rare (scale ×2.47) and rides plentiful for the
+  demand. An oracle there would gain +0.077.
+- **The one gain needs everything in its favour.** At p05 nearly everyone asked releases early (ρ 0.895),
+  almost nobody is put off (η 0.002) and rides are scarce (7.4 a day). B4 gains +0.099 (+0.054 to +0.145),
+  more than half the oracle's +0.181; its interval straddles the margin.
+- **The ceiling stays low everywhere.** ORACLE − B3 runs from +0.014 to +0.181, well under H7.2's 0.5.
+- **Exploratory, ten rank correlations on 20 points, none of them a finding:**
+  - B4 − B3 falls as supply rises (Spearman −0.53), as X5's 20-rides-a-day cell did (−0.046). Its link
+    with η is weaker (−0.22), and with the oracle's gain nil (−0.08).
+  - The oracle's gain rises with ρ (0.64) and falls as cancellations become rarer (−0.78).
+- **How this squares with X5.** X5 moved supply, demand and the cancellation rate one at a time, with the
+  response at its central values (ρ 0.5, η 0.02), and B4 stayed within the margin in all nine cells. X7
+  moves the response with them, and the margin no longer holds. Where reconfirmation's effect can be told
+  from zero, it is a loss at 13 points of 14.
+- **Not separated here: the model is used outside its world.** Model h3 was trained at scale ×1 and is used
+  at every point, as section 26 fixed. Where cancellations are rarer than it learned, it may ask bookings
+  that were going to travel. This run does not test that reading.
+
+**Not done here.** No point was run with a model retrained for its world, or with B3-KM or EARLIEST.
