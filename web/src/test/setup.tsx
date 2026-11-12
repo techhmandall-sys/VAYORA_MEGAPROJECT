@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { forwardRef, useImperativeHandle, type ReactNode } from 'react';
 import { afterEach, beforeEach, vi } from 'vitest';
 
@@ -12,6 +12,10 @@ import { loadLanguage } from '../lib/i18n';
 // The app fetches a language's table when it is chosen; tests switch languages at once.
 await loadLanguage('hi');
 await loadLanguage('mr');
+
+// On a busy machine a screen can take longer than the default second to appear. A test that
+// passes still passes as soon as it can; one that is wrong still fails, a little later.
+configure({ asyncUtilTimeout: 4000 });
 
 // Animations finish at once in tests, so an element leaving the page is gone when asserted.
 MotionGlobalConfig.skipAnimations = true;

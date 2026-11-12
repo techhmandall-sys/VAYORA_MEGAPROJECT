@@ -1725,13 +1725,14 @@ describe('my vehicles', () => {
 });
 
 describe('holding seats', () => {
-  const placed = { rideId: 12, fromSeq: 0, toSeq: 2, seats: 2, expiresAt: new Date(Date.now() + 5 * 60_000).toISOString() };
+  // Made when a test runs: a time fixed when the file is read has moved on by then.
+  const placed = () => ({ rideId: 12, fromSeq: 0, toSeq: 2, seats: 2, expiresAt: new Date(Date.now() + 5 * 60_000).toISOString() });
 
   it('holds the seats searched for, says it is not a booking, and forgets the hold once booked', async () => {
     signIn('PASSENGER');
     const fetchMock = serve({
       'GET /rides/search': () => json([candidate]),
-      'POST /holds': () => json(placed, 201),
+      'POST /holds': () => json(placed(), 201),
       'POST /bookings': () => json(booking, 201),
     });
     open('/search');
@@ -3986,7 +3987,8 @@ describe('choosing a place', () => {
 });
 
 describe('a driver\'s rides at a glance', () => {
-  const ride = {
+  // Made when a test runs: a ride three hours ahead when the file is read is less by then.
+  const ride = () => ({
     ...rideWithRoute,
     seriesSize: 1,
     maxTwoInBack: false,
@@ -3997,11 +3999,11 @@ describe('a driver\'s rides at a glance', () => {
       { seq: 0, price: 270, seatsTotal: 3, seatsAvailable: 1 },
       { seq: 1, price: 250, seatsTotal: 3, seatsAvailable: 2 },
     ],
-  };
+  });
 
   it('counts what is ahead from the fullest stretch of each ride, and shows each stretch filling', async () => {
     signIn('DRIVER');
-    serve({ 'GET /rides/mine': () => json([ride]) });
+    serve({ 'GET /rides/mine': () => json([ride()]) });
     open('/rides');
 
     expect(await screen.findByText('Rides ahead')).toBeInTheDocument();
@@ -4014,7 +4016,7 @@ describe('a driver\'s rides at a glance', () => {
 
   it('leaves the figures out when nothing is ahead', async () => {
     signIn('DRIVER');
-    serve({ 'GET /rides/mine': () => json([{ ...ride, status: 'COMPLETED' }]) });
+    serve({ 'GET /rides/mine': () => json([{ ...ride(), status: 'COMPLETED' }]) });
     open('/rides');
 
     await screen.findByRole('meter', { name: /Kolhapur → Satara/ });

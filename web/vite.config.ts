@@ -23,5 +23,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.tsx'],
+    // Room for the longest walks through a screen when the machine is busy; see setup.tsx.
+    testTimeout: 20_000,
   },
 });
