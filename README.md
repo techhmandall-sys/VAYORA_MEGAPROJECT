@@ -198,6 +198,7 @@ flowchart LR
 | `core-api` | Spring Boot 3, Java 21, Flyway | Every transaction and every fact |
 | `intel` | FastAPI, Python 3.11 | Inference: the survival model and the contact scheduler; holds no state |
 | `gateway` | Express 4, Socket.IO 4 | Live streams only: ride chat and the driver's position |
+| `mobile` | Expo, React Native, TypeScript | The Android app for passengers and drivers; talks to core-api and the gateway like the web app |
 | `sim`, `experiments` | SimPy, lifelines, scikit-survival, OR-Tools | The research: simulator, model training, variants and sweeps |
 
 No entity lives in two stores. Why each thing lives where it does is in
@@ -313,6 +314,18 @@ The Python suite needs PostgreSQL running (`docker compose up -d --wait postgres
 a throwaway schema. Two tests keep the languages honest: one fails if the app shows text that is not
 translated, the other if the server can send a message the app cannot translate.
 
+## On a phone
+
+The **Android app** in [`mobile/`](mobile/README.md) gives passengers and drivers VAYORA on a phone, in
+all three languages: search, book, boarding codes, chat and the driver's position for passengers;
+vehicles, publishing, requests and the trip for drivers. It runs on any Android phone through the
+free Expo Go app, from this computer, or as an APK built in Expo's cloud. Administrators, profiles
+and the assistant stay on the website.
+
+```sh
+cd mobile && npm ci && npx expo start     # then scan the QR code with Expo Go on the same Wi-Fi
+```
+
 ## Reproducing the research
 
 ```sh
@@ -378,6 +391,7 @@ The binding project rules (frozen parameters, the architecture rule, research in
 | Path | What |
 |---|---|
 | `web/` | Vite + React 18 + TypeScript + Tailwind |
+| `mobile/` | Expo + React Native + TypeScript: the Android app ([how to run it](mobile/README.md)) |
 | `core-api/` | Spring Boot 3, Java 21, `com.dypcet.vayora`, Flyway migrations |
 | `intel/` | FastAPI, Python 3.11: durability model, explanations, contact scheduler, live what-if, assistant |
 | `gateway/` | Express 4 + Socket.IO 4, JWT verification |

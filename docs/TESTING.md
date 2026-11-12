@@ -150,6 +150,15 @@ and again every number came out exactly as committed.
 
 ## Checked by hand against the running stack
 
+- **The Android app's journeys** (2026-11-12, its web build in a phone-sized headless Edge against the
+  running stack, with `/api` and `/socket.io` proxied to core-api and the gateway as the edge does online):
+  a driver and a passenger at once. The driver signed up, added a vehicle, published Kolhapur to Pune for
+  later that day with the route's suggested price, saw the passenger's booking, started the ride,
+  chatted, shared a position, completed. The passenger signed up, found the ride with its fare, booked
+  it instantly, saw it confirmed with a boarding code, chatted, saw the driver's position arrive on the
+  map, rated the driver. Notifications named who booked; the app switched to Hindi and back. 14 of 14
+  steps, no page errors; both accounts deleted afterwards through `DELETE /me`. Not yet run on a phone.
+
 - **Sign in with Google, with Google itself** (2026-11-02): with a real client ID, the page loaded Google's real button at http://localhost:5173/login with no origin error, in headless Edge. A team member then signed in with a real Gmail account. The account's `email_verified_at` was set at that moment and `google_sub` is filled, which only the linking step does. That person said only "next", so the screen after signing in was not reported.
 - **Names in Devanagari on the PDF receipt** (2026-11-01): drawn to an image and looked at, with conjuncts and vowel signs such as प्रिया, क्षितिज, ज्ञानेश्वर and कार्तिक. That look is what found PDFBox's own shaping printing कार्तिक as कातर्कि, which a test could not have said was wrong. A small program then loaded the font and shaped text in the image that actually runs (`eclipse-temurin:21-jre`, no desktop). A whole receipt through the running app with a Devanagari name was not tried, to keep test accounts out of the real database.
 - **The interface staying current** (2026-11-01, several headless Edge browsers against a throwaway stack with real routing, gateway and databases, nothing reloaded): a seat booked by someone else showed on another's results in 19.4 s; left open 45 seconds more, that page searched once, read seats 4 times, and `search_issued` stayed at 1. A request reached the driver's screen in 11.7 s and counted in the tab's title; the answer turned the booking Confirmed in 14.7 s. With a ride under way the driver's position reached the passenger, the marker moved 7.5 s after the driver did and glided, and a chat message arrived at once. Each screen was looked at in light and dark at 1280, 820 and 390 pixels with no sideways scroll. The stack and its volumes were then removed.
