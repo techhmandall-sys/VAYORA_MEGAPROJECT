@@ -3,6 +3,10 @@
 
 import { z } from 'zod';
 
+// Zod would otherwise try to compile its checks with `new Function`, which the online setup's content
+// security policy refuses (and reports, on every page). It falls back either way; this skips the attempt.
+z.config({ jitless: true });
+
 // A coerced number is written z.coerce.number<number>() throughout: the field holds a number
 // as far as the form's types go, as it did before zod 4 typed the input as unknown.
 

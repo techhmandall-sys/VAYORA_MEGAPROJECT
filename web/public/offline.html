@@ -25,9 +25,9 @@
       h1 { font-size: 22px; margin: 16px 0 4px; }
       p { margin: 0 0 4px; color: var(--muted); }
       .lang { margin-top: 16px; }
-      button { margin-top: 20px; border: 0; border-radius: 999px; padding: 12px 22px; font: inherit; font-weight: 600;
-        color: #fff; background: #0f766e; cursor: pointer; }
-      button:focus-visible { outline: 3px solid var(--tint); outline-offset: 3px; }
+      .again { display: inline-block; margin-top: 20px; border-radius: 999px; padding: 12px 22px; font-weight: 600;
+        color: #fff; background: #0f766e; text-decoration: none; }
+      .again:focus-visible { outline: 3px solid var(--tint); outline-offset: 3px; }
     </style>
   </head>
   <body>
@@ -42,7 +42,9 @@
       <p>VAYORA needs a connection to show rides and bookings. Try again once you are back online.</p>
       <p class="lang" lang="hi">आप ऑफ़लाइन हैं। सवारियाँ और बुकिंग देखने के लिए इंटरनेट चाहिए।</p>
       <p lang="mr">तुम्ही ऑफलाइन आहात. प्रवास आणि बुकिंग पाहण्यासाठी इंटरनेट हवे.</p>
-      <button type="button" onclick="location.reload()">Try again · फिर कोशिश करें · पुन्हा प्रयत्न करा</button>
+      <!-- A link to this same address loads it again, with no script: the online setup's content
+           security policy allows none written into a page. -->
+      <a class="again" href="">Try again · फिर कोशिश करें · पुन्हा प्रयत्न करा</a>
     </main>
   </body>
 </html>

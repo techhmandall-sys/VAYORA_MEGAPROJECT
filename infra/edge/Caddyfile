@@ -4,7 +4,11 @@
 	encode gzip
 
 	header {
-		Strict-Transport-Security "max-age=31536000"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(self), geolocation=(self)"
 		-Server
 	}
 
@@ -25,14 +29,21 @@
 		reverse_proxy gateway:3000
 	}
 
-	# intel: only live what-if runs, which check an administrator's token themselves. Its model
-	# and scheduler have no authentication and must never be reachable from here.
+	# intel: live what-if runs, which check an administrator's token themselves, and the assistant,
+	# which checks a member's. Its model and scheduler have no authentication and must never be
+	# reachable from here.
 	handle /v1/whatif/* {
 		reverse_proxy intel:8000
 	}
+	handle /v1/assistant* {
+		reverse_proxy intel:8000
+	}
 
-	# Everything else is the app.
+	# Everything else is the app. Its pages may run only VAYORA's own scripts and Google's sign-in,
+	# show the map's tiles, and talk to this address and Google's sign-in, as Google's guide to a
+	# content security policy for its button lists.
 	handle {
+		header Content-Security-Policy "default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: blob: https://*.tile.openstreetmap.org; connect-src 'self' wss://{$VAYORA_DOMAIN} https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 		reverse_proxy web:80
 	}
 }
