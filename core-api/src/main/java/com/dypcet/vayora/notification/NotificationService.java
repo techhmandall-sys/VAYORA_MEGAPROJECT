@@ -211,6 +211,38 @@ public class NotificationService {
                 .map(NotificationService::toNotification).toList();
     }
 
+    /** Every notification the member has, newest first, for their copy of their own data. */
+    public List<Notification> everyFor(long userId) {
+        Query query = new Query(Criteria.where("userId").is(userId))
+                .with(Sort.by(Sort.Direction.DESC, "createdAt", "_id"));
+        return mongo.find(query, Document.class, COLLECTION).stream()
+                .map(NotificationService::toNotification).toList();
+    }
+
+    /**
+     * Removes every notification of a member whose account is being deleted: once the deletion
+     * commits, if called inside its transaction. Never fails its caller; a failure is logged.
+     */
+    public void forget(long userId) {
+        Runnable remove = () -> {
+            try {
+                mongo.remove(new Query(Criteria.where("userId").is(userId)), COLLECTION);
+            } catch (RuntimeException e) {
+                log.warn("Notifications of deleted user {} not removed: {}", userId, e.getMessage());
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    remove.run();
+                }
+            });
+        } else {
+            remove.run();
+        }
+    }
+
     public long unreadCount(long userId) {
         return mongo.count(new Query(unreadOf(userId)), COLLECTION);
     }

@@ -45,6 +45,19 @@ public class AuthController {
     public record TokenResponse(String accessToken, long expiresInSeconds, User user) {
     }
 
+    /** @param login the email address or phone number the account signs in with */
+    public record ForgotPasswordRequest(@NotBlank @Size(max = 254) String login) {
+    }
+
+    public record ResetPasswordRequest(
+            @NotBlank @Size(max = 254) String login,
+            @NotBlank @Pattern(regexp = "^[0-9]{6}$") String code,
+            @NotBlank @Size(min = 8, max = 72) String newPassword) {
+    }
+
+    public record MessageResponse(String message) {
+    }
+
     /** @param role passenger or driver, needed only to create an account */
     public record GoogleRequest(@NotBlank @Size(max = 4096) String idToken, UserRole role) {
     }
@@ -57,13 +70,17 @@ public class AuthController {
     private final TokenService tokens;
     private final ReferralService referrals;
     private final GoogleSignInService google;
+    private final PasswordResetService passwordReset;
+    private final TokenRevocationService revocations;
 
     public AuthController(IdentityService identity, TokenService tokens, ReferralService referrals,
-            GoogleSignInService google) {
+            GoogleSignInService google, PasswordResetService passwordReset, TokenRevocationService revocations) {
         this.google = google;
         this.identity = identity;
         this.tokens = tokens;
         this.referrals = referrals;
+        this.passwordReset = passwordReset;
+        this.revocations = revocations;
     }
 
     /** The member's referral code, and how many have signed up and travelled with it. */
@@ -93,6 +110,27 @@ public class AuthController {
         return tokenFor(oneOf(request.email(), request.phone())
                 ? identity.authenticateByPhone(request.phone(), request.password())
                 : identity.authenticate(request.email(), request.password()));
+    }
+
+    /** Ends this session: the token stops working at once instead of when it expires. */
+    @PostMapping("/auth/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@AuthenticationPrincipal Jwt jwt) {
+        revocations.revoke(jwt);
+    }
+
+    /** Sends a reset code if the address is a member's. The answer is the same either way. */
+    @PostMapping("/auth/forgot-password")
+    public MessageResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordReset.requestReset(request.login());
+        return new MessageResponse("If that account exists, a reset code has been sent.");
+    }
+
+    /** Sets a new password with the code that was sent. Every failure gets the same answer. */
+    @PostMapping("/auth/reset-password")
+    public MessageResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordReset.resetPassword(request.login(), request.code(), request.newPassword());
+        return new MessageResponse("Your password has been reset. You can now sign in.");
     }
 
     /** True for a phone, false for an email; refuses neither or both. */

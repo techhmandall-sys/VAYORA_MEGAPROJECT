@@ -51,6 +51,8 @@ Access is through `JdbcTemplate` with hand-written SQL. There is no ORM.
 | V37 | `document_checks`: staff checks of what a driver declared |
 | V38, V39 | Tax invoices and credit notes, removed by V40 |
 | V40 | Paying the driver directly: drops `passes`, `ledger_entries`, `refunds`, `settlements`, the tax tables and `rides.pay_after_ride`; on `payment_intents` drops the fee, provider and deferred columns, allows only `CASH` and `UPI`; deletes simulated settled payments, moves simulated holds to `DEFERRED`; adds `driver_payment_details` |
+| V41 | `password_reset_codes`: codes that reset a forgotten password |
+| V42 | Deleted accounts: the status `DELETED` and `users.deleted_at`; a deleted account needs neither email nor phone |
 
 ### Tables
 
@@ -58,9 +60,10 @@ Access is through `JdbcTemplate` with hand-written SQL. There is no ORM.
 
 | Table | One row is | Notes |
 |---|---|---|
-| `users` | An account | Unique email, BCrypt password hash, one role, `ACTIVE` or `SUSPENDED`, optional phone, when email and phone were confirmed, the kind of identity document a driver declared |
+| `users` | An account | Unique email, BCrypt password hash, one role, `ACTIVE`, `SUSPENDED` or `DELETED` (with when), optional phone, when email and phone were confirmed, the kind of identity document a driver declared. A deleted account keeps its row, with its name, email, phone, password, Google link, referral code and declaration removed |
 | `profiles` | What a member says about themselves | Bio, birth year, gender, smoking, pets, music, chattiness. Every column optional; null means not said |
 | `verification_codes` | A one-time code sent to an address | Only the hash is stored, with the address it was sent to, an expiry, and a count of wrong attempts |
+| `password_reset_codes` | A code that resets a forgotten password | As `verification_codes`: only the hash, the address, an expiry, wrong attempts, and when it was spent. A new code spends the earlier one |
 | `emergency_contacts` | Someone to tell in an emergency | At most three per member, enforced in the service under a row lock |
 | `sos_alerts` | An emergency button press | Optional ride and position; how many contacts a message was handed over for, and by which sender |
 
@@ -102,7 +105,7 @@ Access is through `JdbcTemplate` with hand-written SQL. There is no ORM.
 | `rides.status` | `SCHEDULED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED` |
 | `bookings.status` | `PENDING`, `CONFIRMED`, `REJECTED`, `CANCELLED`, `COMPLETED`, `NO_SHOW` |
 | `payment_intents.status` | `DEFERRED`, `DUE`, `SETTLED`, `VOID` |
-| `users.status` | `ACTIVE`, `SUSPENDED` |
+| `users.status` | `ACTIVE`, `SUSPENDED`, `DELETED` |
 | `reports.status` | `OPEN`, `RESOLVED`, `DISMISSED` |
 | `sos_alerts.status` | `OPEN`, `ACKNOWLEDGED` |
 
@@ -127,14 +130,16 @@ Allowed booking transitions are defined in one place, `BookingStatus`, and teste
 
 - No table for seat holds: they live in Redis (below).
 - No table for chat, GPS or notifications: MongoDB.
-- No soft delete. Nothing a user creates can be deleted through the API except an
-  emergency contact, which is deleted outright.
+- No soft delete, except of a whole account. A deleted account's row stays, marked `DELETED`,
+  because rides, bookings, ratings, reports and the event log refer to it. The rows that held
+  only the member's own data (profile, photo, contacts, codes, notification choices, push
+  subscriptions, UPI details, vehicle photos) are deleted outright.
 
 ## MongoDB 7
 
 | Collection | Written by | One document is | Kept |
 |---|---|---|---|
-| `notifications` | core-api | A message for one user, with a type, an optional booking, and when it was read | Indefinitely |
+| `notifications` | core-api | A message for one user, with a type, an optional booking, and when it was read | Until the member deletes their account |
 | `chat_messages` | gateway | One chat message on a ride | Indefinitely |
 | `gps_traces` | gateway | One reported driver position | 7 days, by a TTL index |
 
@@ -143,13 +148,15 @@ commits, so nobody is told about something that was rolled back.
 
 ## Redis 7
 
-Everything in Redis may be lost at any time without making anything wrong.
+Everything in Redis may be lost at any time without making anything wrong, with one
+exception: a signed-out token works again, until it expires, if its key is lost.
 
 | Key | Type | Holds | Expires |
 |---|---|---|---|
 | `osrm:<the stops' coordinates>` | string | A cached road route | 7 days |
 | `holds:<ride id>` | sorted set | Members `passenger:from:to:seats`, scored by when each lapses | With its last member |
 | `hold:of:<passenger id>` | string | That passenger's one hold | 5 minutes |
+| `token:revoked:<SHA-256 of the token>` | string | A token signed out, or the one that deleted its account | When the token would have expired |
 
 A seat hold never changes a count in PostgreSQL. Booking and search subtract live holds
 by other passengers from what PostgreSQL says is free; if Redis cannot be reached they

@@ -21,6 +21,7 @@ function page<K extends string>(load: () => Promise<Record<K, ComponentType>>, n
 const { passenger, driver, backOffice, receipts } = load;
 const LoginPage = page(load.auth, 'LoginPage');
 const RegisterPage = page(load.auth, 'RegisterPage');
+const ForgotPasswordPage = page(load.auth, 'ForgotPasswordPage');
 const SearchPage = page(passenger, 'SearchPage');
 const BookingsPage = page(passenger, 'BookingsPage');
 const PaymentsPage = page(load.payments, 'PaymentsPage');
@@ -84,6 +85,7 @@ export function AppRoutes() {
         <Route index element={<Home />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route element={<RequireRole role="PASSENGER" />}>
           <Route path="search" element={<SearchPage />} />
           <Route path="bookings" element={<BookingsPage />} />

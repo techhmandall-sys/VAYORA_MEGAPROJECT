@@ -25,6 +25,27 @@ export const loginSchema = z.object({
 });
 export type LoginForm = z.infer<typeof loginSchema>;
 
+export const forgotPasswordSchema = z.object({
+  login: z
+    .string()
+    .trim()
+    .min(1, msg('Enter your email or phone number'))
+    .refine((value) => (value.includes('@') ? z.string().email().safeParse(value).success : PHONE.test(value)), {
+      message: msg('Enter a valid email or phone number'),
+    }),
+});
+export type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .min(1, msg('Enter the 6-digit reset code'))
+    .regex(/^[0-9]{6}$/, msg('Enter the 6-digit reset code')),
+  newPassword: z.string().min(8, msg('Use at least 8 characters')).max(72, msg('Use at most 72 characters')),
+});
+export type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
+
 export const registerSchema = z
   .object({
     fullName: z.string().trim().min(1, msg('Enter your name')).max(100),

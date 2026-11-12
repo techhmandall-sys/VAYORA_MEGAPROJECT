@@ -1313,6 +1313,10 @@ export const mr: Record<string, string> = {
     'तो कोड आता वैध नाही. नवीन कोड मागवा.',
   'That code is not right':
     'तो कोड बरोबर नाही',
+  'That code is wrong or has expired. Request a new one.':
+    'तो कोड चुकीचा आहे किंवा त्याची मुदत संपली आहे. नवीन कोड मागवा.',
+  'Cancel your rides and bookings still to come, or let them finish, before deleting your account':
+    'खाते हटवण्यापूर्वी तुमचे पुढील प्रवास आणि बुकिंग रद्द करा, किंवा ते पूर्ण होऊ द्या',
   'That is not a photo VAYORA can read: use a JPEG or PNG':
     'VAYORA हा फोटो वाचू शकत नाही: JPEG किंवा PNG वापरा',
   'That is not a push service VAYORA sends to':
@@ -2372,6 +2376,30 @@ export const mr: Record<string, string> = {
   // Signing in and up: the password shown, the welcome, the invitation tucked away
   'Show password':
     'पासवर्ड दाखवा',
+  'Forgot password?':
+    'पासवर्ड विसरलात?',
+  'Reset password':
+    'पासवर्ड रीसेट करा',
+  'Enter your details to reset your password.':
+    'तुमचा पासवर्ड रीसेट करण्यासाठी तुमचा तपशील प्रविष्ट करा.',
+  'If that account exists, a reset code has been sent.':
+    'ते खाते अस्तित्वात असल्यास, रीसेट कोड पाठवला गेला आहे.',
+  'Sending code…':
+    'कोड पाठवत आहे…',
+  'Send reset code':
+    'रीसेट कोड पाठवा',
+  'Reset code':
+    'रीसेट कोड',
+  'New password':
+    'नवीन पासवर्ड',
+  'Resetting password…':
+    'पासवर्ड रीसेट करत आहे…',
+  'Your password has been reset. You can now sign in.':
+    'तुमचा पासवर्ड रीसेट केला गेला आहे. आता तुम्ही साइन इन करू शकता.',
+  'Back to sign in':
+    'साइन इन वर परत जा',
+  'Enter the 6-digit reset code':
+    '6 अंकी रीसेट कोड प्रविष्ट करा',
   'Welcome back. Your bookings and rides are where you left them.':
     'पुन्हा स्वागत आहे. तुमच्या बुकिंग आणि राइड तुम्ही सोडल्या तिथेच आहेत.',
   'Have an invitation code?':
@@ -2495,4 +2523,23 @@ export const mr: Record<string, string> = {
     '1 बुकिंग झाली',
   '{n} bookings':
     '{n} बुकिंग झाल्या',
+  // Privacy and personal data management
+  'Privacy and data':
+    'गोपनीयता आणि डेटा',
+  'Your data and account':
+    'तुमचा डेटा आणि खाते',
+  'Download a copy of your account, profile, rides, and bookings as a JSON file.':
+    'तुमचे खाते, प्रोफाइल, राइड्स आणि बुकिंगची एक प्रत JSON फाइल म्हणून डाउनलोड करा.',
+  'Downloading…':
+    'डाउनलोड होत आहे…',
+  'Download my data':
+    'माझा डेटा डाउनलोड करा',
+  'Delete account':
+    'खाते हटवा',
+  'Remove your personal details and sign out. This cannot be undone.':
+    'तुमचा वैयक्तिक तपशील काढून टाका आणि साइन आउट करा. हे पूर्ववत केले जाऊ शकत नाही.',
+  'Yes, delete my account':
+    'होय, माझे खाते हटवा',
+  'All your personal information will be permanently deleted. Active rides or bookings must be finished first.':
+    'तुमची सर्व वैयक्तिक माहिती कायमची हटवली जाईल. सक्रिय राइड्स किंवा बुकिंग आधी पूर्ण असणे आवश्यक आहे.',
 };

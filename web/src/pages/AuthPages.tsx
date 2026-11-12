@@ -9,9 +9,19 @@ import { GoogleSignIn } from '../components/google';
 import { afterSignIn } from '../components/Layout';
 import { useLargeTitle } from '../components/pageTitle';
 import { Button, More, Notice, PasswordField, TextField } from '../components/ui';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useT } from '../lib/i18n';
-import { loginSchema, registerSchema, type LoginForm, type RegisterForm } from '../lib/schemas';
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  registerSchema,
+  resetPasswordSchema,
+  type ForgotPasswordForm,
+  type LoginForm,
+  type RegisterForm,
+  type ResetPasswordForm,
+} from '../lib/schemas';
 
 /**
  * Signing in and signing up, beside the brand: the front page's road and promise next to the
@@ -76,6 +86,11 @@ export function LoginPage() {
         {failure && <Notice tone="error">{failure}</Notice>}
         <TextField label={t('Email or phone number')} autoComplete="username" error={formState.errors.login?.message} {...register('login')} />
         <PasswordField label={t('Password')} autoComplete="current-password" error={formState.errors.password?.message} {...register('password')} />
+        <div className="flex justify-end">
+          <Link to="/forgot-password" className="text-sm font-medium text-teal-800 underline underline-offset-2">
+            {t('Forgot password?')}
+          </Link>
+        </div>
         <Button type="submit" className="w-full" disabled={formState.isSubmitting}>
           {formState.isSubmitting ? t('Signing in…') : t('Sign in')}
         </Button>
@@ -85,6 +100,105 @@ export function LoginPage() {
         {t('New here?')}{' '}
         <Link to="/register" className="font-semibold text-teal-800 underline underline-offset-2">
           {t('Create an account')}
+        </Link>
+      </p>
+    </AuthShell>
+  );
+}
+
+export function ForgotPasswordPage() {
+  const t = useT();
+  const { user } = useAuth();
+  const [step, setStep] = useState<'request' | 'reset' | 'done'>('request');
+  const [loginValue, setLoginValue] = useState('');
+  const [failure, setFailure] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const requestForm = useForm<ForgotPasswordForm>({ resolver: zodResolver(forgotPasswordSchema) });
+  const resetForm = useForm<ResetPasswordForm>({ resolver: zodResolver(resetPasswordSchema) });
+
+  if (user) return <Navigate to={afterSignIn(user.role)} replace />;
+
+  const onRequest = requestForm.handleSubmit(async (data) => {
+    setFailure(null);
+    try {
+      await api<{ message: string }>('/auth/forgot-password', {
+        method: 'POST',
+        body: { login: data.login },
+      });
+      setLoginValue(data.login);
+      setSuccess(t('If that account exists, a reset code has been sent.'));
+      setStep('reset');
+    } catch (error) {
+      setFailure((error as Error).message);
+    }
+  });
+
+  const onReset = resetForm.handleSubmit(async (data) => {
+    setFailure(null);
+    try {
+      await api<{ message: string }>('/auth/reset-password', {
+        method: 'POST',
+        body: { login: loginValue, code: data.code, newPassword: data.newPassword },
+      });
+      setStep('done');
+    } catch (error) {
+      setFailure((error as Error).message);
+    }
+  });
+
+  return (
+    <AuthShell title={t('Reset password')} lead={t('Enter your details to reset your password.')}>
+      {failure && <Notice tone="error">{failure}</Notice>}
+      {success && step === 'reset' && <Notice tone="success">{success}</Notice>}
+
+      {step === 'request' && (
+        <form onSubmit={onRequest} noValidate className="space-y-4">
+          <TextField
+            label={t('Email or phone number')}
+            autoComplete="username"
+            error={requestForm.formState.errors.login?.message}
+            {...requestForm.register('login')}
+          />
+          <Button type="submit" className="w-full" disabled={requestForm.formState.isSubmitting}>
+            {requestForm.formState.isSubmitting ? t('Sending code…') : t('Send reset code')}
+          </Button>
+        </form>
+      )}
+
+      {step === 'reset' && (
+        <form onSubmit={onReset} noValidate className="space-y-4">
+          <TextField
+            label={t('Reset code')}
+            placeholder="123456"
+            autoComplete="one-time-code"
+            error={resetForm.formState.errors.code?.message}
+            {...resetForm.register('code')}
+          />
+          <PasswordField
+            label={t('New password')}
+            autoComplete="new-password"
+            error={resetForm.formState.errors.newPassword?.message}
+            {...resetForm.register('newPassword')}
+          />
+          <Button type="submit" className="w-full" disabled={resetForm.formState.isSubmitting}>
+            {resetForm.formState.isSubmitting ? t('Resetting password…') : t('Reset password')}
+          </Button>
+        </form>
+      )}
+
+      {step === 'done' && (
+        <div className="space-y-4">
+          <Notice tone="success">{t('Your password has been reset. You can now sign in.')}</Notice>
+          <Link to="/login" className="block">
+            <Button className="w-full">{t('Sign in')}</Button>
+          </Link>
+        </div>
+      )}
+
+      <p className="text-sm text-slate-600">
+        <Link to="/login" className="font-semibold text-teal-800 underline underline-offset-2">
+          {t('Back to sign in')}
         </Link>
       </p>
     </AuthShell>

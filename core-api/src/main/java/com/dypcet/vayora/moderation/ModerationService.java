@@ -147,10 +147,10 @@ public class ModerationService {
         audit.record(adminId, "USER_REINSTATED", "user", userId, Map.of());
     }
 
-    /** Administrators are not suspended or reinstated from here. */
+    /** Administrators are not suspended or reinstated from here, and a deleted account stays deleted. */
     private void setStatus(long userId, String status) {
         int changed = jdbc.update(
-                "UPDATE users SET status = ? WHERE id = ? AND role <> 'ADMIN'", status, userId);
+                "UPDATE users SET status = ? WHERE id = ? AND role <> 'ADMIN' AND status <> 'DELETED'", status, userId);
         if (changed == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Member not found");
         }

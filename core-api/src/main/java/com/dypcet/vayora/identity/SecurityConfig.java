@@ -37,20 +37,24 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, JdbcTemplate jdbc) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, JdbcTemplate jdbc,
+            TokenRevocationService tokenRevocations) throws Exception {
         http
                 // Bearer tokens in a header, no cookies: there is no session to forge.
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health", "/api/v1/auth/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/api/v1/auth/logout").authenticated()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
                         // The API's description is public; every endpoint it describes still checks its token.
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(roleConverter())))
-                .addFilterAfter(new SuspensionFilter(jdbc), BearerTokenAuthenticationFilter.class);
+                .addFilterAfter(new TokenRevocationFilter(tokenRevocations), BearerTokenAuthenticationFilter.class)
+                .addFilterAfter(new SuspensionFilter(jdbc), TokenRevocationFilter.class);
         return http.build();
     }
 

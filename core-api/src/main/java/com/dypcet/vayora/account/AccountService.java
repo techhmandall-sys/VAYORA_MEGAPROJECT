@@ -3,13 +3,16 @@ package com.dypcet.vayora.account;
 import com.dypcet.vayora.account.MessageSender.Channel;
 import com.dypcet.vayora.check.DocumentCheckService;
 import com.dypcet.vayora.identity.Phones;
+import com.dypcet.vayora.notification.NotificationService;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -72,6 +75,7 @@ public class AccountService {
     private final MessageSender sender;
     private final Clock clock;
     private final DocumentCheckService checks;
+    private final NotificationService notifications;
     private final Duration codeTtl;
     private final Duration resendAfter;
     private final int maxAttempts;
@@ -79,7 +83,7 @@ public class AccountService {
     private final SecureRandom random = new SecureRandom();
 
     public AccountService(JdbcTemplate jdbc, PasswordEncoder encoder, MessageSender sender,
-            Clock clock, DocumentCheckService checks,
+            Clock clock, DocumentCheckService checks, NotificationService notifications,
             @Value("${vayora.verification.code-ttl}") Duration codeTtl,
             @Value("${vayora.verification.resend-after}") Duration resendAfter,
             @Value("${vayora.verification.max-attempts}") int maxAttempts,
@@ -89,6 +93,7 @@ public class AccountService {
         this.sender = sender;
         this.clock = clock;
         this.checks = checks;
+        this.notifications = notifications;
         this.codeTtl = codeTtl;
         this.resendAfter = resendAfter;
         this.maxAttempts = maxAttempts;
@@ -304,6 +309,98 @@ public class AccountService {
                 contactId, userId) == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Contact not found");
         }
+    }
+
+    // ---- the member's own data ---------------------------------------------------
+
+    /**
+     * Everything VAYORA keeps about the member, as one document they can save (their right of
+     * access). Rides and bookings are listed as the member's own records: what another member
+     * entered about themselves is not included.
+     */
+    public Map<String, Object> export(long userId) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("exportedAt", clock.instant().toString());
+        data.put("account", jdbc.queryForMap("""
+                SELECT id, full_name, email, email_verified_at, phone, phone_verified_at, role, status,
+                       referral_code, id_document, google_sub IS NOT NULL AS signs_in_with_google, created_at
+                FROM users WHERE id = ?""", userId));
+        data.put("profile", profile(userId));
+        data.put("emergencyContacts", contacts(userId));
+        data.put("notificationChoices", jdbc.queryForList(
+                "SELECT email, sms, updated_at FROM notification_preferences WHERE user_id = ?", userId));
+        data.put("vehicles", jdbc.queryForList("""
+                SELECT id, make, model, year, colour, seats, comfort, luggage, electric, battery_kwh,
+                       consumption_kwh_per_100km, insurer, insured_until, created_at
+                FROM vehicles WHERE owner_id = ? ORDER BY id""", userId));
+        data.put("paymentDetails", jdbc.queryForList("""
+                SELECT upi_id, qr_png IS NOT NULL AS has_qr_code, updated_at
+                FROM driver_payment_details WHERE user_id = ?""", userId));
+        data.put("documentChecks", jdbc.queryForList("""
+                SELECT kind, vehicle_id, status, requested_at, decided_at, note
+                FROM document_checks WHERE driver_id = ? ORDER BY id""", userId));
+        data.put("ridesOffered", jdbc.queryForList("""
+                SELECT r.id, r.departure_time, r.status, r.seats_offered, r.notes, r.created_at,
+                       (SELECT name FROM ride_stops WHERE ride_id = r.id ORDER BY seq LIMIT 1) AS from_stop,
+                       (SELECT name FROM ride_stops WHERE ride_id = r.id ORDER BY seq DESC LIMIT 1) AS to_stop
+                FROM rides r WHERE r.driver_id = ? ORDER BY r.id""", userId));
+        data.put("bookings", jdbc.queryForList("""
+                SELECT b.id, b.ride_id, s.name AS from_stop, t.name AS to_stop, b.seats, b.price, b.status,
+                       b.created_at
+                FROM bookings b
+                JOIN ride_stops s ON s.ride_id = b.ride_id AND s.seq = b.from_seq
+                JOIN ride_stops t ON t.ride_id = b.ride_id AND t.seq = b.to_seq
+                WHERE b.passenger_id = ? ORDER BY b.id""", userId));
+        data.put("ratingsGiven", jdbc.queryForList(
+                "SELECT booking_id, stars, comment, created_at FROM ratings WHERE rater_id = ? ORDER BY id", userId));
+        data.put("ratingsReceived", jdbc.queryForList(
+                "SELECT booking_id, stars, comment, created_at FROM ratings WHERE ratee_id = ? ORDER BY id", userId));
+        data.put("emergencyAlerts", jdbc.queryForList("""
+                SELECT id, ride_id, status, contacts_told, contacts_missed, created_at
+                FROM sos_alerts WHERE user_id = ? ORDER BY id""", userId));
+        data.put("notifications", notifications.everyFor(userId));
+        return data;
+    }
+
+    /**
+     * Deletes the member's account (their right to erasure). Whatever identifies them goes: name,
+     * email, phone, password, Google link, referral code, declared document, profile, photo,
+     * emergency contacts, codes, notification choices, push subscriptions, payment details,
+     * vehicle photos and in-app notifications. Checks of their documents are withdrawn. The row
+     * stays, marked deleted, because rides, bookings, ratings, reports and the event log refer to
+     * it; there the member appears as "Deleted member". Refused while the member drives or holds a
+     * seat on a ride that is still to come, since other people are counting on it.
+     */
+    @Transactional
+    public void delete(long userId) {
+        // Taken first, so the checks below and the erasure see the same account.
+        jdbc.queryForObject("SELECT id FROM users WHERE id = ? FOR UPDATE", Long.class, userId);
+        boolean committed = jdbc.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM rides WHERE driver_id = ? AND status IN ('SCHEDULED', 'IN_PROGRESS'))
+                    OR EXISTS (SELECT 1 FROM bookings WHERE passenger_id = ? AND status IN ('PENDING', 'CONFIRMED'))""",
+                Boolean.class, userId, userId);
+        if (committed) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Cancel your rides and bookings still to come, or let them finish, before deleting your account");
+        }
+        jdbc.update("""
+                UPDATE users
+                SET full_name = 'Deleted member', email = NULL, email_verified_at = NULL, phone = NULL,
+                    phone_verified_at = NULL, password_hash = '!', google_sub = NULL, referral_code = NULL,
+                    id_document = NULL, status = 'DELETED', deleted_at = ?
+                WHERE id = ?""", utc(clock.instant()), userId);
+        for (String table : List.of("profiles", "emergency_contacts", "verification_codes",
+                "password_reset_codes", "user_photos", "notification_preferences", "push_subscriptions",
+                "driver_payment_details")) {
+            jdbc.update("DELETE FROM " + table + " WHERE user_id = ?", userId);
+        }
+        jdbc.update("DELETE FROM vehicle_photos WHERE vehicle_id IN (SELECT id FROM vehicles WHERE owner_id = ?)",
+                userId);
+        checks.withdrawIdentity(userId);
+        for (long vehicleId : jdbc.queryForList("SELECT id FROM vehicles WHERE owner_id = ?", Long.class, userId)) {
+            checks.withdrawInsurance(vehicleId);
+        }
+        notifications.forget(userId);
     }
 
     private static String blankToNull(String value) {

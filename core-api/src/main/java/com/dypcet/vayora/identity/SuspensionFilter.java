@@ -15,10 +15,14 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Refuses a suspended member's requests even while their token is still valid. A token
- * cannot be recalled, so the account's standing is checked on every request instead.
+ * Refuses a suspended member's requests even while their token is still valid, and ends every
+ * session of a deleted account. The account's standing is checked on every request, so it takes
+ * effect at once on every device, whatever tokens are still out there.
  */
 class SuspensionFilter extends OncePerRequestFilter {
+
+    /** What a request from a deleted account is told: its session is over, as when a token expires. */
+    static final String SESSION_ENDED = "Your session has ended. Sign in again.";
 
     private final JdbcTemplate jdbc;
 
@@ -30,21 +34,26 @@ class SuspensionFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication instanceof JwtAuthenticationToken token && isSuspended(token)) {
-            response.setStatus(HttpStatus.FORBIDDEN.value());
-            response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-            response.getWriter().write(
-                    "{\"title\":\"Forbidden\",\"status\":403,\"detail\":\"" + IdentityService.SUSPENDED
-                            + "\"}");
-            return;
+        if (authentication instanceof JwtAuthenticationToken token) {
+            List<String> status = jdbc.queryForList("SELECT status FROM users WHERE id = ?", String.class,
+                    Long.parseLong(token.getToken().getSubject()));
+            if (status.contains("DELETED")) {
+                refuse(response, HttpStatus.UNAUTHORIZED, SESSION_ENDED);
+                return;
+            }
+            if (status.contains("SUSPENDED")) {
+                refuse(response, HttpStatus.FORBIDDEN, IdentityService.SUSPENDED);
+                return;
+            }
         }
         chain.doFilter(request, response);
     }
 
-    private boolean isSuspended(JwtAuthenticationToken token) {
-        List<String> status = jdbc.queryForList(
-                "SELECT status FROM users WHERE id = ?", String.class,
-                Long.parseLong(token.getToken().getSubject()));
-        return status.contains("SUSPENDED");
+    /** @param detail a fixed sentence the web app translates, never anything a caller sent */
+    static void refuse(HttpServletResponse response, HttpStatus status, String detail) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        response.getWriter().write("{\"title\":\"" + status.getReasonPhrase() + "\",\"status\":" + status.value()
+                + ",\"detail\":\"" + detail + "\"}");
     }
 }

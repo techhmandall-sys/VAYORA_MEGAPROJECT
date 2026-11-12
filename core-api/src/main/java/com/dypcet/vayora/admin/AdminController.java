@@ -47,7 +47,7 @@ public class AdminController {
     @GetMapping("/overview")
     public Overview overview() {
         return new Overview(
-                counts("SELECT role, COUNT(*) FROM users GROUP BY role ORDER BY role"),
+                counts("SELECT role, COUNT(*) FROM users WHERE status <> 'DELETED' GROUP BY role ORDER BY role"),
                 counts("SELECT status, COUNT(*) FROM rides GROUP BY status ORDER BY status"),
                 counts("SELECT status, COUNT(*) FROM bookings GROUP BY status ORDER BY status"),
                 jdbc.queryForObject("SELECT COUNT(*) FROM users WHERE status = 'SUSPENDED'", Long.class),
@@ -55,7 +55,7 @@ public class AdminController {
                 jdbc.queryForObject("SELECT COUNT(*) FROM bookings WHERE passenger_confirmed IS FALSE", Long.class));
     }
 
-    /** Members whose name, email or phone contains {@code q}, newest first. */
+    /** Members whose name, email or phone contains {@code q}, newest first. Deleted accounts are not members. */
     @GetMapping("/users")
     public List<Member> users(@RequestParam(defaultValue = "") String q) {
         // The pattern is a bound parameter; % and _ in the search text are matched literally.
@@ -63,7 +63,7 @@ public class AdminController {
                 .replace("_", "\\_") + "%";
         return jdbc.query("""
                 SELECT id, full_name, email, role, status, created_at FROM users
-                WHERE full_name ILIKE ? OR email ILIKE ? OR phone ILIKE ?
+                WHERE status <> 'DELETED' AND (full_name ILIKE ? OR email ILIKE ? OR phone ILIKE ?)
                 ORDER BY id DESC LIMIT ?""",
                 (rs, n) -> new Member(rs.getLong("id"), rs.getString("full_name"),
                         rs.getString("email"), rs.getString("role"), rs.getString("status"),

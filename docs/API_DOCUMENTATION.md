@@ -38,7 +38,12 @@ territory.
 | `GET /api/v1/auth/google` | public | `clientId`, or null when Google sign-in is off |
 | `POST /api/v1/auth/google` | public | `idToken` from Google, and `role` only to create an account; returns a token. 409 when no account exists and no role was given |
 | `POST /api/v1/auth/login` | public | Exactly one of `email` or `phone`, with `password`. Returns a token valid for 12 hours. After 5 wrong passwords for one address in 15 minutes, 429 until the window ends, even with the right password |
+| `POST /api/v1/auth/logout` | any | Ends this session: the token is refused from then on (401), not only when it expires. 204. Without Redis nothing is revoked |
+| `POST /api/v1/auth/forgot-password` | public | `{login}`, an email address or phone number. Sends a 6-digit reset code if it is a passenger's or driver's account in good standing and no code went to it in the last minute or ten in a day. Always `200 {message}` with the same message, so it says nothing about the account |
+| `POST /api/v1/auth/reset-password` | public | `{login, code, newPassword}` (8 to 72 characters): sets the password if the code is the latest sent to that address, unspent, under 10 minutes old and not guessed wrong 5 times. Every failure is the same 400, "That code is wrong or has expired. Request a new one." |
 | `GET /api/v1/me` | any | The signed-in account |
+| `GET /api/v1/me/export` | any | Everything VAYORA keeps about the member, as one JSON document: account (no password), profile, emergency contacts, notification choices, vehicles, UPI details, document checks, rides offered, bookings, ratings given and received, emergency alerts, notifications. Chat and live positions are the gateway's and are not included |
+| `DELETE /api/v1/me` | P, D | Delete the account: what identifies the member is removed and the account is marked deleted, which ends every session (401). 204. 409 while the member drives or holds a seat on a ride still to come. KNOWN_LIMITATIONS lists what stays |
 | `GET /api/v1/me/referral` | any | Own invitation code, how many used it, and how many of them have completed a trip |
 | `GET /api/v1/bus-alternatives?from=&to=&after=HH:mm` | any | Up to five administrator-entered buses between two towns, earliest first; not checked against the operator |
 | `GET/POST /api/v1/admin/bus-services`, `DELETE /api/v1/admin/bus-services/{id}` | ADMIN | List, add and remove bus services; adding and removing are audited |
@@ -161,9 +166,9 @@ returns the booking the first request made instead of making another.
 
 | Method and path | Who | What |
 |---|---|---|
-| `GET /api/v1/admin/overview` | A | Counts of users, rides and bookings by state |
-| `GET /api/v1/admin/users?q=` | A | Find members by name or email; at most 100 |
-| `POST /api/v1/admin/users/{id}/reinstate` | A | Lift a suspension |
+| `GET /api/v1/admin/overview` | A | Counts of users, rides and bookings by state. Deleted accounts are not counted as users |
+| `GET /api/v1/admin/users?q=` | A | Find members by name or email; at most 100. Deleted accounts are not listed |
+| `POST /api/v1/admin/users/{id}/reinstate` | A | Lift a suspension. 404 for a deleted account |
 | `GET /api/v1/admin/reports?status=` | A | The reports queue |
 | `POST /api/v1/admin/reports/{id}/resolve` | A | Dismiss, warn or suspend |
 | `GET /api/v1/admin/sos` | A | Unacknowledged emergency alerts |

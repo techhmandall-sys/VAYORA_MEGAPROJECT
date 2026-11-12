@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { api, setToken, setUnauthorizedHandler } from './api';
+import { api, getToken, setToken, setUnauthorizedHandler } from './api';
 import type { LoginForm, RegisterForm } from './schemas';
 import type { Role, Session, User } from './types';
 
@@ -44,9 +44,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    const currentToken = getToken();
     sessionStorage.removeItem(STORAGE_KEY);
     setToken(null);
     setSession(null);
+    if (currentToken) {
+      fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:8080'}/api/v1/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${currentToken}` },
+      }).catch(() => {});
+    }
   }, []);
 
   useEffect(() => {

@@ -11,6 +11,7 @@ import com.dypcet.vayora.account.MockMessageSender.Sent;
 import com.dypcet.vayora.account.SosService.Alert;
 import com.dypcet.vayora.account.SosService.Raised;
 import com.dypcet.vayora.identity.CurrentUser;
+import com.dypcet.vayora.identity.TokenRevocationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -21,6 +22,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -71,11 +73,14 @@ public class AccountController {
     private final AccountService accounts;
     private final SosService sos;
     private final MockMessageSender mock;
+    private final TokenRevocationService revocations;
 
-    public AccountController(AccountService accounts, SosService sos, MockMessageSender mock) {
+    public AccountController(AccountService accounts, SosService sos, MockMessageSender mock,
+            TokenRevocationService revocations) {
         this.accounts = accounts;
         this.sos = sos;
         this.mock = mock;
+        this.revocations = revocations;
     }
 
     @GetMapping("/me/profile")
@@ -88,6 +93,24 @@ public class AccountController {
         return accounts.update(CurrentUser.id(jwt), new ProfileUpdate(request.phone(), request.bio(),
                 request.birthYear(), request.gender(), request.smoking(), request.pets(),
                 request.music(), request.chattiness()));
+    }
+
+    /** Everything VAYORA keeps about the member, as one JSON document to save. */
+    @GetMapping("/me/export")
+    public Map<String, Object> exportData(@AuthenticationPrincipal Jwt jwt) {
+        return accounts.export(CurrentUser.id(jwt));
+    }
+
+    /**
+     * Deletes the member's account and ends the session that asked; any other session ends at its
+     * next request. Administrators come from configuration and are not deleted here.
+     */
+    @DeleteMapping("/me")
+    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAccount(@AuthenticationPrincipal Jwt jwt) {
+        accounts.delete(CurrentUser.id(jwt));
+        revocations.revoke(jwt);
     }
 
     @PutMapping("/me/id-declaration")

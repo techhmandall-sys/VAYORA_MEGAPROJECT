@@ -366,6 +366,39 @@ describe('signing in', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid email or password');
   });
+
+  it('links to the forgot password page', async () => {
+    serve({});
+    open('/login');
+
+    const link = await screen.findByRole('link', { name: 'Forgot password?' });
+    expect(link).toHaveAttribute('href', '/forgot-password');
+  });
+});
+
+describe('resetting a forgotten password', () => {
+  it('requests a reset code and sets a new password', async () => {
+    serve({
+      'POST /auth/forgot-password': () => json({ message: 'If that account exists, a reset code has been sent.' }),
+      'POST /auth/reset-password': () => json({ message: 'Your password has been reset. You can now sign in.' }),
+    });
+    open('/forgot-password');
+
+    expect(await screen.findByRole('heading', { name: 'Reset password' })).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText('Email or phone number'), 'asha@example.test');
+    await userEvent.click(screen.getByRole('button', { name: 'Send reset code' }));
+
+    expect(await screen.findByText('If that account exists, a reset code has been sent.')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Reset code')).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText('Reset code'), '123456');
+    await userEvent.type(screen.getByLabelText('New password'), 'new-secret-password-123');
+    await userEvent.click(screen.getByRole('button', { name: 'Reset password' }));
+
+    expect(await screen.findByText('Your password has been reset. You can now sign in.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+  });
 });
 
 describe('finding and booking a ride', () => {
@@ -1354,6 +1387,31 @@ describe('my account', () => {
     expect(await screen.findByRole('region', { name: 'Profile' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Emergency contacts' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Emergency' })).not.toBeInTheDocument();
+  });
+
+  it('downloads data and confirms deleting the account', async () => {
+    signIn('PASSENGER');
+    let deleted = false;
+    serve({
+      'GET /me/profile': () => json(mine),
+      'GET /me/emergency-contacts': () => json([]),
+      'GET /me/export': () => json({ account: { email: 'asha@example.test' } }),
+      'DELETE /me': () => {
+        deleted = true;
+        return new Response(null, { status: 204 });
+      },
+    });
+    open('/account');
+
+    const section = within(await screen.findByRole('region', { name: 'Your data and account' }));
+    expect(section.getByRole('button', { name: 'Download my data' })).toBeInTheDocument();
+
+    await userEvent.click(section.getByRole('button', { name: 'Delete account' }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete account' });
+    expect(dialog).toBeInTheDocument();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Yes, delete my account' }));
+    await waitFor(() => expect(deleted).toBe(true));
   });
 });
 

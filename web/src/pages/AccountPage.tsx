@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BadgeCheck, Bell, ChevronDown, ChevronRight, CircleAlert, Contact, Gift, IdCard, Mail, ShieldAlert, UserRound, Wallet, type LucideIcon } from 'lucide-react';
+import { BadgeCheck, Bell, ChevronDown, ChevronRight, CircleAlert, Contact, Gift, IdCard, Mail, Shield, ShieldAlert, UserRound, Wallet, type LucideIcon } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { useToast } from '../components/toast';
 import { Button, ConfirmButton, Notice, Page, QueryState, SelectField, TextField } from '../components/ui';
-import { api } from '../lib/api';
+import { api, download } from '../lib/api';
 import { DriverPaymentEditor } from '../components/payment';
 import { initialsOf, Photo, PhotoEditor } from '../components/photo';
 import { PushChoice } from '../components/push';
@@ -428,6 +428,64 @@ function NotificationChoices({ emailConfirmed, phoneConfirmed }: { emailConfirme
   );
 }
 
+function PrivacySection() {
+  const t = useT();
+  const { logout } = useAuth();
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const deleteAccount = useMutation({
+    mutationFn: () => api<void>('/me', { method: 'DELETE' }),
+    onSuccess: () => {
+      logout();
+      window.location.href = '/';
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    setError(null);
+    try {
+      await download('/me/export', 'vayora-personal-data.json');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-slate-600">
+        {t('Download a copy of your account, profile, rides, and bookings as a JSON file.')}
+      </p>
+      {error && <Notice tone="error">{error}</Notice>}
+      <div>
+        <Button tone="secondary" disabled={downloading} onClick={handleDownload}>
+          {downloading ? t('Downloading…') : t('Download my data')}
+        </Button>
+      </div>
+      <div className="border-t border-slate-100 pt-4">
+        <p className="text-sm font-semibold text-slate-900">{t('Delete account')}</p>
+        <p className="mt-1 text-sm text-slate-500">
+          {t('Remove your personal details and sign out. This cannot be undone.')}
+        </p>
+        <div className="mt-3">
+          <ConfirmButton
+            label={t('Delete account')}
+            confirmLabel={t('Yes, delete my account')}
+            disabled={deleteAccount.isPending}
+            onConfirm={() => deleteAccount.mutate()}
+          >
+            {t('All your personal information will be permanently deleted. Active rides or bookings must be finished first.')}
+          </ConfirmButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * One row of a grouped list, as iOS's Settings lays them out: what it is and where it stands,
  * opening in place. A link to /account#<id> opens that row, so another screen can point at it.
@@ -619,6 +677,11 @@ export function AccountPage() {
             </SettingsRow>
             <SettingsRow id="invite" icon={Gift} tint="bg-amber-800" title={t('Invite friends')}>
               <Invitations />
+            </SettingsRow>
+          </SettingsGroup>
+          <SettingsGroup title={t('Privacy and data')}>
+            <SettingsRow id="privacy" icon={Shield} tint="bg-slate-700" title={t('Your data and account')}>
+              <PrivacySection />
             </SettingsRow>
           </SettingsGroup>
         </>
