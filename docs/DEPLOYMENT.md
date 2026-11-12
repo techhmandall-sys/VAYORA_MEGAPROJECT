@@ -199,7 +199,8 @@ without real secrets.
 **You need**
 
 - A Linux server with a public address, ports 80 and 443 open, about 2 CPUs, 4 GB of memory and
-  40 GB of disk. All the services together were measured idling at 1.3 GB; the first run also
+  40 GB of disk. It must be x86-64 (amd64), not ARM: the PostGIS and OSRM images the stack pins are
+  built for amd64 only (checked on Docker Hub, 2026-11-12). All the services together were measured idling at 1.3 GB; the first run also
   builds images and the road graphs, which take more and have not been measured on a server.
   A student can often get credit: see the GitHub Student Developer Pack and Azure for Students.
 - A domain name pointing at that server. A free subdomain such as DuckDNS's works. Without one,
@@ -211,7 +212,7 @@ The research database is not needed online and stays where it is: a new server s
 
 ```sh
 curl -fsSL https://get.docker.com | sh
-git clone https://github.com/techhmandall-sys/Vayora.git && cd Vayora
+git clone https://github.com/techhmandall-sys/VAYORA_MEGAPROJECT.git && cd VAYORA_MEGAPROJECT
 cp .env.production.example .env
 nano .env                  # fill in the first block; openssl rand -base64 48 makes each secret
 sh scripts/deploy.sh       # the first run downloads the road map and takes a while
