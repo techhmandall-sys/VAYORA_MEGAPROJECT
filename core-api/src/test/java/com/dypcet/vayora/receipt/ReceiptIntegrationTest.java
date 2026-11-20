@@ -83,10 +83,11 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
         String text = text(receipts.forBooking(passenger, bookingId));
 
         assertThat(text).contains("Receipt for booking " + bookingId)
-                .contains("Passenger: Asha Patil").contains("Driver: Ravi Jadhav")
-                .contains("Trip: Kolhapur to Pune, 2 seats")
-                .contains("by UPI").contains("For: the trip")
-                .contains("Fare: Rs 900.00").contains("Paid to the driver: Rs 900.00")
+                .contains("Asha Patil").contains("Ravi Jadhav")
+                .contains("Shared ride, Kolhapur to Pune, 2 seats").contains("Paid after the ride")
+                .contains("by UPI")
+                .contains("Charged by VAYORA Rs 0.00")
+                .contains("Total paid to the driver Rs 900.00")
                 .contains("as the driver recorded it").contains("VAYORA took no part of it")
                 .contains("This is not a tax invoice")
                 .doesNotContain("Service fee");
@@ -100,8 +101,9 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
         bookings.paymentReceived(driver, bookingId, Method.CASH);
 
         assertThat(text(receipts.forBooking(passenger, bookingId)))
-                .contains("Booking status: CANCELLED").contains("in cash").contains("For: cancelling late")
-                .contains("Fare: Rs 450.00").contains("Paid to the driver: Rs 225.00");
+                .contains("Booking status: Cancelled by the passenger").contains("in cash")
+                .contains("Late cancellation, Kolhapur to Pune, 1 seat").contains("Owed for cancelling late")
+                .contains("Rs 450.00").contains("Total paid to the driver Rs 225.00");
     }
 
     @Test
@@ -135,9 +137,9 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
                 new ReceiptService.Run("Passenger: ", null),
                 new ReceiptService.Run("आशा पाटील", "Devanagari"),
                 new ReceiptService.Run(", Pune", null));
-        // Really drawn: the same line has more on the page with a name in it than without.
-        assertThat(ink(ReceiptService.pdf(List.of("Receipt", "Passenger: आशा पाटील"))))
-                .isGreaterThan(ink(ReceiptService.pdf(List.of("Receipt", "Passenger: "))));
+        // Really drawn: the same receipt has more on the page with a name in it than without.
+        assertThat(ink(ReceiptService.pdf(receiptFor("आशा पाटील"))))
+                .isGreaterThan(ink(ReceiptService.pdf(receiptFor(""))));
         // Really shaped: a repha joins the letter after it, and is not a letter of its own, as
         // three characters drawn one by one would be.
         assertThat(ReceiptService.shaped("Devanagari", "र्क", 11).getNumGlyphs()).isEqualTo(2);
@@ -147,8 +149,8 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
             assertThat(ReceiptService.runs(name)).containsExactly(new ReceiptService.Run(name, script));
             assertThat(ReceiptService.shaped(script, name, 11).getNumGlyphs()).isPositive();
             try {
-                assertThat(ink(ReceiptService.pdf(List.of("Receipt", "Passenger: " + name))))
-                        .as(script).isGreaterThan(ink(ReceiptService.pdf(List.of("Receipt", "Passenger: "))));
+                assertThat(ink(ReceiptService.pdf(receiptFor(name))))
+                        .as(script).isGreaterThan(ink(ReceiptService.pdf(receiptFor(""))));
             } catch (IOException e) {
                 throw new java.io.UncheckedIOException(e);
             }
@@ -192,11 +194,11 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.fare").value(900.0)).andExpect(jsonPath("$.paid").value(900.0))
                 .andExpect(jsonPath("$.reason").value("TRIP_COMPLETED"));
         // Drawn as shapes, so not "???", and not text either.
-        assertThat(text(receipts.forBooking(devanagari, bookingId))).contains("Passenger:").doesNotContain("???");
+        assertThat(text(receipts.forBooking(devanagari, bookingId))).contains("Ravi Jadhav").doesNotContain("???");
         // A script with no font here still prints, as "?", and does not fail.
         long urdu = user(UserRole.PASSENGER, "آشا Patil");
         long urduBooking = paid(urdu, 1, Method.CASH);
-        assertThat(text(receipts.forBooking(urdu, urduBooking))).contains("Passenger: ??? Patil");
+        assertThat(text(receipts.forBooking(urdu, urduBooking))).contains("??? Patil");
 
         mvc.perform(get("/api/v1/bookings/" + bookingId + "/receipt-data")
                         .header("Authorization", "Bearer " + tokens.issue(passenger, UserRole.PASSENGER)))
@@ -204,6 +206,13 @@ class ReceiptIntegrationTest extends PostgresIntegrationTest {
         mvc.perform(get("/api/v1/bookings/" + bookingId + "/receipt-data")
                         .header("Authorization", "Bearer " + tokens.issue(driver, UserRole.DRIVER)))
                 .andExpect(status().isForbidden());
+    }
+
+    /** A paid receipt naming this passenger, for drawing without a database. */
+    private static ReceiptService.BookingReceipt receiptFor(String passenger) {
+        Instant at = Instant.parse("2026-11-20T11:30:00Z");
+        return new ReceiptService.BookingReceipt(1, passenger, "Ravi Jadhav", "Kolhapur", "Pune", 1, at, "COMPLETED",
+                at, "CASH", new BigDecimal("450.00"), new BigDecimal("450.00"), "TRIP_COMPLETED");
     }
 
     /** A trip that ran and the driver marked paid: its booking. */

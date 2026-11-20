@@ -1,5 +1,6 @@
 package com.dypcet.vayora.receipt;
 
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.font.FontRenderContext;
@@ -71,7 +72,7 @@ public class ReceiptService {
 
     /** The receipt for what was paid on one of the passenger's bookings, as PDF. */
     public byte[] forBooking(long passengerId, long bookingId) {
-        return pdf(lines(booking(passengerId, bookingId)));
+        return pdf(booking(passengerId, bookingId));
     }
 
     /** What the receipt for what was paid on one of the passenger's bookings says. */
@@ -102,57 +103,340 @@ public class ReceiptService {
                 HttpStatus.NOT_FOUND, "No receipt for that booking"));
     }
 
-    private static List<String> lines(BookingReceipt receipt) {
-        return List.of(
-                "Receipt for booking " + receipt.bookingId(),
-                "",
-                "Passenger: " + receipt.passenger(),
-                "Driver: " + receipt.driver(),
-                "Trip: " + receipt.fromStop() + " to " + receipt.toStop()
-                        + ", " + receipt.seats() + (receipt.seats() == 1 ? " seat" : " seats"),
-                "Boarding: " + when(receipt.boarding()),
-                "Booking status: " + receipt.status(),
-                "",
-                "Paid: " + when(receipt.paidAt()) + (receipt.method().equals("CASH") ? " in cash" : " by UPI"),
-                "For: " + switch (receipt.reason()) {
-                    case "PASSENGER_NO_SHOW" -> "a seat not taken up";
-                    case "PASSENGER_CANCELLED" -> "cancelling late";
-                    default -> "the trip";
-                },
-                "Fare: " + rupees(receipt.fare()),
-                "Paid to the driver: " + rupees(receipt.paid()),
-                "",
-                "Paid directly to the driver, as the driver recorded it. VAYORA took no part of it and charged nothing.",
-                "This is not a tax invoice.",
-                "VAYORA, shared rides between cities");
-    }
+    // The app's colours, so a printed receipt looks like the rest of VAYORA.
+    private static final Color NAVY = new Color(0x10213A);
+    private static final Color GREEN = new Color(0x16865A);
+    private static final Color SOFT_GREEN = new Color(0xE6F4EC);
+    private static final Color PALE_GREEN = new Color(0xA0D6BA);
+    private static final Color INK = new Color(0x25364A);
+    private static final Color MUTED = new Color(0x5F6E84);
+    private static final Color HEADER_MUTED = new Color(0xCBD3DE);
+    private static final Color LINE = new Color(0xE2E7EE);
+    private static final Color PANEL = new Color(0xF8FAFC);
+    private static final Color TABLE_HEAD = new Color(0xEEF2F6);
+    private static final Color NOTE_FILL = new Color(0xFFF8E6);
+    private static final Color NOTE_LINE = new Color(0xFDDC96);
+    private static final Color NOTE_INK = new Color(0x783806);
+    private static final float MARGIN = 48;
 
-    static byte[] pdf(List<String> lines) {
+    /**
+     * The receipt laid out as a bill: VAYORA's header, who paid whom, the trip, what was paid and
+     * how, and the note that says on whose word it rests. Every fact is the record's; only the layout
+     * is the bill's.
+     */
+    static byte[] pdf(BookingReceipt receipt) {
         try (PDDocument document = new PDDocument(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
             PDType1Font regular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
             PDType1Font bold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
-            try (PDPageContentStream content = new PDPageContentStream(document, page)) {
-                float y = PDRectangle.A4.getHeight() - 72;
-                for (int i = 0; i < lines.size(); i++) {
-                    PDType1Font latin = i == 0 ? bold : regular;
-                    float size = i == 0 ? 16 : 11;
-                    float x = 56;
-                    for (Run run : runs(lines.get(i))) {
-                        x += canShape(run)
-                                ? drawShaped(content, run, size, x, y)
-                                : write(content, latin, size, latin(run.text()), x, y);
-                    }
-                    y -= 18;
+            float pageWidth = PDRectangle.A4.getWidth();
+            float top = PDRectangle.A4.getHeight();
+            float left = MARGIN;
+            float right = pageWidth - MARGIN;
+            float width = right - left;
+            String title = "Receipt for booking " + receipt.bookingId();
+            String seats = receipt.seats() + (receipt.seats() == 1 ? " seat" : " seats");
+            boolean cash = receipt.method().equals("CASH");
+            try (PDPageContentStream c = new PDPageContentStream(document, page)) {
+                // The header: VAYORA on the left, what this is on the right.
+                c.setNonStrokingColor(NAVY);
+                c.addRect(0, top - 118, pageWidth, 118);
+                c.fill();
+                logo(c, left, top - 86);
+                tracked(c, "VAYORA", bold, 22, Color.WHITE, 1.2f, left + 54, top - 63);
+                text(c, "Shared rides between cities", regular, 9.5f, PALE_GREEN, left + 54, top - 79);
+                tracked(c, "RECEIPT", bold, 20, Color.WHITE, 3, right - trackedWidth("RECEIPT", bold, 20, 3), top - 61);
+                textRight(c, title, regular, 10, HEADER_MUTED, right, top - 79);
+
+                // Paid, and how; where the booking stands.
+                String badge = cash ? "PAID IN CASH" : "PAID BY UPI";
+                float badgeWidth = trackedWidth(badge, bold, 9, 0.6f) + 26;
+                c.setNonStrokingColor(GREEN);
+                roundRect(c, left, top - 158, badgeWidth, 22, 11);
+                c.fill();
+                tracked(c, badge, bold, 9, Color.WHITE, 0.6f, left + 13, top - 150);
+                text(c, "Booking status: " + statusText(receipt.status()), regular, 10, MUTED, left + badgeWidth + 12, top - 150);
+
+                // Who paid, and whom.
+                float partiesTop = top - 176;
+                float cardWidth = (width - 14) / 2;
+                party(c, regular, bold, "PASSENGER", receipt.passenger(), "Paid for " + seats, left, partiesTop, cardWidth);
+                party(c, regular, bold, "DRIVER", receipt.driver(), "Received the payment directly",
+                        left + cardWidth + 14, partiesTop, cardWidth);
+
+                // The trip, stop to stop.
+                tracked(c, "TRIP", bold, 8, MUTED, 1, left, partiesTop - 64 - 24);
+                float tripTop = partiesTop - 64 - 32;
+                c.setNonStrokingColor(SOFT_GREEN);
+                roundRect(c, left, tripTop - 86, width, 86, 10);
+                c.fill();
+                float nameRoom = width / 2 - 28;
+                text(c, receipt.fromStop(), bold, fit(receipt.fromStop(), bold, 14, nameRoom), INK, left + 16, tripTop - 28);
+                textRight(c, receipt.toStop(), bold, fit(receipt.toStop(), bold, 14, nameRoom), INK, right - 16, tripTop - 28);
+                float routeY = tripTop - 44;
+                c.setStrokingColor(GREEN);
+                c.setLineWidth(1.6f);
+                c.setLineDashPattern(new float[] {4, 4}, 0);
+                c.moveTo(left + 30, routeY);
+                c.lineTo(right - 30, routeY);
+                c.stroke();
+                c.setLineDashPattern(new float[] {}, 0);
+                dot(c, left + 22, routeY, 5, GREEN, null);
+                dot(c, right - 22, routeY, 5, Color.WHITE, GREEN);
+                text(c, "Boarding: " + when(receipt.boarding()), regular, 9.5f, INK, left + 16, tripTop - 68);
+                textRight(c, seats, regular, 9.5f, INK, right - 16, tripTop - 68);
+
+                // What was paid for.
+                float tableTop = tripTop - 86 - 22;
+                float fareX = right - 120;
+                float paidX = right - 12;
+                c.setNonStrokingColor(TABLE_HEAD);
+                roundRect(c, left, tableTop - 24, width, 24, 6);
+                c.fill();
+                tracked(c, "DESCRIPTION", bold, 8, MUTED, 0.6f, left + 12, tableTop - 15);
+                tracked(c, "FARE", bold, 8, MUTED, 0.6f, fareX - trackedWidth("FARE", bold, 8, 0.6f), tableTop - 15);
+                tracked(c, "PAID", bold, 8, MUTED, 0.6f, paidX - trackedWidth("PAID", bold, 8, 0.6f), tableTop - 15);
+                float rowY = tableTop - 44;
+                String item = itemName(receipt.reason()) + ", " + receipt.fromStop() + " to " + receipt.toStop() + ", " + seats;
+                // Long stop names take a second line rather than running into the fare.
+                float itemRoom = fareX - 80 - (left + 12);
+                List<String> itemLines = wrap(item, regular, 10.5f, itemRoom);
+                if (itemLines.size() > 2) {
+                    itemLines = List.of(item);
                 }
+                for (int i = 0; i < itemLines.size(); i++) {
+                    String part = itemLines.get(i);
+                    text(c, part, regular, fit(part, regular, 10.5f, itemRoom), INK, left + 12, rowY - i * 13);
+                }
+                float rowBottom = rowY - (itemLines.size() - 1) * 13;
+                text(c, itemNote(receipt.reason()), regular, 8.5f, MUTED, left + 12, rowBottom - 13);
+                textRight(c, rupees(receipt.fare()), regular, 10.5f, INK, fareX, rowY);
+                textRight(c, rupees(receipt.paid()), bold, 10.5f, INK, paidX, rowY);
+                rule(c, left, rowBottom - 24, right);
+                text(c, "Charged by VAYORA", regular, 10, MUTED, right - 230, rowBottom - 44);
+                textRight(c, rupees(BigDecimal.ZERO), regular, 10, INK, paidX, rowBottom - 44);
+
+                // The total.
+                float totalTop = rowBottom - 58;
+                c.setNonStrokingColor(NAVY);
+                roundRect(c, left, totalTop - 44, width, 44, 8);
+                c.fill();
+                text(c, "Total paid to the driver", bold, 11.5f, Color.WHITE, left + 16, totalTop - 27);
+                textRight(c, rupees(receipt.paid()), bold, 18, Color.WHITE, right - 16, totalTop - 27);
+
+                // How it was paid.
+                float paymentTop = totalTop - 44 - 30;
+                tracked(c, "PAYMENT", bold, 8, MUTED, 1, left, paymentTop);
+                String[][] details = {
+                    {"Method", cash ? "Cash, handed to the driver" : "UPI, sent to the driver"},
+                    {"Paid", when(receipt.paidAt()) + (cash ? " in cash" : " by UPI")},
+                    {"Recorded by", "The driver"},
+                };
+                for (int i = 0; i < details.length; i++) {
+                    float y = paymentTop - 20 - i * 17;
+                    text(c, details[i][0], regular, 9.5f, MUTED, left, y);
+                    text(c, details[i][1], regular, 9.5f, INK, left + 110, y);
+                }
+
+                // On whose word it rests.
+                List<String> note = wrap("Paid directly to the driver, as the driver recorded it. VAYORA took no part of it"
+                        + " and charged nothing.", regular, 9, width - 32);
+                float noteTop = paymentTop - 20 - details.length * 17 - 4;
+                float noteHeight = 22 + 13 * note.size() + 4;
+                c.setNonStrokingColor(NOTE_FILL);
+                c.setStrokingColor(NOTE_LINE);
+                c.setLineWidth(0.8f);
+                roundRect(c, left, noteTop - noteHeight, width, noteHeight, 8);
+                c.fillAndStroke();
+                for (int i = 0; i < note.size(); i++) {
+                    text(c, note.get(i), regular, 9, NOTE_INK, left + 16, noteTop - 17 - i * 13);
+                }
+                text(c, "This is not a tax invoice.", bold, 9, NOTE_INK, left + 16, noteTop - 17 - note.size() * 13);
+
+                // Footer.
+                rule(c, left, MARGIN + 14, right);
+                text(c, "VAYORA, shared rides between cities", regular, 8, MUTED, left, MARGIN);
+                textRight(c, "Times are India Standard Time", regular, 8, MUTED, right, MARGIN);
             }
-            document.getDocumentInformation().setTitle(latin(lines.get(0)));
+            document.getDocumentInformation().setTitle(latin(title));
             document.save(out);
             return out.toByteArray();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private static String statusText(String status) {
+        return switch (status) {
+            case "COMPLETED" -> "Completed";
+            case "CANCELLED" -> "Cancelled by the passenger";
+            case "DRIVER_CANCELLED" -> "Cancelled by the driver";
+            case "NO_SHOW", "PASSENGER_NO_SHOW" -> "Passenger did not board";
+            default -> status.charAt(0) + status.substring(1).toLowerCase(Locale.ROOT).replace('_', ' ');
+        };
+    }
+
+    private static String itemName(String reason) {
+        return switch (reason) {
+            case "PASSENGER_NO_SHOW" -> "Seat not taken up";
+            case "PASSENGER_CANCELLED" -> "Late cancellation";
+            default -> "Shared ride";
+        };
+    }
+
+    private static String itemNote(String reason) {
+        return switch (reason) {
+            case "PASSENGER_NO_SHOW" -> "Owed because the seat was held and not taken up";
+            case "PASSENGER_CANCELLED" -> "Owed for cancelling late, under the cancellation rule";
+            default -> "Paid after the ride";
+        };
+    }
+
+    /** A card naming one side of the payment: a label, the name, and a line under it. */
+    private static void party(PDPageContentStream c, PDType1Font regular, PDType1Font bold, String label, String name,
+            String under, float x, float top, float width) throws IOException {
+        c.setNonStrokingColor(PANEL);
+        c.setStrokingColor(LINE);
+        c.setLineWidth(0.8f);
+        roundRect(c, x, top - 64, width, 64, 8);
+        c.fillAndStroke();
+        tracked(c, label, bold, 8, GREEN, 1, x + 16, top - 20);
+        text(c, name, bold, fit(name, bold, 13, width - 32), INK, x + 16, top - 39);
+        text(c, under, regular, 9, MUTED, x + 16, top - 54);
+    }
+
+    /** VAYORA's mark: a route between two points, white on green. {@code y} is its bottom edge. */
+    private static void logo(PDPageContentStream c, float x, float y) throws IOException {
+        c.setNonStrokingColor(GREEN);
+        roundRect(c, x, y, 40, 40, 10);
+        c.fill();
+        c.setStrokingColor(Color.WHITE);
+        c.setLineWidth(3.4f);
+        c.setLineCapStyle(1);
+        c.moveTo(x + 11, y + 10.5f);
+        c.curveTo(x + 20, y + 10.5f, x + 21, y + 27.4f, x + 30, y + 29.5f);
+        c.stroke();
+        c.setLineCapStyle(0);
+        dot(c, x + 11, y + 10.5f, 2.8f, Color.WHITE, null);
+        dot(c, x + 30, y + 29.5f, 2.8f, Color.WHITE, null);
+    }
+
+    private static void roundRect(PDPageContentStream c, float x, float y, float w, float h, float r) throws IOException {
+        float k = 0.5523f * r;
+        c.moveTo(x + r, y);
+        c.lineTo(x + w - r, y);
+        c.curveTo(x + w - r + k, y, x + w, y + r - k, x + w, y + r);
+        c.lineTo(x + w, y + h - r);
+        c.curveTo(x + w, y + h - r + k, x + w - r + k, y + h, x + w - r, y + h);
+        c.lineTo(x + r, y + h);
+        c.curveTo(x + r - k, y + h, x, y + h - r + k, x, y + h - r);
+        c.lineTo(x, y + r);
+        c.curveTo(x, y + r - k, x + r - k, y, x + r, y);
+        c.closePath();
+    }
+
+    /** A filled circle, ringed when {@code ring} is given. */
+    private static void dot(PDPageContentStream c, float cx, float cy, float r, Color fill, Color ring) throws IOException {
+        float k = 0.5523f * r;
+        c.setNonStrokingColor(fill);
+        c.moveTo(cx + r, cy);
+        c.curveTo(cx + r, cy + k, cx + k, cy + r, cx, cy + r);
+        c.curveTo(cx - k, cy + r, cx - r, cy + k, cx - r, cy);
+        c.curveTo(cx - r, cy - k, cx - k, cy - r, cx, cy - r);
+        c.curveTo(cx + k, cy - r, cx + r, cy - k, cx + r, cy);
+        c.closePath();
+        if (ring == null) {
+            c.fill();
+        } else {
+            c.setStrokingColor(ring);
+            c.setLineWidth(2.2f);
+            c.fillAndStroke();
+        }
+    }
+
+    private static void rule(PDPageContentStream c, float from, float y, float to) throws IOException {
+        c.setStrokingColor(LINE);
+        c.setLineWidth(0.8f);
+        c.moveTo(from, y);
+        c.lineTo(to, y);
+        c.stroke();
+    }
+
+    /**
+     * Text in any of the receipt's scripts: Latin in the built-in font, India's main scripts drawn
+     * as shaped outlines. Gives the width taken.
+     */
+    private static float text(PDPageContentStream c, String text, PDType1Font font, float size, Color color, float x,
+            float y) throws IOException {
+        c.setNonStrokingColor(color);
+        float dx = 0;
+        for (Run run : runs(text)) {
+            dx += canShape(run) ? drawShaped(c, run, size, x + dx, y) : write(c, font, size, latin(run.text()), x + dx, y);
+        }
+        return dx;
+    }
+
+    private static void textRight(PDPageContentStream c, String text, PDType1Font font, float size, Color color,
+            float right, float y) throws IOException {
+        text(c, text, font, size, color, right - width(text, font, size), y);
+    }
+
+    static float width(String text, PDType1Font font, float size) throws IOException {
+        float total = 0;
+        for (Run run : runs(text)) {
+            total += canShape(run)
+                    ? (float) shaped(run.script(), run.text(), size).getLogicalBounds().getWidth()
+                    : font.getStringWidth(latin(run.text())) / 1000 * size;
+        }
+        return total;
+    }
+
+    /** The largest size up to {@code size}, and no smaller than 8, at which the text fits. */
+    private static float fit(String text, PDType1Font font, float size, float room) throws IOException {
+        float fitted = size;
+        while (fitted > 8 && width(text, font, fitted) > room) {
+            fitted -= 0.5f;
+        }
+        return fitted;
+    }
+
+    /** Words laid into lines no wider than {@code room}. */
+    private static List<String> wrap(String text, PDType1Font font, float size, float room) throws IOException {
+        List<String> lines = new ArrayList<>();
+        StringBuilder line = new StringBuilder();
+        for (String word : text.split(" ")) {
+            String tried = line.isEmpty() ? word : line + " " + word;
+            if (!line.isEmpty() && width(tried, font, size) > room) {
+                lines.add(line.toString());
+                line.setLength(0);
+                line.append(word);
+            } else {
+                line.setLength(0);
+                line.append(tried);
+            }
+        }
+        if (!line.isEmpty()) {
+            lines.add(line.toString());
+        }
+        return lines;
+    }
+
+    /** Latin capitals with space between the letters, for labels. */
+    private static void tracked(PDPageContentStream c, String text, PDType1Font font, float size, Color color,
+            float tracking, float x, float y) throws IOException {
+        c.setNonStrokingColor(color);
+        c.beginText();
+        c.setFont(font, size);
+        c.setCharacterSpacing(tracking);
+        c.newLineAtOffset(x, y);
+        c.showText(text);
+        c.setCharacterSpacing(0);
+        c.endText();
+    }
+
+    private static float trackedWidth(String text, PDType1Font font, float size, float tracking) throws IOException {
+        return font.getStringWidth(text) / 1000 * size + tracking * (text.length() - 1);
     }
 
     private static float write(PDPageContentStream content, PDType1Font font, float size, String text, float x, float y)
