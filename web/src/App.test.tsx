@@ -97,7 +97,7 @@ function serve(routes: Record<string, () => Response>) {
     if (!match && key === 'GET /me/push') return json({ publicKey: null, subscribed: false });
     if (!match && key === 'GET /me/document-checks') return json([]);
     if (!match && key === 'GET /auth/google') return json({ clientId: null });
-    if (!match && key.startsWith('GET ') && key.endsWith('/photo')) return json({ detail: 'No photo' }, 404);
+    if (!match && key.startsWith('GET ') && key.endsWith('/photo')) return new Response(null, { status: 204 });
     if (!match && key === 'GET /me/referral') return json({ code: 'K7QX2M', signedUp: 0, qualified: 0 });
     if (!match && key === 'GET /booking-terms') return json({ answerWithinMinutes: 720, closesMinutesBeforeBoarding: 120 });
     // The navigation asks for this on every signed-in page.
@@ -2946,7 +2946,7 @@ describe('photos', () => {
         stored = true;
         return new Response(null, { status: 204 });
       },
-      'GET /users/1/photo': () => (stored ? new Response(new Blob(['jpeg'], { type: 'image/jpeg' })) : json({ detail: 'No photo' }, 404)),
+      'GET /users/1/photo': () => (stored ? new Response(new Blob(['jpeg'], { type: 'image/jpeg' })) : new Response(null, { status: 204 })),
     });
     open('/account');
 
@@ -3653,7 +3653,7 @@ describe('paying the driver', () => {
     const fetchMock = serve({
       'GET /me/profile': () => json(profile),
       'GET /me/emergency-contacts': () => json([]),
-      'GET /me/payment-details/qr': () => json({ detail: 'No QR code' }, 404),
+      'GET /me/payment-details/qr': () => new Response(null, { status: 204 }),
       'GET /me/payment-details': () => json({ upiId: null, hasQr: false }),
       'PUT /me/payment-details': () =>
         attempts++ === 0
@@ -3680,7 +3680,7 @@ describe('paying the driver', () => {
     const fetchMock = serve({
       'GET /me/profile': () => json(profile),
       'GET /me/emergency-contacts': () => json([]),
-      'GET /me/payment-details/qr': () => json({ detail: 'No QR code' }, 404),
+      'GET /me/payment-details/qr': () => new Response(null, { status: 204 }),
       'PUT /me/payment-details/qr': () => new Response(null, { status: 204 }),
       'GET /me/payment-details': () => json({ upiId: null, hasQr: false }),
     });
@@ -4353,7 +4353,7 @@ describe('easier on a phone', () => {
       'GET /me/profile': () => json({ email: 'user@example.test', emailVerified: true, phone: null, phoneVerified: false }),
       'GET /me/emergency-contacts': () => json([]),
       // Before the details: the first route whose prefix matches answers.
-      'GET /me/payment-details/qr': () => json({ detail: 'No QR code' }, 404),
+      'GET /me/payment-details/qr': () => new Response(null, { status: 204 }),
       'GET /me/payment-details': () => json({ upiId: 'ravi@okaxis', hasQr: false }),
     });
     open('/account#payment');

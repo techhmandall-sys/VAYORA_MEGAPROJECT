@@ -70,7 +70,10 @@ export async function download(path: string, filename: string): Promise<void> {
 /** A photo or other file the server keeps, or null if there is none. */
 export async function fetchFile(path: string): Promise<Blob | null> {
   try {
-    return await (await send(path, {})).blob();
+    const response = await send(path, {});
+    // 204: nothing there yet, such as a member with no photo.
+    if (response.status === 204) return null;
+    return await response.blob();
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return null;
     throw error;

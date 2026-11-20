@@ -381,7 +381,8 @@ class DirectPaymentIntegrationTest extends PostgresIntegrationTest {
         Booking booking = book(passengerId, ride(Duration.ofDays(3), true));
         String qrPath = "/api/v1/bookings/" + booking.id() + "/pay-driver/qr";
 
-        mvc.perform(get(qrPath).header("Authorization", passenger)).andExpect(status().isNotFound());
+        // The driver has no code yet: nothing to send, not an error.
+        mvc.perform(get(qrPath).header("Authorization", passenger)).andExpect(status().isNoContent());
         mvc.perform(put("/api/v1/me/payment-details/qr").header("Authorization", driver).content("not a picture"))
                 .andExpect(status().isBadRequest());
         mvc.perform(put("/api/v1/me/payment-details/qr").header("Authorization", passenger).content(picture(40, 40)))
@@ -411,7 +412,7 @@ class DirectPaymentIntegrationTest extends PostgresIntegrationTest {
 
         mvc.perform(delete("/api/v1/me/payment-details/qr").header("Authorization", driver))
                 .andExpect(status().isNoContent());
-        mvc.perform(get(qrPath).header("Authorization", passenger)).andExpect(status().isNotFound());
+        mvc.perform(get(qrPath).header("Authorization", passenger)).andExpect(status().isNoContent());
     }
 
     @Test

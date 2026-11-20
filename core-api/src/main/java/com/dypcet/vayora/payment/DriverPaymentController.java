@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 /** A driver's own UPI details, and what a passenger with a booking is shown of them. */
 @RestController
@@ -92,8 +91,10 @@ public class DriverPaymentController {
     }
 
     private static ResponseEntity<byte[]> png(byte[] qr) {
+        // No QR code yet is nothing to send, not an error. Someone else's booking is still a 404,
+        // refused before any code is looked up.
         if (qr == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No QR code");
+            return ResponseEntity.noContent().build();
         }
         // Not kept by the browser: a driver may change it, and it is shown only for a live booking.
         return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).cacheControl(CacheControl.noStore()).body(qr);

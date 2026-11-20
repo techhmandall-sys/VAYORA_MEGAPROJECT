@@ -62,8 +62,9 @@ class PhotoIntegrationTest extends PostgresIntegrationTest {
         assertThat(new String(stored, StandardCharsets.ISO_8859_1)).doesNotContain("GPS").doesNotContain("home");
 
         mvc.perform(delete("/api/v1/me/photo").header("Authorization", auth)).andExpect(status().isNoContent());
+        // No photo is nothing to send, not an error a browser would log.
         mvc.perform(get("/api/v1/users/" + member + "/photo").header("Authorization", auth))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNoContent());
     }
 
     @Test

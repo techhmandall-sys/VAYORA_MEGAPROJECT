@@ -48,10 +48,10 @@ territory.
 | `GET /api/v1/bus-alternatives?from=&to=&after=HH:mm` | any | Up to five administrator-entered buses between two towns, earliest first; not checked against the operator |
 | `GET/POST /api/v1/admin/bus-services`, `DELETE /api/v1/admin/bus-services/{id}` | ADMIN | List, add and remove bus services; adding and removing are audited |
 | `GET/POST /api/v1/admin/stopovers`, `DELETE /api/v1/admin/stopovers/{id}` | ADMIN | Rest stops and chargers; audited. The route preview (`POST /api/v1/rides/route-preview`) now also returns `alongRoute`: those near the route, in order, with `kmAlong`, `kmOffRoute` and `suggestedBreak` |
-| `GET /api/v1/users/{id}/photo`, `GET /api/v1/vehicles/{id}/photo` | any | The photo as `image/jpeg`, or 404 |
+| `GET /api/v1/users/{id}/photo`, `GET /api/v1/vehicles/{id}/photo` | any | The photo as `image/jpeg`, or 204 No Content when there is none |
 | `GET /api/v1/me/payment-details` | D | Own `{upiId, hasQr}` |
 | `PUT /api/v1/me/payment-details` | D | `{upiId}`: as name@bank; blank removes it, 400 if it does not look like one, an email address included |
-| `GET`, `PUT`, `DELETE /api/v1/me/payment-details/qr` | D | Own UPI QR code. The body is the image itself (JPEG or PNG, up to 5 MB); kept as a PNG |
+| `GET`, `PUT`, `DELETE /api/v1/me/payment-details/qr` | D | Own UPI QR code. The body is the image itself (JPEG or PNG, up to 5 MB); kept as a PNG. `GET` answers 204 No Content when there is none |
 | `PUT /api/v1/me/photo`, `DELETE /api/v1/me/photo` | any | Own photo. The body is the image itself (JPEG or PNG, up to 5 MB) |
 | `PUT/DELETE /api/v1/vehicles/{id}/photo` | DRIVER, owner | A vehicle's photo; someone else's vehicle is a 404 |
 | `POST /api/v1/me/document-checks`, `GET /api/v1/me/document-checks` | D | `{kind, vehicleId}`: ask VAYORA staff to see the identity document declared (`IDENTITY`) or a car's declared insurance (`INSURANCE`, with its `vehicleId`); the current check of each. 409 when nothing is declared or one is already waiting or checked |
@@ -131,7 +131,7 @@ returns the booking the first request made instead of making another.
 |---|---|---|
 | `GET /api/v1/payment-terms` | any | `cancellationTiers`: `{atLeastHoursBefore, owedShare}`, earliest first; later than the last, the whole fare is owed |
 | `GET /api/v1/bookings/{id}/pay-driver` | P | `{driverName, upiId, hasQr}` for own booking, once it is confirmed or while it owes something; 404 otherwise |
-| `GET /api/v1/bookings/{id}/pay-driver/qr` | P | The driver's QR code under the same rule; never cached |
+| `GET /api/v1/bookings/{id}/pay-driver/qr` | P | The driver's QR code under the same rule; never cached; 204 No Content when the driver has none |
 | `GET /api/v1/payments` | P | Own bookings as what each costs and owes: `{status, amountDue, dueReason, method, paidAt}`. `status` is `DEFERRED`, `DUE`, `SETTLED` or `VOID` |
 | `GET /api/v1/earnings` | D | What passengers owe the driver (`status: "DUE"`) and what the driver said they paid (`SETTLED`, with `method`) |
 | `GET /api/v1/bookings/{id}/receipt` | P | PDF receipt once the driver says they were paid |

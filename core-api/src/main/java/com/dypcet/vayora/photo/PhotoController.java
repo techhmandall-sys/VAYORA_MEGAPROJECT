@@ -93,8 +93,10 @@ public class PhotoController {
     }
 
     private static ResponseEntity<byte[]> jpeg(byte[] photo) {
+        // No photo yet is nothing to send, not an error: a 404 here was logged by every browser as one,
+        // on each page that shows initials instead.
         if (photo == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No photo");
+            return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG)
                 .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePrivate()).body(photo);
