@@ -847,6 +847,10 @@ export const hi: Record<string, string> = {
     'पहले की बुकिंग में रद्द का हिस्सा',
   'Main reasons':
     'मुख्य कारण',
+  'Distance from the start to the boarding stop':
+    'सफ़र की शुरुआत से सवार होने के स्टॉप तक की दूरी',
+  'Rickshaw or bus offered to reach the stop':
+    'स्टॉप तक रिक्शा या बस से पहुँचने की सुविधा',
   '{factor} makes a cancellation likelier':
     '{factor} से रद्द होने की संभावना बढ़ती है',
   '{factor} makes a cancellation less likely':

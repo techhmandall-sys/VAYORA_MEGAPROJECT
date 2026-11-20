@@ -846,6 +846,10 @@ export const mr: Record<string, string> = {
     'आधीच्या बुकिंगपैकी रद्द केलेला वाटा',
   'Main reasons':
     'मुख्य कारणे',
+  'Distance from the start to the boarding stop':
+    'सुरुवातीच्या ठिकाणापासून चढण्याच्या थांब्यापर्यंतचे अंतर',
+  'Rickshaw or bus offered to reach the stop':
+    'थांब्यापर्यंत रिक्षा किंवा बसची सोय',
   '{factor} makes a cancellation likelier':
     '{factor} मुळे रद्द होण्याची शक्यता वाढते',
   '{factor} makes a cancellation less likely':

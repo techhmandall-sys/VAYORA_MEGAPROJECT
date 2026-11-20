@@ -6,7 +6,7 @@ import { formatDateTime, formatPercent } from '../lib/format';
 import { msg, useT } from '../lib/i18n';
 import type { HazardScore, ScoringSummary } from '../lib/types';
 
-// The model's features (version f1), in words.
+// The model's features in words: version f1's nine, and the two last-mile ones world h3 added.
 const factorLabels: Record<string, string> = {
   lead_hours: msg('How far ahead it was booked'),
   seats: msg('Seats booked'),
@@ -17,6 +17,8 @@ const factorLabels: Record<string, string> = {
   prior_completed: msg('Earlier completed trips'),
   prior_no_shows: msg('Earlier no-shows'),
   prior_cancel_share: msg('Share of earlier bookings cancelled'),
+  last_mile_distance_m: msg('Distance from the start to the boarding stop'),
+  last_mile_mode_available: msg('Rickshaw or bus offered to reach the stop'),
 };
 
 /** The two features that moved the estimate most, largest first. */
@@ -117,7 +119,7 @@ export function DurabilityPage() {
                         </ul>
                       )}
                     </td>
-                    <td className="py-2 pr-4">{score.modelVersion}</td>
+                    <td className="whitespace-nowrap py-2 pr-4">{score.modelVersion}</td>
                     <td className="py-2">{formatDateTime(score.scoredAt)}</td>
                   </tr>
                 ))}
