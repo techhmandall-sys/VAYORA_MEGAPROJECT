@@ -16,7 +16,7 @@ import { InsuranceEditor } from '../components/insurance';
 import { RideChat } from '../components/RideChat';
 import { initialsOf, PhotoEditor } from '../components/photo';
 import { RouteMap } from '../components/LazyRouteMap';
-import { WeeklyPayoutChart } from '../components/charts';
+import { WeeklyEarningsChart } from '../components/charts';
 import { Collapse } from '../components/collapse';
 import { CountUp } from '../components/countup';
 import { Button, Card, ConfirmButton, Meter, Notice, Page, QueryState, SelectField, Stat, StatusBadge, TextField } from '../components/ui';
@@ -1446,7 +1446,7 @@ export function EarningsPage() {
             </div>
           </dl>
           <div className="mt-6">
-            <WeeklyPayoutChart payouts={paid.map((earning) => ({ amount: earning.amount, createdAt: earning.at }))} />
+            <WeeklyEarningsChart payments={paid.map((earning) => ({ amount: earning.amount, createdAt: earning.at }))} />
           </div>
           <div className="mt-6 overflow-x-auto">
             <table className="w-full text-left text-sm">

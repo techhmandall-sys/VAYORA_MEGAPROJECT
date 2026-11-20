@@ -791,7 +791,7 @@ export const hi: Record<string, string> = {
     'केवल महिलाओं के लिए हैं',
   'Not shown on your profile. Choosing Woman lets you offer and book women-only rides; nobody checks it.':
     'आपकी प्रोफ़ाइल पर नहीं दिखाया जाता। महिला चुनने पर आप केवल-महिला सवारियाँ दे और बुक कर सकती हैं; इसकी कोई जाँच नहीं करता।',
-  // Travel passes
+  // Countdowns
   '{n} days':
     '{n} दिन',
   // Receipts

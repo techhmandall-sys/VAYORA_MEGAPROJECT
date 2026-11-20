@@ -792,7 +792,7 @@ export const mr: Record<string, string> = {
     'फक्त महिलांसाठी आहेत',
   'Not shown on your profile. Choosing Woman lets you offer and book women-only rides; nobody checks it.':
     'तुमच्या प्रोफाइलवर दाखवले जात नाही. स्त्री निवडल्यास तुम्ही फक्त-महिला प्रवास देऊ आणि बुक करू शकता; याची कोणी तपासणी करत नाही.',
-  // Travel passes
+  // Countdowns
   '{n} days':
     '{n} दिवस',
   // Receipts

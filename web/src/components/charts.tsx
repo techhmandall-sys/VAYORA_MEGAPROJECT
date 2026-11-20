@@ -36,7 +36,7 @@ const PAD = { left: 44, right: 8, top: 14, bottom: 28 };
  * What a driver was paid in each of the last weeks, one bar a week, the current week last.
  * One series, so no legend: the title names it. Every value is also in the table below it.
  */
-export function WeeklyPayoutChart({ payouts, weeks = 8 }: { payouts: { amount: number; createdAt: string }[]; weeks?: number }) {
+export function WeeklyEarningsChart({ payments, weeks = 8 }: { payments: { amount: number; createdAt: string }[]; weeks?: number }) {
   const t = useT();
   const [hovered, setHovered] = useState<number | null>(null);
   // Drawn in real pixels at whatever width it has, so its text stays the same size on every screen.
@@ -53,7 +53,7 @@ export function WeeklyPayoutChart({ payouts, weeks = 8 }: { payouts: { amount: n
   const thisWeek = mondayOf(indiaDay(`${todayInIndia()}T12:00:00Z`));
   const starts = Array.from({ length: weeks }, (_, i) => thisWeek - 7 * (weeks - 1 - i));
   const totals = starts.map((start) =>
-    payouts.filter((payout) => mondayOf(indiaDay(payout.createdAt)) === start).reduce((sum, payout) => sum + payout.amount, 0),
+    payments.filter((payment) => mondayOf(indiaDay(payment.createdAt)) === start).reduce((sum, payment) => sum + payment.amount, 0),
   );
   const top = niceCeiling(Math.max(...totals));
   const plotW = W - PAD.left - PAD.right;
