@@ -16,9 +16,10 @@ gemini:
   thinking_level: low
   # The most one answer may use: a cap on what one question can take from the daily allowance.
   max_tokens: 4000
-  # How long one attempt may take. Google ends a request at about this time too, so a stuck one
-  # fails here rather than keeping the member waiting.
-  timeout_seconds: 10
+  # How long one attempt may take, so a stuck one fails here rather than keeping the member
+  # waiting. Raised from 10 on 2026-11-20: with the new key, answers through intel took 8 to 9 s,
+  # too close to 10 to leave a slow answer room.
+  timeout_seconds: 20
   # Tries in all when Google stalls or fails (a timeout, a 5xx). The free tier's stalls are
   # brief: on 2026-11-08 a question that timed out was answered in 2.3 s straight after. A
   # member waits at most attempts times timeout_seconds.
