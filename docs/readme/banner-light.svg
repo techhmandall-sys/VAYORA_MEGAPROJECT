@@ -14,11 +14,7 @@
       @keyframes flow { to { stroke-dashoffset: -24; } }
       .pulse { animation: pulse 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
       @keyframes pulse { 0% { opacity: .55; transform: scale(1); } 100% { opacity: 0; transform: scale(2.6); } }
-      .rise { animation: rise .9s ease-out both; }
-      .rise2 { animation: rise .9s .15s ease-out both; }
-      .rise3 { animation: rise .9s .3s ease-out both; }
-      @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-      @media (prefers-reduced-motion: reduce) { .dash, .pulse, .rise, .rise2, .rise3 { animation: none; } }
+      @media (prefers-reduced-motion: reduce) { .dash, .pulse { animation: none; } }
     </style>
   </defs>
   <g clip-path="url(#frame)">
@@ -38,18 +34,18 @@
   </g>
   <rect x="1" y="1" width="1278" height="398" rx="27" fill="none" stroke="#E2E7EE" stroke-width="2"/>
 
-  <g class="rise">
+  <g>
     <rect x="72" y="70" width="72" height="72" rx="18" fill="#16865A"/>
     <path d="M92 124 C 108 124, 110 92, 126 88" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
     <circle cx="92" cy="124" r="6" fill="#fff"/><circle cx="126" cy="88" r="6" fill="#fff"/>
     <text x="166" y="134" font-family="'Segoe UI', 'Inter', 'Helvetica Neue', Arial, 'Nirmala UI', 'Kohinoor Devanagari', sans-serif" font-size="76" font-weight="800" letter-spacing="2" fill="#10213A">VAYORA</text>
   </g>
-  <g class="rise2" font-family="'Segoe UI', 'Inter', 'Helvetica Neue', Arial, 'Nirmala UI', 'Kohinoor Devanagari', sans-serif">
+  <g font-family="'Segoe UI', 'Inter', 'Helvetica Neue', Arial, 'Nirmala UI', 'Kohinoor Devanagari', sans-serif">
     <text x="74" y="198" font-size="30" font-weight="600" fill="#10213A">Shared intercity rides across India</text>
     <text x="74" y="240" font-size="22" fill="#3A485C"><tspan font-weight="700" fill="#16865A">An early cancellation is a success.</tspan> We model how long each</text>
     <text x="74" y="270" font-size="22" fill="#3A485C">booking lasts, and act while acting still helps.</text>
   </g>
-  <g class="rise3" font-family="'Segoe UI', 'Inter', 'Helvetica Neue', Arial, 'Nirmala UI', 'Kohinoor Devanagari', sans-serif" font-size="16" font-weight="600">
+  <g font-family="'Segoe UI', 'Inter', 'Helvetica Neue', Arial, 'Nirmala UI', 'Kohinoor Devanagari', sans-serif" font-size="16" font-weight="600">
     <rect x="74" y="304" width="198" height="38" rx="19" fill="#FFFFFF" stroke="#E2E7EE"/>
     <circle cx="96" cy="323" r="6" fill="#16865A"/>
     <text x="110" y="329" fill="#10213A">Survival analysis</text>
