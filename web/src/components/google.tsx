@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, Card, Notice } from './ui';
 import { api, ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { useT } from '../lib/i18n';
+import { useLanguage, useT } from '../lib/i18n';
+import { useTheme } from '../lib/theme';
 import type { Role } from '../lib/types';
 
 // Google's own script draws the button and hands back a signed ID token; core-api checks it.
@@ -44,8 +45,11 @@ function loadScript(): Promise<GoogleIdentity> {
 export function GoogleSignIn() {
   const t = useT();
   const { google } = useAuth();
+  const { choice } = useTheme();
+  const { language } = useLanguage();
   const settings = useQuery({ queryKey: ['auth', 'google'], queryFn: () => api<{ clientId: string | null }>('/auth/google') });
   const button = useRef<HTMLDivElement>(null);
+  const [identity, setIdentity] = useState<GoogleIdentity | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const clientId = settings.data?.clientId ?? null;
@@ -63,18 +67,18 @@ export function GoogleSignIn() {
   };
 
   // The latest of each, so a sign-in that finishes after a re-render, or a change of
-  // language, uses what is current; the button itself is drawn once per client.
+  // language, uses what is current; Google is set up once per client.
   const latest = useRef({ finish, t });
   latest.current = { finish, t };
 
   useEffect(() => {
-    if (!clientId || !button.current) return;
+    if (!clientId) return;
     let cancelled = false;
     loadScript()
-      .then((identity) => {
-        if (cancelled || !button.current) return;
-        identity.accounts.id.initialize({ client_id: clientId, callback: ({ credential }) => void latest.current.finish(credential) });
-        identity.accounts.id.renderButton(button.current, { theme: 'outline', size: 'large', text: 'continue_with' });
+      .then((loaded) => {
+        if (cancelled) return;
+        loaded.accounts.id.initialize({ client_id: clientId, callback: ({ credential }) => void latest.current.finish(credential) });
+        setIdentity(loaded);
       })
       .catch(() => setFailure(latest.current.t('Google sign-in could not be loaded. Use your email or phone instead.')));
     return () => {
@@ -82,13 +86,32 @@ export function GoogleSignIn() {
     };
   }, [clientId]);
 
+  // Drawn as wide as the card allows (Google stops at 400 px), pill-shaped like the app's own
+  // buttons, dark in dark mode and in the reader's language; drawn again when either changes.
+  useEffect(() => {
+    const parent = button.current;
+    if (!identity || !parent) return;
+    const dark = choice === 'dark' || (choice === 'system' && Boolean(window.matchMedia?.('(prefers-color-scheme: dark)')?.matches));
+    parent.replaceChildren();
+    identity.accounts.id.renderButton(parent, {
+      theme: dark ? 'filled_black' : 'outline',
+      size: 'large',
+      shape: 'pill',
+      text: 'continue_with',
+      width: String(Math.max(200, Math.min(400, Math.floor(parent.clientWidth || 400)))),
+      locale: language,
+    });
+  }, [identity, choice, language]);
+
   // Nothing at all when Google sign-in is off: not even an empty card.
   if (!clientId) return null;
   return (
     <Card>
       <div className="space-y-3">
         <p className="text-center text-sm text-slate-500">{t('or')}</p>
-        <div ref={button} />
+        {/* Centred. A light colour scheme here keeps the browser from painting Google's frame
+            white on a dark page: a frame whose scheme differs from its page gets an opaque one. */}
+        <div ref={button} className="flex min-h-11 justify-center" style={{ colorScheme: 'light' }} />
         {pending && (
           <div className="space-y-2">
             <p className="text-sm">{t('No VAYORA account uses this Google address yet. How will you use VAYORA?')}</p>
