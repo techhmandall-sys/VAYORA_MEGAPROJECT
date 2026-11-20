@@ -35,6 +35,7 @@
 [🔬 Research](#research) &nbsp;·&nbsp;
 [🏗️ Architecture](#architecture) &nbsp;·&nbsp;
 [🚀 Run it](#quick-start) &nbsp;·&nbsp;
+[🧭 Roadmap](#roadmap) &nbsp;·&nbsp;
 [📚 Docs](#documents)
 
 <br>
@@ -50,7 +51,7 @@
 
 <a name="idea"></a>
 
-## 💡 The idea
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-idea-dark.svg"><img src="docs/readme/h-idea-light.svg" alt="The idea" width="100%"></picture></h2>
 
 > [!TIP]
 > **An early cancellation is a success.** A seat released three days before departure gets refilled
@@ -69,9 +70,16 @@ app itself serves routes anywhere in India.
 The measure is **completed rides per 100 searches**, never bookings: a platform can take more bookings
 and still move fewer people.
 
+**🗺️ Explore the research corridor.** Drag and zoom: the road route the app computes with OSRM, 235.9 km
+through Karad and Satara. Click a stop to see how far it is from Kolhapur.
+
+```geojson
+{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"Kolhapur to Pune by road","distance":"235.9 km, as OSRM routes it on OpenStreetMap","stroke":"#16865A","stroke-width":5,"stroke-opacity":0.9},"geometry":{"type":"LineString","coordinates":[[74.2433,16.705],[74.2517,16.7075],[74.2768,16.7081],[74.2795,16.7089],[74.2807,16.7113],[74.283,16.7212],[74.2817,16.7435],[74.2761,16.7716],[74.279,16.7887],[74.2833,16.7925],[74.2848,16.7966],[74.2862,16.8259],[74.2951,16.8514],[74.297,16.8634],[74.2962,16.8693],[74.2984,16.8737],[74.2972,16.8878],[74.2905,16.8944],[74.2852,16.9034],[74.2856,16.9057],[74.2909,16.9098],[74.2888,16.9263],[74.2795,16.9414],[74.2698,16.965],[74.2589,17.0097],[74.2429,17.0349],[74.2154,17.0933],[74.1928,17.123],[74.1879,17.1324],[74.1823,17.1721],[74.1774,17.2598],[74.1795,17.2734],[74.1706,17.2832],[74.1784,17.279],[74.1808,17.2811],[74.1798,17.2893],[74.1817,17.2892],[74.1798,17.2889],[74.1814,17.2801],[74.1784,17.279],[74.1706,17.283],[74.167,17.2971],[74.1601,17.3092],[74.1483,17.3243],[74.1449,17.3321],[74.1396,17.3376],[74.126,17.3616],[74.1078,17.3847],[74.1036,17.395],[74.1005,17.3976],[74.102,17.4094],[74.0995,17.4143],[74.0854,17.4823],[74.079,17.5059],[74.07,17.525],[74.0655,17.5296],[74.051,17.5605],[74.0503,17.5766],[74.048,17.5839],[74.0202,17.6186],[74.0129,17.6373],[74.0117,17.6456],[74.0139,17.6511],[74.0136,17.6555],[74.0215,17.6773],[74.0173,17.6801],[74.0189,17.6815],[74.0225,17.6811],[74.0241,17.6886],[74.0269,17.7132],[74.0259,17.7192],[74.0218,17.7258],[73.9947,17.7535],[73.9739,17.8059],[73.9551,17.8368],[73.9523,17.8525],[73.9527,17.8621],[73.9569,17.8682],[73.9656,17.8716],[73.9713,17.8784],[73.9725,17.9093],[73.9781,17.9461],[73.984,17.9575],[73.9884,17.9833],[73.9939,17.9964],[73.9998,18.021],[74.0032,18.026],[74.0125,18.0292],[74.0157,18.0442],[74.0076,18.0691],[73.9971,18.0886],[73.9954,18.0957],[73.9914,18.1002],[73.9901,18.1112],[73.9753,18.147],[73.9727,18.1501],[73.9568,18.1601],[73.9543,18.1638],[73.9527,18.1713],[73.9552,18.1767],[73.9481,18.1987],[73.9446,18.2026],[73.9387,18.2047],[73.9336,18.2092],[73.911,18.2339],[73.9032,18.2379],[73.8904,18.2546],[73.8851,18.259],[73.8722,18.2924],[73.8734,18.3006],[73.8682,18.3058],[73.8654,18.313],[73.8519,18.3265],[73.8534,18.3418],[73.8513,18.3466],[73.8564,18.3904],[73.8487,18.4011],[73.8459,18.4216],[73.8377,18.433],[73.8393,18.4407],[73.8168,18.4661],[73.82,18.4693],[73.8296,18.4884],[73.8456,18.5012],[73.8513,18.4991],[73.8538,18.4998],[73.854,18.5181],[73.8552,18.5209],[73.8565,18.5204]]}},{"type":"Feature","properties":{"name":"Kolhapur","km from Kolhapur":0,"marker-color":"#F59E0B","marker-size":"large"},"geometry":{"type":"Point","coordinates":[74.2433,16.705]}},{"type":"Feature","properties":{"name":"Karad","km from Kolhapur":75,"marker-color":"#16865A","marker-size":"medium"},"geometry":{"type":"Point","coordinates":[74.1818,17.289]}},{"type":"Feature","properties":{"name":"Satara","km from Kolhapur":126.7,"marker-color":"#16865A","marker-size":"medium"},"geometry":{"type":"Point","coordinates":[74.0183,17.6805]}},{"type":"Feature","properties":{"name":"Pune","km from Kolhapur":235.9,"marker-color":"#F59E0B","marker-size":"large"},"geometry":{"type":"Point","coordinates":[73.8567,18.5204]}}]}
+```
+
 <a name="different"></a>
 
-## ✨ What makes VAYORA different
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-different-dark.svg"><img src="docs/readme/h-different-light.svg" alt="What makes VAYORA different" width="100%"></picture></h2>
 
 <table>
 <tr>
@@ -124,7 +132,9 @@ notification, error and PDF receipt works in English, Hindi and Marathi, in ligh
 </tr>
 </table>
 
-## 📊 At a glance
+<a name="glance"></a>
+
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-glance-dark.svg"><img src="docs/readme/h-glance-light.svg" alt="At a glance" width="100%"></picture></h2>
 
 <div align="center">
 <table>
@@ -158,11 +168,18 @@ notification, error and PDF receipt works in English, Hindi and Marathi, in ligh
 
 <a name="tour"></a>
 
-## 🖼️ A tour of the app
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-tour-dark.svg"><img src="docs/readme/h-tour-light.svg" alt="A tour of the app" width="100%"></picture></h2>
 
 Every screenshot below is the running app, filled with demo data from
 [`scripts/demo-data.mjs`](scripts/demo-data.mjs). **Every person, ride, review and message in them is
 made up.** Open each section to see it.
+
+<p align="center">
+  <img src="docs/readme/tour.svg" alt="An auto-playing tour of six screens: the front page, search results, a ride's road route, a booking with its ride chat, booking durability scores, and the live what-if simulator" width="100%">
+</p>
+
+> [!TIP]
+> In the app, press <kbd>Ctrl</kbd> + <kbd>K</kbd> on any page to jump straight to another.
 
 <details open>
 <summary><h3>🧳 For passengers: search, hold, book, travel, pay the driver</h3></summary>
@@ -445,7 +462,7 @@ other if the server can send a message the app cannot translate.
 
 <a name="research"></a>
 
-## 🔬 What the research found
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-research-dark.svg"><img src="docs/readme/h-research-light.svg" alt="What the research found" width="100%"></picture></h2>
 
 > [!IMPORTANT]
 > The answer so far is **no, not in this simulated world**, and the project reports it that way.
@@ -475,6 +492,34 @@ the earlier world's committed numbers (B0 30.77, B3 31.11) to every digit.</sub>
 - **The one gain needs no model.** Offering the soonest-leaving ride first does exactly what B3 does
   (−0.001 against B3); a model that knows nothing about the passenger does as well, and the scheduler
   does no better than choosing at random.
+
+<details>
+<summary><b>🧮 The durability model in two formulas</b></summary>
+
+<br>
+
+How long a booking lasts is modelled as a time to an event, $T$, from acceptance until the passenger
+cancels; a booking still standing at departure is right-censored. The served model is a Cox
+proportional-hazards model (h3-cox, fitted with lifelines) on 11 features known when the booking is
+requested:
+
+```math
+S(t \mid \mathbf{x}) \;=\; P\left(T > t \mid \mathbf{x}\right) \;=\; S_0(t)^{\exp\left(\boldsymbol{\beta}^{\top}\mathbf{x}\right)}
+```
+
+For a booking that has already lasted $e$ hours and departs $h$ hours after acceptance, the score is
+the chance it lasts the rest of the way:
+
+```math
+\text{score} \;=\; \frac{S(h \mid \mathbf{x})}{S(e \mid \mathbf{x})}
+```
+
+Bookings scoring below $0.8$ become candidates for the reminder 48 hours before boarding, and the
+CP-SAT contact scheduler chooses among them within the contact budget. On the validation seeds it
+reaches a concordance of 0.638 and a Brier score of 0.1169: well calibrated but weak at ranking, as
+expected of a model that cannot represent the generator.
+
+</details>
 
 <details>
 <summary><b>📈 The report's figures</b></summary>
@@ -560,7 +605,7 @@ Every number above is a SQL query over the event log. The method is in
 
 <a name="architecture"></a>
 
-## 🏗️ Architecture
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-architecture-dark.svg"><img src="docs/readme/h-architecture-light.svg" alt="Architecture" width="100%"></picture></h2>
 
 ```mermaid
 flowchart TB
@@ -650,7 +695,7 @@ lives where it does is in [ARCHITECTURE](docs/ARCHITECTURE.md).
 
 <a name="quick-start"></a>
 
-## 🚀 Quick start
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-quick-start-dark.svg"><img src="docs/readme/h-quick-start-light.svg" alt="Quick start" width="100%"></picture></h2>
 
 > [!TIP]
 > Requires only **Docker with Compose v2**. Nothing else needs to be installed.
@@ -773,7 +818,9 @@ only Google has been tried against the real service.
 
 </details>
 
-## ✅ Tests
+<a name="tests"></a>
+
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-tests-dark.svg"><img src="docs/readme/h-tests-light.svg" alt="Tests" width="100%"></picture></h2>
 
 ```sh
 docker compose --profile test run --rm core-api-tests      # core-api: Java 21, real PostGIS, MongoDB and Redis
@@ -782,10 +829,21 @@ docker compose --profile research run --rm research        # event log, simulato
 (cd gateway && npm ci && npm test)                         # real Socket.IO server and clients
 ```
 
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"pie1": "#16865A", "pie2": "#F59E0B", "pie3": "#10213A", "pie4": "#D70015", "pieSectionTextColor": "#FFFFFF", "pieTitleTextColor": "#8B949E", "pieLegendTextColor": "#8B949E", "pieStrokeColor": "#FFFFFF", "pieOuterStrokeWidth": "0px"}}}%%
+pie showData title 1,029 tests, all passing in the team's run of 12 November
+    "core-api · Java" : 328
+    "Python · research and intel" : 339
+    "web · React" : 334
+    "gateway · Node" : 28
+```
+
 The Python suite needs PostgreSQL running (`docker compose up -d --wait postgres core-api`) and works in
 a throwaway schema.
 
-## 🔁 Reproducing the research
+<a name="reproduce"></a>
+
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-reproduce-dark.svg"><img src="docs/readme/h-reproduce-light.svg" alt="Reproducing the research" width="100%"></picture></h2>
 
 ```sh
 scripts/reproduce.sh               # tests, model, ladder and sweeps, about an hour
@@ -816,7 +874,9 @@ docker compose --profile research run --rm research python -m sim.run --variant 
 Every threshold, budget and assumed value lives in `experiments/configs/*.yaml`, none in code. Latent
 passenger types drive behaviour in the simulator and are never model features.
 
-## 🧾 The event log
+<a name="event-log"></a>
+
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-event-log-dark.svg"><img src="docs/readme/h-event-log-light.svg" alt="The event log" width="100%"></picture></h2>
 
 Every number in the report is a SQL aggregate over one table, `events`, through
 [`experiments/analysis/metrics.sql`](experiments/analysis/metrics.sql). Two writers share it and a fixed
@@ -825,9 +885,31 @@ vocabulary of 24 event types, from `search_issued` and `booking_requested` throu
 throws into its caller, and the Python `vayora_events` writer, which fails loudly. The platform and the
 simulator speak the same vocabulary; the platform's own rows sit outside every simulation run.
 
+<a name="roadmap"></a>
+
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-roadmap-dark.svg"><img src="docs/readme/h-roadmap-light.svg" alt="Roadmap" width="100%"></picture></h2>
+
+What is built, and what is still open. Every open item needs something from outside the code: a
+device, an account, a person, real data or a server. The details are in
+[IMPLEMENTATION_ROADMAP](docs/IMPLEMENTATION_ROADMAP.md).
+
+- [x] Web app for passengers, drivers and administrators, in English, Hindi and Marathi
+- [x] Android app in Expo and React Native, sharing the web app's translations
+- [x] Durability model, contact scheduler and live what-if simulator
+- [x] Variant ladder, sweeps and robustness experiments X1 to X7, every number a SQL query
+- [x] One booking for the last seat under concurrent requests, tested with real databases
+- [ ] Run the Android app on a phone and build an APK
+- [ ] Switch on the CI workflow for this repository
+- [ ] Try SMS and masked calls with a real Twilio account
+- [ ] A native speaker's review of the Hindi and Marathi text
+- [ ] Train the durability model on real bookings, once there are some
+- [ ] Measure real demand on the corridor
+- [ ] Add the soonest-first ladder and X1 to X7 to `scripts/reproduce.sh`
+- [ ] Put the platform online on a real server
+
 <a name="documents"></a>
 
-## 📚 Documents
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-documents-dark.svg"><img src="docs/readme/h-documents-light.svg" alt="Documents" width="100%"></picture></h2>
 
 | Document | What it answers |
 |---|---|
@@ -876,12 +958,16 @@ shows as a straight line and says so. To rebuild from scratch:
 
 </details>
 
-## 🙏 Data and credits
+<a name="credits"></a>
+
+<h2><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/h-credits-dark.svg"><img src="docs/readme/h-credits-light.svg" alt="Data and credits" width="100%"></picture></h2>
 
 - Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL), routed with
   OSRM.
 - Noto Sans, for names in nine Indian scripts on PDF receipts: © The Noto Project Authors, SIL Open Font
   License 1.1 (`core-api/src/main/resources/fonts/OFL.txt`).
+- The README's artwork is set in Montserrat (SIL Open Font License 1.1, The Montserrat Project Authors),
+  drawn as outlines, with icons from Lucide (ISC License).
 - The photo of the Khandala ghat on the front page and in the screenshots: Sonika Agarwal, on Unsplash.
 - Hotel bookings: Nuno Antonio, Ana de Almeida and Luis Nunes (2019), *Hotel booking demand datasets*,
   Data in Brief 22, 41–49, [doi:10.1016/j.dib.2018.11.126](https://doi.org/10.1016/j.dib.2018.11.126),
