@@ -32,7 +32,9 @@ export default function TabsLayout() {
         headerShadowVisible: false,
         // In a browser there is no safe-area inset to pad the bar, and the labels' descenders were
         // clipped at its bottom edge. On a phone the navigator's own sizing is kept.
-        ...(Platform.OS === 'web' ? { tabBarStyle: { height: 62, paddingTop: 4, paddingBottom: 8 } } : {}),
+        ...(Platform.OS === 'web'
+          ? { tabBarStyle: { height: 70, paddingTop: 2, paddingBottom: 6 }, tabBarLabelStyle: { fontSize: 12, lineHeight: 16 } }
+          : {}),
       }}
     >
       <Tabs.Screen name="search" options={{ title: t('Find a ride'), href: driver ? null : undefined, tabBarIcon: icon('search') }} />
