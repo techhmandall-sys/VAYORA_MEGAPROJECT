@@ -503,16 +503,16 @@ cancels; a booking still standing at departure is right-censored. The served mod
 proportional-hazards model (h3-cox, fitted with lifelines) on 11 features known when the booking is
 requested:
 
-```math
+$$
 S(t \mid \mathbf{x}) \;=\; P\left(T > t \mid \mathbf{x}\right) \;=\; S_0(t)^{\exp\left(\boldsymbol{\beta}^{\top}\mathbf{x}\right)}
-```
+$$
 
 For a booking that has already lasted $e$ hours and departs $h$ hours after acceptance, the score is
 the chance it lasts the rest of the way:
 
-```math
+$$
 \text{score} \;=\; \frac{S(h \mid \mathbf{x})}{S(e \mid \mathbf{x})}
-```
+$$
 
 Bookings scoring below $0.8$ become candidates for the reminder 48 hours before boarding, and the
 CP-SAT contact scheduler chooses among them within the contact budget. On the validation seeds it
