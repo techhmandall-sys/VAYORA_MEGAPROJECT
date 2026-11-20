@@ -447,7 +447,7 @@ export function Layout() {
         <main
           id="main"
           key={location.pathname}
-          className={`mx-auto max-w-5xl animate-page-in px-4 pt-6 sm:px-6 sm:pt-8 print:p-0 ${user && phone ? 'pb-28' : 'pb-20'}`}
+          className={`mx-auto max-w-5xl animate-page-in px-4 pt-6 sm:px-6 sm:pt-8 print:p-0 ${user ? 'pb-28' : 'pb-20'}`}
         >
           <ErrorBoundary>
             <BarTitleContext.Provider value={setBarTitle}>

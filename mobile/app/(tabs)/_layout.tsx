@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
+import { Platform } from 'react-native';
 
 import { useAuth } from '../../src/auth';
 import { useT } from '../../src/settings';
@@ -29,6 +30,9 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: colors.canvas },
         headerTitleStyle: { fontWeight: '700', color: colors.text },
         headerShadowVisible: false,
+        // In a browser there is no safe-area inset to pad the bar, and the labels' descenders were
+        // clipped at its bottom edge. On a phone the navigator's own sizing is kept.
+        ...(Platform.OS === 'web' ? { tabBarStyle: { height: 62, paddingTop: 4, paddingBottom: 8 } } : {}),
       }}
     >
       <Tabs.Screen name="search" options={{ title: t('Find a ride'), href: driver ? null : undefined, tabBarIcon: icon('search') }} />
