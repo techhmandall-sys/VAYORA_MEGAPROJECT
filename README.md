@@ -1,42 +1,148 @@
 <div align="center">
 
-# VAYORA
+<a name="top"></a>
 
-**Shared intercity rides in India, built to test one idea about cancellations.**
-
-Final-year B.Tech project · CSE (Data Science) · DYPCET Kolhapur · team of four
-
-![Java 21](https://img.shields.io/badge/Java-21-007396?logo=openjdk&logoColor=white)
-![Spring Boot 3](https://img.shields.io/badge/Spring_Boot-3-6DB33F?logo=springboot&logoColor=white)
-![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
-![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
-![PostgreSQL with PostGIS](https://img.shields.io/badge/PostgreSQL-PostGIS-4169E1?logo=postgresql&logoColor=white)
-![MongoDB 7](https://img.shields.io/badge/MongoDB-7-47A248?logo=mongodb&logoColor=white)
-![Redis 7](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
-![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-
-[The idea](#the-idea-under-test) · [What we found](#what-the-research-found) · [What it does](#what-the-platform-does) · [Run it](#quick-start) · [Architecture](#architecture) · [Documents](#documents)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/readme/banner-dark.svg">
+  <img src="docs/readme/banner-light.svg" alt="VAYORA: shared intercity rides across India. An early cancellation is a success." width="100%">
+</picture>
 
 <br>
 
-<img src="docs/screenshots/home.jpg" alt="VAYORA's front page: a search from Kolhapur to Pune over a photo of the Khandala ghat" width="100%">
+![Status](https://img.shields.io/badge/status-final--year_project-16865A?style=for-the-badge)
+![Tests](https://img.shields.io/badge/tests-1%2C029_passing-16865A?style=for-the-badge)
+![Features](https://img.shields.io/badge/features-84_of_89_verified-10213A?style=for-the-badge)
+![Languages](https://img.shields.io/badge/languages-English_%C2%B7_Hindi_%C2%B7_Marathi-F59E0B?style=for-the-badge)
+
+![Java 21](https://img.shields.io/badge/Java-21-007396?style=flat-square&logo=openjdk&logoColor=white)
+![Spring Boot 3](https://img.shields.io/badge/Spring_Boot-3-6DB33F?style=flat-square&logo=springboot&logoColor=white)
+![React 18](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Expo](https://img.shields.io/badge/Expo-React_Native-000020?style=flat-square&logo=expo&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)
+![PostgreSQL with PostGIS](https://img.shields.io/badge/PostgreSQL-PostGIS-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![MongoDB 7](https://img.shields.io/badge/MongoDB-7-47A248?style=flat-square&logo=mongodb&logoColor=white)
+![Redis 7](https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-4-010101?style=flat-square&logo=socketdotio&logoColor=white)
+![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
+
+**Final-year B.Tech project · CSE (Data Science) · DYPCET Kolhapur · team of four**
+
+[💡 Idea](#idea) &nbsp;·&nbsp;
+[✨ What's different](#different) &nbsp;·&nbsp;
+[🖼️ Tour](#tour) &nbsp;·&nbsp;
+[🔬 Research](#research) &nbsp;·&nbsp;
+[🏗️ Architecture](#architecture) &nbsp;·&nbsp;
+[🚀 Run it](#quick-start) &nbsp;·&nbsp;
+[📚 Docs](#documents)
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/landing-dark.jpg">
+  <img src="docs/screenshots/landing.jpg" alt="VAYORA's front page: a search from Kolhapur to Pune over a photo of the Khandala ghat" width="100%">
+</picture>
 
 </div>
 
-## The idea under test
+<br>
 
+<a name="idea"></a>
+
+## 💡 The idea
+
+> [!TIP]
 > **An early cancellation is a success.** A seat released three days before departure gets refilled
 > and the journey completes; the same seat released two hours before departure is destroyed capacity.
 
-VAYORA models how long a booking will last as a survival curve over the seven-day booking horizon,
-and acts on it while action still helps. It does so on one corridor, Kolhapur to Pune (~230 km).
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/readme/idea-dark.svg">
+  <img src="docs/readme/idea-light.svg" alt="Seat A is released three days before departure, another passenger books it and the journey completes. Seat B is released two hours before departure and leaves empty." width="100%">
+</picture>
 
-The measure is **completed rides per 100 searches**, never bookings: a platform can take more
-bookings and still move fewer people.
+VAYORA models how long a booking will last as a **survival curve over the seven-day booking horizon**,
+and acts on it while action still helps: a reminder, sent to the bookings most likely to break, asks
+whether plans have changed. The research runs on one corridor, **Kolhapur to Pune (~230 km)**; the
+app itself serves routes anywhere in India.
 
-## At a glance
+The measure is **completed rides per 100 searches**, never bookings: a platform can take more bookings
+and still move fewer people.
+
+<a name="different"></a>
+
+## ✨ What makes VAYORA different
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+### 📉 Survival, not yes/no
+Cox proportional hazards and gradient-boosted survival models estimate **how long** each booking will
+last across the week, not just whether it cancels. Every score comes with the reasons behind it.
+
+</td>
+<td width="33%" valign="top">
+
+### 🎯 Rides, not bookings
+One number decides everything: **completed rides per 100 searches**. A feature that adds bookings but
+moves fewer people counts as a loss.
+
+</td>
+<td width="33%" valign="top">
+
+### 🧪 An honest answer
+The project tested its own idea and found that, in this simulated world, asking people to release
+early **does not add rides**. It reports that plainly, with 95% intervals, instead of hiding it.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### 🧾 Every number is a query
+One append-only event log, a frozen vocabulary of 24 event types, and
+[`metrics.sql`](experiments/analysis/metrics.sql). `reproduce.sh` rebuilds the results and fails
+unless they match to the digit.
+
+</td>
+<td width="33%" valign="top">
+
+### 🛡️ Built not to cheat
+Cancellations come from a Weibull hazard with hidden shocks that no fitted model can represent.
+Hidden passenger types drive behaviour but never become features. Training and validation seeds
+never overlap.
+
+</td>
+<td width="33%" valign="top">
+
+### 🤝 Fair and local
+Passengers pay the driver directly in cash or UPI, and **VAYORA charges nothing**. Every screen,
+notification, error and PDF receipt works in English, Hindi and Marathi, in light and dark.
+
+</td>
+</tr>
+</table>
+
+## 📊 At a glance
+
+<div align="center">
+<table>
+<tr>
+<td align="center" width="16%"><h3>84 / 89</h3><sub>features verified,<br>5 partial</sub></td>
+<td align="center" width="16%"><h3>1,029</h3><sub>tests, all passing</sub></td>
+<td align="center" width="16%"><h3>126</h3><sub>Indian cities listed,<br>or any map point</sub></td>
+<td align="center" width="16%"><h3>3</h3><sub>languages on<br>every screen</sub></td>
+<td align="center" width="16%"><h3>24</h3><sub>event types in<br>one event log</sub></td>
+<td align="center" width="16%"><h3>30 × 60</h3><sub>seeds × simulated<br>days per variant</sub></td>
+</tr>
+</table>
+</div>
+
+<details>
+<summary><b>The detail behind each number</b></summary>
+
+<br>
 
 | | |
 |---|---|
@@ -48,7 +154,298 @@ bookings and still move fewer people.
 | **Research** | On Kolhapur to Pune alone. A SimPy simulator of the corridor: 60 simulated days, 30 seeds per variant, train and validation on disjoint seeds |
 | **Data** | All synthetic, plus one public dataset of real hotel cancellations used as a check |
 
-## What the research found
+</details>
+
+<a name="tour"></a>
+
+## 🖼️ A tour of the app
+
+Every screenshot below is the running app, filled with demo data from
+[`scripts/demo-data.mjs`](scripts/demo-data.mjs). **Every person, ride, review and message in them is
+made up.** Open each section to see it.
+
+<details open>
+<summary><h3>🧳 For passengers: search, hold, book, travel, pay the driver</h3></summary>
+
+<br>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/search-results.jpg" alt="Search results for Kolhapur to Pune with three rides">
+<br><b>🔎 Search and compare</b><br>
+<sub>By town or by exact points on a map. Each ride shows seats left, instant or approved booking, a staff-checked identity and the driver's rating. Sort five ways, including a match score for both sides.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/ride-route.jpg" alt="The ride's road route from Kolhapur to Pune on a map">
+<br><b>🗺️ The real road route</b><br>
+<sub>Stops and meeting points on OpenStreetMap, with distances worked out on real roads by OSRM.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/ride-details.jpg" alt="Ride details: every stop with its time, the driver and the fare">
+<br><b>📋 Ride details</b><br>
+<sub>Every stop with its time, where you board and get off, the driver's record of rides kept, the car and the fare.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/seat-hold.jpg" alt="A seat held for five minutes with a countdown">
+<br><b>⏳ Hold while you decide</b><br>
+<sub>Seats held for five minutes with a live countdown. It is not a booking, and the seats go back by themselves.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/bookings.jpg" alt="My bookings with a progress tracker for each trip">
+<br><b>🧭 Every booking, live</b><br>
+<sub>Requested, accepted, under way, arrived. Each booking says what cancelling costs right now, and when that changes.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/boarding-code.jpg" alt="A confirmed booking showing its four-digit boarding code">
+<br><b>🎫 Boarding code</b><br>
+<sub>Shown at pickup and checked by the driver. Call the driver through a masked number, or open the meeting point.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/chat.jpg" alt="A ride chat between a passenger and the driver">
+<br><b>💬 Ride chat</b><br>
+<sub>Real-time messages with everyone on the ride over Socket.IO, and the driver's live position once the ride is on the road.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/emergency.jpg" alt="The emergency panel: call 112, or alert the administrators">
+<br><b>🚨 Emergency, one tap away</b><br>
+<sub>Puts <b>112</b> first. Then, if you choose, an alert to VAYORA's staff queue and the people you added to tell.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/payments.jpg" alt="Payments: every trip and what is owed, paid by UPI or cash">
+<br><b>💸 Pay the driver directly</b><br>
+<sub>In cash or by UPI, after the ride. VAYORA moves no money and takes no commission.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/receipt.jpg" alt="A receipt for a completed booking">
+<br><b>🧾 Receipts</b><br>
+<sub>Printable, or as a PDF that writes names in nine Indian scripts.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/passenger-home-dark.jpg">
+  <img src="docs/screenshots/passenger-home.jpg" alt="The passenger's home: next trip, quick search and a setup checklist">
+</picture>
+<br><b>🏠 A home of your own</b><br>
+<sub>The next trip with a countdown, a quick search, your numbers and a setup checklist.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/assistant.jpg" alt="The assistant answering what giving a seat back costs">
+<br><b>✨ Assistant</b><br>
+<sub>Answers how VAYORA works, typed or spoken, in all three languages. It cannot see your bookings or change anything.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/notifications.jpg" alt="Notifications about trips and payments">
+<br><b>🔔 Notifications</b><br>
+<sub>Live, in your language. Copies by SMS, email or browser push once those services are switched on.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/account.jpg" alt="The account page">
+<br><b>👤 Your account, your data</b><br>
+<sub>Profile and preferences, confirmed email or phone, emergency contacts. Download what VAYORA keeps, or delete the account.</sub>
+</td>
+</tr>
+</table>
+
+</details>
+
+<details>
+<summary><h3>🚗 For drivers: publish, approve, drive, get paid</h3></summary>
+
+<br>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/driver-home-dark.jpg">
+  <img src="docs/screenshots/driver-home.jpg" alt="The driver's home: next ride, seats booked and earnings">
+</picture>
+<br><b>🏠 Driver home</b><br>
+<sub>The next ride, seats booked, requests waiting, money owed and paid in the last week.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/publish-route.jpg" alt="Publishing a ride: the route worked out on a map with a suggested price">
+<br><b>➕ Publish in five steps</b><br>
+<sub>Stops on the way, a route worked out on real roads, suggested per-stretch prices, a return trip and weekly repeats.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/driver-requests.jpg" alt="A passenger's request waiting for the driver to accept or decline">
+<br><b>✅ Approve each request</b><br>
+<sub>On rides that are not instant, accept or decline each passenger. Seats are counted per stretch of the route.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/driver-rides.jpg" alt="My rides with seats free on each stretch">
+<br><b>🛣️ Seats on every stretch</b><br>
+<sub>Kolhapur to Karad, Karad to Satara, Satara to Pune: each leg has its own seats and its own price.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/vehicles.jpg" alt="A Tata Nexon EV with its estimated range">
+<br><b>🔋 Vehicles, electric too</b><br>
+<sub>An electric car's range from its battery and consumption, which publishing respects. Insurance is declared, not assumed.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/earnings.jpg" alt="Earnings: total paid, a weekly chart and each payment">
+<br><b>₹ Earnings</b><br>
+<sub>A weekly chart and every payment. The driver keeps the whole fare and marks each passenger paid.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/driver-record.jpg" alt="The driver's reliability record">
+<br><b>🏅 Reliability record</b><br>
+<sub>Rides completed and withdrawn, passengers carried, no-shows and rating: what passengers see before they book.</sub>
+</td>
+<td width="50%" valign="top">
+<br><b>📣 Told where demand is</b><br>
+<sub>Drivers hear when passengers searched a stretch they drive and found nothing, at most once a week. Whether they then offer a ride is recorded, never reported as a result.</sub>
+</td>
+</tr>
+</table>
+
+</details>
+
+<details>
+<summary><h3>🛠️ For administrators: run the platform, watch the model</h3></summary>
+
+<br>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/admin-overview.jpg" alt="The administrators' live overview">
+<br><b>📈 Live overview</b><br>
+<sub>Members, rides, bookings and reports at a glance, current without a reload.</sub>
+</td>
+<td width="50%" valign="top">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-durability-dark.jpg">
+  <img src="docs/screenshots/admin-durability.jpg" alt="Booking durability: each booking's estimate and the main reasons">
+</picture>
+<br><b>🧠 Booking durability</b><br>
+<sub>The model's estimate that each passenger will not cancel, with the main reasons. Used for one thing only: choosing whom the seat-release reminder asks.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/admin-what-if-dark.jpg">
+  <img src="docs/screenshots/admin-what-if.jpg" alt="What if: a saved sweep, and the simulator run live at a new value">
+</picture>
+<br><b>🧪 What if, run live</b><br>
+<sub>Browse every saved sweep, or run the simulator now at a value no sweep covered. Exploratory, and labelled so.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/admin-unmet-demand.jpg" alt="Unmet demand: stretches where searches found no ride">
+<br><b>📍 Unmet demand</b><br>
+<sub>Days and stretches where at least three searches found no ride, and how many drivers were told.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/admin-document-checks.jpg" alt="Document checks waiting for staff">
+<br><b>🪪 Document checks</b><br>
+<sub>Staff record that a person saw the driver's document. No number and no copy is kept.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/admin-audit.jpg" alt="The audit log">
+<br><b>📜 Audit log</b><br>
+<sub>Every administrative action, newest first; entries cannot be edited or removed. Beside it: reports, the emergency queue, members, disputed trips, bus alternatives, rest stops and chargers.</sub>
+</td>
+</tr>
+</table>
+
+</details>
+
+<details>
+<summary><h3>📱 The Android app: VAYORA on a phone</h3></summary>
+
+<br>
+
+<div align="center">
+<img src="docs/screenshots/app-search.jpg" alt="App: find a ride" width="23%">
+&nbsp;
+<img src="docs/screenshots/app-results.jpg" alt="App: rides found" width="23%">
+&nbsp;
+<img src="docs/screenshots/app-bookings.jpg" alt="App: my bookings" width="23%">
+&nbsp;
+<img src="docs/screenshots/app-chat.jpg" alt="App: ride chat with the route" width="23%">
+<br><br>
+<img src="docs/screenshots/app-sign-in.jpg" alt="App: sign in" width="23%">
+&nbsp;
+<img src="docs/screenshots/app-driver-rides.jpg" alt="App: a driver's rides" width="23%">
+&nbsp;
+<img src="docs/screenshots/app-publish.jpg" alt="App: publish a ride" width="23%">
+</div>
+
+<br>
+
+Built with **Expo and React Native**, in all three languages. Passengers search, book, show boarding
+codes, chat and follow the driver; drivers add vehicles, publish, answer requests and run the trip.
+It talks to core-api and the gateway just as the web app does. <sub>Shown here through Expo's web
+build at phone size.</sub>
+
+</details>
+
+<details>
+<summary><h3>🌗 Light, dark and three languages</h3></summary>
+
+<br>
+
+<div align="center">
+<img src="docs/screenshots/landing-phone.jpg" alt="Front page on a phone, light" width="23%">
+&nbsp;
+<img src="docs/screenshots/landing-phone-dark.jpg" alt="Front page on a phone, dark" width="23%">
+&nbsp;
+<img src="docs/screenshots/sign-in-phone.jpg" alt="Signing in on a phone" width="23%">
+&nbsp;
+<img src="docs/screenshots/search-phone-marathi.jpg" alt="Search on a phone, in Marathi" width="23%">
+</div>
+
+<br>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/home-marathi.jpg" alt="A passenger's home in Marathi">
+<br><b>मराठी</b> <sub>A passenger's home in Marathi.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/driver-home-hindi-dark.jpg" alt="A driver's home in Hindi, dark">
+<br><b>हिन्दी</b> <sub>A driver's home in Hindi, in dark mode.</sub>
+</td>
+</tr>
+</table>
+
+Two tests keep the languages honest: one fails if the app shows text that is not translated, the
+other if the server can send a message the app cannot translate.
+
+</details>
+
+> [!NOTE]
+> The model never cancels, prices or refuses anyone: the only thing it decides is whom the
+> seat-release reminder asks. What is simulated, mocked or missing is listed plainly in
+> [KNOWN_LIMITATIONS](docs/KNOWN_LIMITATIONS.md).
+
+<a name="research"></a>
+
+## 🔬 What the research found
 
 > [!IMPORTANT]
 > The answer so far is **no, not in this simulated world**, and the project reports it that way.
@@ -59,12 +456,12 @@ bookings and still move fewer people.
 
 | Variant | What it does | Completed rides per 100 searches |
 |---|---|---|
-| B0 | Shows rides closest to the passenger's preferred time | 30.22 |
-| B3 | Ranks rides by how likely each booking is to last | 30.54 (+0.32) |
-| EARLIEST | Shows the soonest-leaving ride first, with no model | 30.54 (+0.32) |
-| B4 | As B3, and asks passengers whose booking looks shaky to release it early | 30.56 |
-| B5 | As B4, within a contact budget, a CP-SAT scheduler choosing whom to ask | 30.53 |
-| ORACLE | Asks exactly the bookings that will cancel late | +0.13 over B3 |
+| 🟦 B0 | Shows rides closest to the passenger's preferred time | 30.22 |
+| 🟩 B3 | Ranks rides by how likely each booking is to last | 30.54 (+0.32) |
+| 🟩 EARLIEST | Shows the soonest-leaving ride first, with no model | 30.54 (+0.32) |
+| 🟨 B4 | As B3, and asks passengers whose booking looks shaky to release it early | 30.56 |
+| 🟨 B5 | As B4, within a contact budget, a CP-SAT scheduler choosing whom to ask | 30.53 |
+| 🟪 ORACLE | Asks exactly the bookings that will cancel late | +0.13 over B3 |
 
 <sub>Current world (h3, with a last-mile effect), 30 paired seeds. Switching that effect off reproduces
 the earlier world's committed numbers (B0 30.77, B3 31.11) to every digit.</sub>
@@ -80,7 +477,49 @@ the earlier world's committed numbers (B0 30.77, B3 31.11) to every digit.</sub>
   does no better than choosing at random.
 
 <details>
-<summary><b>Every experiment since, one finding each</b></summary>
+<summary><b>📈 The report's figures</b></summary>
+
+<br>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/figures/fig2-refill-timing.png" alt="Share of released seats refilled, early against late releases">
+<br><b>Early and late releases.</b> <sub>Under B0, 92% of early releases and 62% of late ones are refilled: the premise holds, but it bounds what moving releases earlier can gain.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/figures/fig4-survival.png" alt="Kaplan–Meier curve of booking durability">
+<br><b>Booking durability.</b> <sub>93% of bookings last a day, 73% three days, 56% six. A booking made a week ahead has close to an even chance of being released.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/figures/fig5-calibration.png" alt="Predicted against observed survival">
+<br><b>Calibration.</b> <sub>Both models sit close to the diagonal, so a predicted 80% means about 80%, yet neither ranks bookings well (concordance 0.64 and 0.62), by design of the generator.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/figures/fig6-cancellation-timing.png" alt="Cancellations by how long before departure they came">
+<br><b>When cancellations come.</b> <sub>Asking moves cancellations earlier, but also releases some bookings that would have travelled unasked.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/figures/fig3-sweeps.png" alt="Sweeps of the effect of asking across settings">
+<br><b>The sweeps.</b> <sub>No setting tried shows a gain from asking; two show a small loss.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/figures/fig7-robustness.png" alt="Robustness variants against B3">
+<br><b>Robustness.</b> <sub>A model with no booking feature changes nothing, and the scheduler does no better than random requests.</sub>
+</td>
+</tr>
+</table>
+
+Captions in full: [docs/figures](docs/figures/README.md).
+
+</details>
+
+<details>
+<summary><b>🧬 Every experiment since, one finding each</b></summary>
 
 <br>
 
@@ -119,69 +558,36 @@ Every number above is a SQL query over the event log. The method is in
 [EXPERIMENT_PROTOCOL](docs/EXPERIMENT_PROTOCOL.md), and the seven report figures in
 [docs/figures](docs/figures/README.md).
 
-## What the platform does
+<a name="architecture"></a>
 
-<p align="center">
-  <img src="docs/screenshots/home-phone-dark.jpg" alt="The front page on a phone, in dark mode" width="250">
-  &nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/sign-in-phone.jpg" alt="Signing in on a phone, by password or with Google" width="250">
-</p>
-
-**Passengers**
-- Search by town or by exact points on a map, and see for each ride the walk to the pickup on real
-  footpaths, an auto-rickshaw estimate with the published meter fare where one exists, the driver's
-  record of rides kept, and a match score for both sides.
-- Hold seats for five minutes while deciding, book or request, choose what happens if the driver
-  withdraws (this ride only, or rebook automatically), and be picked up off the stops where the driver
-  allows a detour.
-- Chat with the driver, follow the driver's live position, call through a masked number, show a
-  boarding code, confirm the trip happened, rate it, and keep receipts in their own language.
-- Pay the driver directly after the ride, in cash or by UPI: VAYORA charges nothing.
-
-**Drivers**
-- Add vehicles (electric ones with their range, which publishing respects) and publish rides with
-  intermediate stops, per-stretch prices from the road route, a return trip and weekly repeats.
-- Set how far they will go out of their way, accept or decline requests, start the ride, check
-  boarding codes, mark no-shows and complete.
-- See earnings and their own reliability record. They put a UPI ID or QR code on their account, keep
-  the whole fare, and mark each passenger paid.
-- Are told when passengers searched a stretch they drive and found nothing.
-
-**Every member**
-- A profile with photo and preferences, an email or phone confirmed by code, emergency contacts, and
-  an emergency button that puts **112** first.
-- Reset a forgotten password with a code, sign out so the session ends at once, download what VAYORA
-  keeps about them, and delete their account.
-- A seat-release reminder 48 hours before boarding asks, without any penalty, whether plans have
-  changed.
-
-**Administrators**
-- A back office: reports and moderation, the emergency queue, members, rides and bookings, disputed
-  trips, bus alternatives, rest stops and chargers, unmet demand, and the audit log.
-- The durability model's scores with the reason behind each, and a what-if page that runs the
-  simulator live at a setting no saved sweep covered.
-
-> [!NOTE]
-> The model never cancels, prices or refuses anyone: the only thing it decides is whom the
-> seat-release reminder asks. What is simulated, mocked or missing is listed plainly in
-> [KNOWN_LIMITATIONS](docs/KNOWN_LIMITATIONS.md).
-
-## Architecture
+## 🏗️ Architecture
 
 ```mermaid
-flowchart LR
-  web["web<br/>React: renders"]
-  core["core-api<br/>Spring Boot: transactions and truth"]
-  intel["intel<br/>FastAPI: model and scheduler, no state"]
-  gw["gateway<br/>Express + Socket.IO: chat and live position"]
-  pg[("PostgreSQL + PostGIS<br/>users, rides, bookings, payments, events")]
-  mongo[("MongoDB<br/>chat, GPS, notifications")]
-  redis[("Redis<br/>seat holds, route cache")]
-  osrm["OSRM<br/>roads and footpaths"]
-  sim["simulator<br/>SimPy"]
+flowchart TB
+  subgraph clients["Clients: they render"]
+    direction LR
+    web["🖥️ web<br/>React"]
+    mobile["📱 mobile<br/>Expo"]
+  end
+  subgraph services["Services"]
+    direction LR
+    gw["⚡ gateway<br/>Express + Socket.IO<br/>chat and live position"]
+    core["☕ core-api<br/>Spring Boot<br/>transactions and truth"]
+    intel["🧠 intel<br/>FastAPI<br/>model and scheduler, no state"]
+  end
+  subgraph stores["Data"]
+    direction LR
+    mongo[("🍃 MongoDB<br/>chat, GPS, notifications")]
+    pg[("🐘 PostgreSQL + PostGIS<br/>users, rides, bookings,<br/>payments, events")]
+    redis[("🟥 Redis<br/>seat holds, route cache")]
+    osrm["🗺️ OSRM<br/>roads and footpaths"]
+  end
+  sim["🎲 simulator<br/>SimPy"]
   web --> core
   web --> gw
   web -->|what-if| intel
+  mobile --> core
+  mobile --> gw
   core -->|scores, contact plans| intel
   gw -->|membership check| core
   core --> pg
@@ -190,6 +596,44 @@ flowchart LR
   core --> osrm
   gw --> mongo
   sim -->|events| pg
+
+  classDef ui fill:#E6F4EC,stroke:#16865A,color:#10213A
+  classDef svc fill:#10213A,stroke:#10213A,color:#FFFFFF
+  classDef ai fill:#16865A,stroke:#0B5035,color:#FFFFFF
+  classDef store fill:#FFF8E6,stroke:#F59E0B,color:#10213A
+  classDef research fill:#FFE4E2,stroke:#D70015,color:#10213A
+  class web,mobile ui
+  class core,gw,osrm svc
+  class intel ai
+  class pg,mongo,redis store
+  class sim research
+  style clients fill:transparent,stroke:#16865A,stroke-dasharray:4 4
+  style services fill:transparent,stroke:#718096,stroke-dasharray:4 4
+  style stores fill:transparent,stroke:#F59E0B,stroke-dasharray:4 4
+```
+
+**How the seat-release reminder is decided**, the one place the model touches a member:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor P as 🧳 Passenger
+  participant C as ☕ core-api
+  participant I as 🧠 intel
+  actor Q as 🧳 Another passenger
+  P->>C: Book a seat
+  C->>I: Score the booking
+  I-->>C: Chance it survives to departure, and why
+  Note over C: 48 hours before boarding
+  rect rgba(22, 134, 90, 0.12)
+    C->>C: Keep the bookings rated below the threshold
+    C->>I: Whom to ask, within the contact budget?
+    I-->>C: Contact plan (CP-SAT)
+    C->>P: "If your plans have changed, releasing now lets someone else travel"
+  end
+  P->>C: Releases the seat early
+  C-->>Q: The seat is back in search results
+  Q->>C: Books it, and the journey completes
 ```
 
 | Part | Built with | Owns |
@@ -201,18 +645,21 @@ flowchart LR
 | `mobile` | Expo, React Native, TypeScript | The Android app for passengers and drivers; talks to core-api and the gateway like the web app |
 | `sim`, `experiments` | SimPy, lifelines, scikit-survival, OR-Tools | The research: simulator, model training, variants and sweeps |
 
-No entity lives in two stores. Why each thing lives where it does is in
-[ARCHITECTURE](docs/ARCHITECTURE.md).
+No entity lives in two stores, and no service forwards a request on another's behalf. Why each thing
+lives where it does is in [ARCHITECTURE](docs/ARCHITECTURE.md).
 
-## Quick start
+<a name="quick-start"></a>
 
-Requires Docker with Compose v2. Nothing else needs to be installed.
+## 🚀 Quick start
 
-**On Windows**, double-click **`run.bat`**. It starts Docker Desktop if needed, builds and starts every
-service, and lists their addresses and the administrator. It then offers to add demo rides and
+> [!TIP]
+> Requires only **Docker with Compose v2**. Nothing else needs to be installed.
+
+**🪟 On Windows**, double-click **`run.bat`**. It starts Docker Desktop if needed, builds and starts
+every service, and lists their addresses and the administrator. It then offers to add demo rides and
 members, and opens the app. **`stop.bat`** stops everything and keeps the data.
 
-**Anywhere else**, from the repository's folder:
+**🐧 Anywhere else**, from the repository's folder:
 
 ```sh
 docker compose up -d --build --wait
@@ -241,7 +688,7 @@ OSRM (`5000`).
 tried from the page once **Authorize** has the token sign-in returns.
 
 <details>
-<summary><b>Demo data</b>, to see the platform with rides in it</summary>
+<summary><b>🎭 Demo data</b>, to see the platform with rides in it</summary>
 
 <br>
 
@@ -262,7 +709,7 @@ not evidence of anything. It refuses any API but this machine's.
 </details>
 
 <details>
-<summary><b>A port already in use?</b></summary>
+<summary><b>🔌 A port already in use?</b></summary>
 
 <br>
 
@@ -276,14 +723,37 @@ set -a; . ./.env; set +a; sh infra/check-health.sh
 
 </details>
 
-## Putting it online
+<details>
+<summary><b>📱 Run the Android app</b></summary>
+
+<br>
+
+The app in [`mobile/`](mobile/README.md) runs on any Android phone through the free Expo Go app, from
+this computer, or as an APK built in Expo's cloud. Administrators, profiles and the assistant stay on
+the website.
+
+```sh
+cd mobile && npm ci && npx expo start     # then scan the QR code with Expo Go on the same Wi-Fi
+```
+
+</details>
+
+<details>
+<summary><b>🌐 Putting it online</b></summary>
+
+<br>
 
 One command on a server with a domain name: `sh scripts/deploy.sh`. It adds HTTPS, closes every port
 but 80 and 443, and refuses to start without real secrets. See
 [DEPLOYMENT](docs/DEPLOYMENT.md#putting-vayora-online). It has been tried on one machine with a local
 certificate, not yet on a real server.
 
-## Real services, off until you switch them on
+</details>
+
+<details>
+<summary><b>🔑 Real services, off until you switch them on</b></summary>
+
+<br>
 
 Out of the box nothing leaves the platform: VAYORA moves no money, since passengers pay their driver
 directly, codes and messages go to a simulated outbox an administrator can read, and calls are
@@ -301,7 +771,9 @@ only Google has been tried against the real service.
 `.env` is never committed. Step-by-step setup for each is in
 [DEPLOYMENT](docs/DEPLOYMENT.md#switching-on-real-services), with every setting and what breaks.
 
-## Tests
+</details>
+
+## ✅ Tests
 
 ```sh
 docker compose --profile test run --rm core-api-tests      # core-api: Java 21, real PostGIS, MongoDB and Redis
@@ -311,22 +783,9 @@ docker compose --profile research run --rm research        # event log, simulato
 ```
 
 The Python suite needs PostgreSQL running (`docker compose up -d --wait postgres core-api`) and works in
-a throwaway schema. Two tests keep the languages honest: one fails if the app shows text that is not
-translated, the other if the server can send a message the app cannot translate.
+a throwaway schema.
 
-## On a phone
-
-The **Android app** in [`mobile/`](mobile/README.md) gives passengers and drivers VAYORA on a phone, in
-all three languages: search, book, boarding codes, chat and the driver's position for passengers;
-vehicles, publishing, requests and the trip for drivers. It runs on any Android phone through the
-free Expo Go app, from this computer, or as an APK built in Expo's cloud. Administrators, profiles
-and the assistant stay on the website.
-
-```sh
-cd mobile && npm ci && npx expo start     # then scan the QR code with Expo Go on the same Wi-Fi
-```
-
-## Reproducing the research
+## 🔁 Reproducing the research
 
 ```sh
 scripts/reproduce.sh               # tests, model, ladder and sweeps, about an hour
@@ -339,7 +798,10 @@ exactly as committed. The first run downloads the public hotel bookings and chec
 soonest-first ladder and experiments X1 to X7 are not in it yet; the protocol gives each one's
 commands.
 
-Single steps:
+<details>
+<summary><b>Single steps</b></summary>
+
+<br>
 
 ```sh
 # Train and evaluate the durability model
@@ -349,42 +811,47 @@ docker compose --profile research run --rm research python -m experiments.hazard
 docker compose --profile research run --rm research python -m sim.run --variant experiments/configs/variants/B4.yaml
 ```
 
+</details>
+
 Every threshold, budget and assumed value lives in `experiments/configs/*.yaml`, none in code. Latent
 passenger types drive behaviour in the simulator and are never model features.
 
-## The event log
+## 🧾 The event log
 
 Every number in the report is a SQL aggregate over one table, `events`, through
 [`experiments/analysis/metrics.sql`](experiments/analysis/metrics.sql). Two writers share it and a fixed
-vocabulary of 24 event types: core-api's `EventLogService`, which never throws into its caller, and the
-Python `vayora_events` writer, which fails loudly. The platform and the simulator speak the same
-vocabulary; the platform's own rows sit outside every simulation run.
+vocabulary of 24 event types, from `search_issued` and `booking_requested` through `hazard_scored` and
+`intervention_issued` to `seat_refilled` and `trip_completed`: core-api's `EventLogService`, which never
+throws into its caller, and the Python `vayora_events` writer, which fails loudly. The platform and the
+simulator speak the same vocabulary; the platform's own rows sit outside every simulation run.
 
-## Documents
+<a name="documents"></a>
+
+## 📚 Documents
 
 | Document | What it answers |
 |---|---|
-| [ARCHITECTURE](docs/ARCHITECTURE.md) | What the parts are and why things live where they do |
-| [DATABASE_DESIGN](docs/DATABASE_DESIGN.md) | Every table, collection and key |
-| [API_DOCUMENTATION](docs/API_DOCUMENTATION.md) | Every endpoint and who may call it |
-| [SECURITY](docs/SECURITY.md) | What is protected, how it is checked, and what is missing |
-| [DEPLOYMENT](docs/DEPLOYMENT.md) | Running it, configuring it, and what breaks |
-| [FEATURE_MATRIX](docs/FEATURE_MATRIX.md) | The state of each of the 95 features, and the evidence for it |
-| [TESTING](docs/TESTING.md) | What is tested, and what is not |
-| [KNOWN_LIMITATIONS](docs/KNOWN_LIMITATIONS.md) | Everything that does not work, is simulated, or could be mistaken for more |
-| [AI_ML_METHODOLOGY](docs/AI_ML_METHODOLOGY.md) | The survival models, their explanations and the contact scheduler |
-| [EXPERIMENT_PROTOCOL](docs/EXPERIMENT_PROTOCOL.md) | How variants are compared, and every result with its interval |
-| [Figures](docs/figures/README.md) | The report's seven figures, with captions |
-| [DATASET_DOCUMENTATION](docs/DATASET_DOCUMENTATION.md) | Where every dataset comes from |
-| [DECISIONS](docs/DECISIONS.md) | Every design decision, why, and what it costs |
-| [IMPLEMENTATION_ROADMAP](docs/IMPLEMENTATION_ROADMAP.md) | What is left and what it needs |
-| [PROGRESS](docs/PROGRESS.md) | What was built when |
+| 🏗️ [ARCHITECTURE](docs/ARCHITECTURE.md) | What the parts are and why things live where they do |
+| 🗄️ [DATABASE_DESIGN](docs/DATABASE_DESIGN.md) | Every table, collection and key |
+| 🔌 [API_DOCUMENTATION](docs/API_DOCUMENTATION.md) | Every endpoint and who may call it |
+| 🔒 [SECURITY](docs/SECURITY.md) | What is protected, how it is checked, and what is missing |
+| 🚀 [DEPLOYMENT](docs/DEPLOYMENT.md) | Running it, configuring it, and what breaks |
+| ✅ [FEATURE_MATRIX](docs/FEATURE_MATRIX.md) | The state of each of the 95 features, and the evidence for it |
+| 🧪 [TESTING](docs/TESTING.md) | What is tested, and what is not |
+| ⚠️ [KNOWN_LIMITATIONS](docs/KNOWN_LIMITATIONS.md) | Everything that does not work, is simulated, or could be mistaken for more |
+| 🧠 [AI_ML_METHODOLOGY](docs/AI_ML_METHODOLOGY.md) | The survival models, their explanations and the contact scheduler |
+| 🔬 [EXPERIMENT_PROTOCOL](docs/EXPERIMENT_PROTOCOL.md) | How variants are compared, and every result with its interval |
+| 📈 [Figures](docs/figures/README.md) | The report's seven figures, with captions |
+| 📦 [DATASET_DOCUMENTATION](docs/DATASET_DOCUMENTATION.md) | Where every dataset comes from |
+| ⚖️ [DECISIONS](docs/DECISIONS.md) | Every design decision, why, and what it costs |
+| 🗺️ [IMPLEMENTATION_ROADMAP](docs/IMPLEMENTATION_ROADMAP.md) | What is left and what it needs |
+| 📅 [PROGRESS](docs/PROGRESS.md) | What was built when |
 
 The binding project rules (frozen parameters, the architecture rule, research integrity) are in
 [CLAUDE.md](CLAUDE.md).
 
 <details>
-<summary><b>Repository layout</b></summary>
+<summary><b>🗂️ Repository layout</b></summary>
 
 <br>
 
@@ -400,7 +867,7 @@ The binding project rules (frozen parameters, the architecture rule, research in
 | `experiments/` | Configs (every tunable number), runners, analysis queries and committed reports |
 | `infra/` | OSRM corridor preparation, the online setup's edge server, stack health check |
 | `scripts/` | `reproduce.sh`, demo data, deployment, backups, push key generation |
-| `docs/` | Report material, figures and screenshots |
+| `docs/` | Report material, figures, screenshots and the README's graphics (`docs/readme/`) |
 
 OSRM serves a clipped bounding box: `infra/osrm/prepare.sh` downloads Geofabrik's western India extract
 and clips it to the corridor (`OSRM_BBOX`, default `73.4,16.4,74.9,18.9`). A route outside that box
@@ -409,7 +876,7 @@ shows as a straight line and says so. To rebuild from scratch:
 
 </details>
 
-## Data and credits
+## 🙏 Data and credits
 
 - Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL), routed with
   OSRM.
@@ -419,5 +886,19 @@ shows as a straight line and says so. To rebuild from scratch:
 - Hotel bookings: Nuno Antonio, Ana de Almeida and Luis Nunes (2019), *Hotel booking demand datasets*,
   Data in Brief 22, 41–49, [doi:10.1016/j.dib.2018.11.126](https://doi.org/10.1016/j.dib.2018.11.126),
   CC BY 4.0.
+- The screenshots show demo data from `scripts/demo-data.mjs`: every person, ride, review and message in
+  them is made up.
 - Everything else is synthetic, generated by the simulator under the assumptions in
   `experiments/configs/world.yaml`. Nothing here is evidence about real passengers.
+
+<br>
+
+<div align="center">
+
+**VAYORA** · built by a team of four at DYPCET Kolhapur · CSE (Data Science)
+
+<sub>An early cancellation is a success.</sub>
+
+[⬆ Back to top](#top)
+
+</div>

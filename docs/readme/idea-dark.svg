@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="560" viewBox="0 0 1280 560" role="img" aria-labelledby="t d">
+  <title id="t">Same seat, two cancellations</title>
+  <desc id="d">A seat released three days before departure is refilled and the journey completes. The same seat released two hours before departure leaves empty.</desc>
+  <defs>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34C38A" stop-opacity="0.28"/><stop offset="1" stop-color="#34C38A" stop-opacity="0.02"/>
+    </linearGradient>
+    <style>
+      .flow { stroke-dasharray: 6 10; animation: flow 1.4s linear infinite; }
+      @keyframes flow { to { stroke-dashoffset: -16; } }
+      .pulse { animation: pulse 2.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+      @keyframes pulse { 0% { opacity: .6; transform: scale(1); } 100% { opacity: 0; transform: scale(2.8); } }
+      .draw { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: draw 2.2s ease-out .2s forwards; }
+      @keyframes draw { to { stroke-dashoffset: 0; } }
+      @media (prefers-reduced-motion: reduce) { .flow, .pulse { animation: none; } .draw { animation: none; stroke-dashoffset: 0; } }
+    </style>
+  </defs>
+  <rect x="1" y="1" width="1278" height="558" rx="26" fill="#131D2E" stroke="#2E3B4F" stroke-width="2"/>
+  <g font-family="'Segoe UI', 'Inter', 'Helvetica Neue', Arial, 'Nirmala UI', 'Kohinoor Devanagari', sans-serif">
+    <text x="110" y="58" font-size="26" font-weight="800" fill="#F1F5F9">Same seat. Two cancellations. Two different endings.</text>
+    <text x="110" y="88" font-size="17" fill="#94A3B8">VAYORA estimates how likely each booking is to last through the 7-day booking window, and asks while a released seat can still go to someone else.</text>
+
+    <rect x="110" y="104" width="757.1428571428571" height="146" fill="#134E37" opacity="0.55"/>
+    <rect x="1018.5714285714287" y="104" width="151.42857142857133" height="146" fill="#3B1418" opacity="0.8"/>
+    <text x="124" y="126" font-size="14" font-weight="700" fill="#34C38A">ACT HERE: a released seat is still likely to be refilled</text>
+    <text x="1158" y="126" font-size="14" font-weight="700" text-anchor="end" fill="#FF5A5F">TOO LATE</text>
+    <path d="M110,250 L110.0,146.0 L131.6,148.9 L153.3,151.6 L174.9,154.2 L196.5,156.7 L218.2,159.2 L239.8,161.5 L261.4,163.7 L283.1,165.8 L304.7,167.9 L326.3,169.9 L348.0,171.8 L369.6,173.7 L391.2,175.5 L412.9,177.2 L434.5,178.9 L456.1,180.6 L477.8,182.2 L499.4,183.8 L521.0,185.4 L542.7,187.0 L564.3,188.5 L585.9,190.0 L607.6,191.5 L629.2,193.0 L650.8,194.5 L672.4,196.0 L694.1,197.5 L715.7,199.0 L737.3,200.5 L759.0,202.1 L780.6,203.6 L802.2,205.2 L823.9,206.8 L845.5,208.4 L867.1,210.1 L888.8,211.8 L910.4,213.5 L932.0,215.2 L953.7,217.0 L975.3,218.9 L996.9,220.8 L1018.6,222.7 L1040.2,224.7 L1061.8,226.8 L1083.5,228.9 L1105.1,231.1 L1126.7,233.3 L1148.4,235.6 L1170.0,238.0 L1170,250 Z" fill="url(#area)"/>
+    <polyline points="110.0,146.0 131.6,148.9 153.3,151.6 174.9,154.2 196.5,156.7 218.2,159.2 239.8,161.5 261.4,163.7 283.1,165.8 304.7,167.9 326.3,169.9 348.0,171.8 369.6,173.7 391.2,175.5 412.9,177.2 434.5,178.9 456.1,180.6 477.8,182.2 499.4,183.8 521.0,185.4 542.7,187.0 564.3,188.5 585.9,190.0 607.6,191.5 629.2,193.0 650.8,194.5 672.4,196.0 694.1,197.5 715.7,199.0 737.3,200.5 759.0,202.1 780.6,203.6 802.2,205.2 823.9,206.8 845.5,208.4 867.1,210.1 888.8,211.8 910.4,213.5 932.0,215.2 953.7,217.0 975.3,218.9 996.9,220.8 1018.6,222.7 1040.2,224.7 1061.8,226.8 1083.5,228.9 1105.1,231.1 1126.7,233.3 1148.4,235.6 1170.0,238.0" fill="none" stroke="#34C38A" stroke-width="3.5" stroke-linecap="round" class="draw"/>
+    <text x="124" y="236" font-size="14" fill="#94A3B8">share of bookings still standing ↘</text>
+
+    <line x1="110" y1="250" x2="1170" y2="250" stroke="#2E3B4F" stroke-width="2"/>
+    <line x1="110" y1="250" x2="110" y2="258" stroke="#2E3B4F" stroke-width="2"/>
+    <text x="110" y="278" font-size="14" text-anchor="middle" fill="#94A3B8">7 days</text>
+    <line x1="261.42857142857144" y1="250" x2="261.42857142857144" y2="258" stroke="#2E3B4F" stroke-width="2"/>
+    <text x="261.42857142857144" y="278" font-size="14" text-anchor="middle" fill="#94A3B8">6 days</text>
+    <line x1="412.85714285714283" y1="250" x2="412.85714285714283" y2="258" stroke="#2E3B4F" stroke-width="2"/>
+    <text x="412.85714285714283" y="278" font-size="14" text-anchor="middle" fill="#94A3B8">5 days</text>
+    <line x1="564.2857142857143" y1="250" x2="564.2857142857143" y2="258" stroke="#2E3B4F" stroke-width="2"/>
+    <text x="564.2857142857143" y="278" font-size="14" text-anchor="middle" fill="#94A3B8">4 days</text>
+    <line x1="715.7142857142857" y1="250" x2="715.7142857142857" y2="258" stroke="#2E3B4F" stroke-width="2"/>
+    <text x="715.7142857142857" y="278" font-size="14" text-anchor="middle" fill="#94A3B8">3 days</text>
+    <line x1="867.1428571428571" y1="250" x2="867.1428571428571" y2="258" stroke="#2E3B4F" stroke-width="2"/>
+    <text x="867.1428571428571" y="278" font-size="14" text-anchor="middle" fill="#94A3B8">2 days</text>
+    <line x1="1018.5714285714287" y1="250" x2="1018.5714285714287" y2="258" stroke="#2E3B4F" stroke-width="2"/>
+    <text x="1018.5714285714287" y="278" font-size="14" text-anchor="middle" fill="#94A3B8">1 days</text>
+    <line x1="1170" y1="250" x2="1170" y2="258" stroke="#2E3B4F" stroke-width="2"/>
+    <text x="1170" y="278" font-size="14" text-anchor="middle" fill="#94A3B8">departure</text>
+
+    <!-- Track A: released early -->
+    <text x="110" y="330" font-size="15" font-weight="700" fill="#F1F5F9">Seat A</text>
+    <line x1="180" y1="325" x2="715.7142857142857" y2="325" stroke="#F1F5F9" stroke-width="4" stroke-linecap="round"/>
+    <line x1="715.7142857142857" y1="325" x2="1170" y2="325" stroke="#34C38A" stroke-width="4" stroke-linecap="round" class="flow"/>
+    <circle cx="715.7142857142857" cy="325" r="10" fill="#34C38A" class="pulse"/>
+    <circle cx="715.7142857142857" cy="325" r="10" fill="#34C38A" stroke="#131D2E" stroke-width="3"/>
+    <text x="715.7142857142857" y="304" font-size="15" font-weight="700" text-anchor="middle" fill="#34C38A">released 3 days out</text>
+    <g transform="translate(836.8571428571429 325)">
+      <circle r="15" fill="#131D2E" stroke="#34C38A" stroke-width="3"/>
+      <circle cy="-4" r="4.5" fill="#34C38A"/><path d="M-8 8 C -8 1, 8 1, 8 8" fill="#34C38A"/>
+    </g>
+    <text x="836.8571428571429" y="364" font-size="15" text-anchor="middle" fill="#CBD3DE">another passenger books it</text>
+    <circle cx="1170" cy="325" r="15" fill="#34C38A"/>
+    <path d="M1163 325 l5 5 l9 -10" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="1170" y="364" font-size="15" font-weight="700" text-anchor="end" fill="#34C38A">journey completes ✓</text>
+
+    <!-- Track B: released late -->
+    <text x="110" y="430" font-size="15" font-weight="700" fill="#F1F5F9">Seat B</text>
+    <line x1="180" y1="425" x2="1157.3809523809525" y2="425" stroke="#F1F5F9" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="1157.3809523809525" cy="425" r="10" fill="#FF5A5F" class="pulse"/>
+    <circle cx="1157.3809523809525" cy="425" r="10" fill="#FF5A5F" stroke="#131D2E" stroke-width="3"/>
+    <text x="1139.3809523809525" y="404" font-size="15" font-weight="700" text-anchor="end" fill="#FF5A5F">released 2 hours before departure</text>
+    <text x="1170" y="464" font-size="15" font-weight="700" text-anchor="end" fill="#FF5A5F">nobody can take it in time: the seat leaves empty ✗</text>
+
+    <rect x="110" y="492" width="1060" height="42" rx="12" fill="#3A2A08"/>
+    <text x="128" y="519" font-size="15" fill="#F1F5F9"><tspan font-weight="700">In the simulator (baseline B0):</tspan> 92% of seats released 24 hours or more before departure were refilled, against 62% of later ones.</text>
+  </g>
+</svg>
