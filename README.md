@@ -493,33 +493,28 @@ the earlier world's committed numbers (B0 30.77, B3 31.11) to every digit.</sub>
   (−0.001 against B3); a model that knows nothing about the passenger does as well, and the scheduler
   does no better than choosing at random.
 
-<details>
-<summary><b>🧮 The durability model in two formulas</b></summary>
-
-<br>
+#### 🧮 The durability model in two formulas
 
 How long a booking lasts is modelled as a time to an event, $T$, from acceptance until the passenger
 cancels; a booking still standing at departure is right-censored. The served model is a Cox
 proportional-hazards model (h3-cox, fitted with lifelines) on 11 features known when the booking is
 requested:
 
-$$
+```math
 S(t \mid \mathbf{x}) \;=\; P\left(T > t \mid \mathbf{x}\right) \;=\; S_0(t)^{\exp\left(\boldsymbol{\beta}^{\top}\mathbf{x}\right)}
-$$
+```
 
 For a booking that has already lasted $e$ hours and departs $h$ hours after acceptance, the score is
 the chance it lasts the rest of the way:
 
-$$
+```math
 \text{score} \;=\; \frac{S(h \mid \mathbf{x})}{S(e \mid \mathbf{x})}
-$$
+```
 
 Bookings scoring below $0.8$ become candidates for the reminder 48 hours before boarding, and the
 CP-SAT contact scheduler chooses among them within the contact budget. On the validation seeds it
 reaches a concordance of 0.638 and a Brier score of 0.1169: well calibrated but weak at ranking, as
 expected of a model that cannot represent the generator.
-
-</details>
 
 <details>
 <summary><b>📈 The report's figures</b></summary>
