@@ -33,3 +33,6 @@ Thumbs.db
 
 # database backups (scripts/backup.sh)
 backups/
+
+# The report, slides and figures made for submission; kept off the public repository
+Claude outputs/
